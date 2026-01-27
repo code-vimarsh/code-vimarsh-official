@@ -11,7 +11,7 @@ function App() {
   return (
     <div>
       <h1>Code Vimarsh</h1>
-      <p>Total users: {users.length}</p>
+      <p>Total USer: {users.length}</p>
     </div>
   );
 }
