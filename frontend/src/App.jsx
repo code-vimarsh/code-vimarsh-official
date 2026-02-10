@@ -10,7 +10,7 @@ function App() {
 
   return (
     <div>
-      <h1>Code Vimarsh</h1>
+      <h1>Code Vimarsh Official</h1>
       <p>Total USer: {users.length}</p>
     </div>
   );
