@@ -1,13 +1,41 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ChevronRight, Code, Trophy, Users } from 'lucide-react';
+import { ChevronRight, Code, Trophy, Users, Activity, Layers, Star } from 'lucide-react';
 import Scene3D from '../components/Scene3D';
 import { Link } from 'react-router-dom';
 
+const statsData = [
+  { label: 'Active Members', value: '500+', icon: Users, color: 'from-orange-500 to-amber-400' },
+  { label: 'Projects Built', value: '50+', icon: Layers, color: 'from-orange-400 to-yellow-500' },
+  { label: 'Tech Workshops', value: '120+', icon: Activity, color: 'from-amber-500 to-orange-600' },
+  { label: 'Prize Achievements', value: '10L+', icon: Trophy, color: 'from-yellow-400 to-orange-500' },
+];
+
+const featuresData = [
+  {
+    icon: Code,
+    title: 'Learn by Doing',
+    desc: 'Stop watching tutorials. Start building actual software in our guided project cohorts.',
+    badge: '01',
+  },
+  {
+    icon: Users,
+    title: 'Compete & Collaborate',
+    desc: 'Join hackathon teams, participate in competitive programming, and grow together.',
+    badge: '02',
+  },
+  {
+    icon: Trophy,
+    title: 'Career Focused',
+    desc: 'Direct alumni mentorship, resume reviews, and interview prep for top product companies.',
+    badge: '03',
+  },
+];
+
 const Home: React.FC = () => {
   return (
-    <div className="flex flex-col space-y-32 py-10">
-      
+    <div className="flex flex-col space-y-28 py-10">
+
       {/* Hero Section */}
       <section className="min-h-[70vh] flex flex-col lg:flex-row items-center justify-between gap-12">
         <div className="flex-1 space-y-8 z-10">
@@ -19,19 +47,19 @@ const Home: React.FC = () => {
           >
             v2.0.26_STABLE_RELEASE
           </motion.div>
-          
-          <motion.h1 
+
+          <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
             className="text-5xl md:text-7xl font-display font-bold leading-tight"
           >
-            Think.<br/>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">Code.</span><br/>
+            Think.<br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">Code.</span><br />
             Innovate.
           </motion.h1>
-          
-          <motion.p 
+
+          <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
@@ -39,14 +67,17 @@ const Home: React.FC = () => {
           >
             The official, elite coding ecosystem of MSU Baroda. Build real projects, collaborate with top talent, and accelerate your tech career.
           </motion.p>
-          
-          <motion.div 
+
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
             className="flex flex-wrap gap-4"
           >
-            <Link to="/dashboard" className="bg-primary hover:bg-secondary text-black font-semibold px-6 py-3 rounded-lg transition-all flex items-center group">
+            <Link
+              to="/dashboard"
+              className="bg-primary hover:bg-secondary text-black font-semibold px-6 py-3 rounded-lg transition-all flex items-center group shadow-[0_0_20px_rgba(255,106,0,0.35)] hover:shadow-[0_0_35px_rgba(255,106,0,0.55)]"
+            >
               Start Your Journey
               <ChevronRight size={18} className="ml-1 group-hover:translate-x-1 transition-transform" />
             </Link>
@@ -56,7 +87,7 @@ const Home: React.FC = () => {
           </motion.div>
 
           {/* Terminal Snippet */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8 }}
@@ -75,55 +106,111 @@ const Home: React.FC = () => {
         </div>
 
         {/* 3D Visual */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1 }}
           className="flex-1 w-full h-full relative flex items-center justify-center"
         >
-          {/* Subtle glow behind 3D object */}
-          <div className="absolute w-64 h-64 bg-primary/20 rounded-full blur-[100px]"></div>
+          {/* Layered glow behind 3D object */}
+          <div className="absolute w-96 h-96 bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
+          <div className="absolute w-48 h-48 bg-primary/25 rounded-full blur-[60px] pointer-events-none" />
+          <div className="absolute w-24 h-24 bg-orange-400/30 rounded-full blur-[30px] pointer-events-none" />
           <Scene3D />
         </motion.div>
       </section>
 
       {/* Stats Section */}
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
-        {[
-          { label: 'Active Members', value: '500+' },
-          { label: 'Projects Built', value: '50+' },
-          { label: 'Tech Workshops', value: '120+' },
-          { label: 'Prize Achievements', value: '10L+' }
-        ].map((stat, i) => (
-          <div key={i} className="bg-surface border border-surfaceLight rounded-xl p-6 text-center hover:border-primary/30 transition-colors">
-            <h3 className="text-3xl md:text-4xl font-display font-bold text-white mb-2">{stat.value}</h3>
-            <p className="text-textMuted text-sm font-medium">{stat.label}</p>
-          </div>
-        ))}
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+        {statsData.map((stat, i) => {
+          const Icon = stat.icon;
+          return (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1, duration: 0.5 }}
+              whileHover={{ scale: 1.03, y: -4 }}
+              className="relative bg-surface border border-surfaceLight rounded-2xl p-6 text-center overflow-hidden group cursor-default transition-all duration-300 hover:border-primary/40 hover:shadow-[0_0_30px_rgba(255,106,0,0.12)]"
+            >
+              {/* Background glow */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />
+              {/* Icon */}
+              <div className="mx-auto mb-3 w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(255,106,0,0.1)' }}>
+                <Icon size={18} className="text-primary" />
+              </div>
+              {/* Value */}
+              <h3 className={`text-3xl md:text-4xl font-display font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent mb-1`}>
+                {stat.value}
+              </h3>
+              <p className="text-textMuted text-xs font-medium uppercase tracking-widest">{stat.label}</p>
+              {/* Bottom accent line */}
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0.5 bg-gradient-to-r from-primary to-secondary group-hover:w-2/3 transition-all duration-500 rounded-full" />
+            </motion.div>
+          );
+        })}
       </section>
 
-      {/* Features */}
-      <section className="space-y-12">
-        <div className="text-center max-w-2xl mx-auto space-y-4">
-          <h2 className="text-3xl font-display font-bold">Why Join The Ecosystem?</h2>
-          <p className="text-textMuted">We provide the infrastructure and community you need to scale your skills from basic syntax to production-ready architecture.</p>
-        </div>
+      {/* Features Section */}
+      <section className="space-y-16">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center max-w-2xl mx-auto space-y-4"
+        >
+          <span className="inline-block px-3 py-1 rounded-full border border-primary/30 bg-primary/5 text-primary text-xs font-mono mb-2">
+            Why Us
+          </span>
+          <h2 className="text-4xl font-display font-bold">
+            Why Join The{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">Ecosystem?</span>
+          </h2>
+          <p className="text-textMuted text-base leading-relaxed">
+            We provide the infrastructure and community you need to scale your skills from basic syntax to production-ready architecture.
+          </p>
+        </motion.div>
 
         <div className="grid md:grid-cols-3 gap-6">
-          {[
-            { icon: <Code size={24}/>, title: 'Learn by Doing', desc: 'Stop watching tutorials. Start building actual software in our guided project cohorts.' },
-            { icon: <Users size={24}/>, title: 'Compete & Collaborate', desc: 'Join hackathon teams, participate in competitive programming, and grow together.' },
-            { icon: <Trophy size={24}/>, title: 'Career Focused', desc: 'Direct alumni mentorship, resume reviews, and interview prep for top product companies.' }
-          ].map((feature, i) => (
-            <div key={i} className="bg-bgDark border border-surfaceLight p-8 rounded-2xl relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-[50px] group-hover:bg-primary/10 transition-colors"></div>
-              <div className="text-primary mb-6 bg-primary/10 w-12 h-12 rounded-lg flex items-center justify-center">
-                {feature.icon}
-              </div>
-              <h3 className="text-xl font-bold mb-3">{feature.title}</h3>
-              <p className="text-textMuted text-sm leading-relaxed">{feature.desc}</p>
-            </div>
-          ))}
+          {featuresData.map((feature, i) => {
+            const Icon = feature.icon;
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.15, duration: 0.5 }}
+                whileHover={{ y: -6 }}
+                className="relative bg-bgDark border border-surfaceLight rounded-2xl p-8 overflow-hidden group transition-all duration-300 hover:border-primary/40 hover:shadow-[0_0_40px_rgba(255,106,0,0.1)]"
+              >
+                {/* Top accent bar */}
+                <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                {/* Corner glow */}
+                <div className="absolute top-0 right-0 w-40 h-40 bg-primary/5 rounded-full blur-[60px] group-hover:bg-primary/10 transition-colors duration-500" />
+                {/* Badge number */}
+                <div className="absolute top-5 right-6 text-5xl font-display font-black select-none" style={{ color: 'rgba(255,255,255,0.04)' }}>
+                  {feature.badge}
+                </div>
+                {/* Icon */}
+                <div className="relative text-primary mb-6 bg-primary/10 w-14 h-14 rounded-xl flex items-center justify-center group-hover:bg-primary/20 group-hover:shadow-[0_0_20px_rgba(255,106,0,0.2)] transition-all duration-300">
+                  <Icon size={26} />
+                </div>
+                {/* Content */}
+                <h3 className="text-xl font-bold mb-3 text-white group-hover:text-primary transition-colors duration-300">
+                  {feature.title}
+                </h3>
+                <p className="text-textMuted text-sm leading-relaxed">{feature.desc}</p>
+                {/* Bottom CTA hint */}
+                <div className="flex items-center gap-1 mt-6 text-xs transition-all duration-300 opacity-0 group-hover:opacity-70" style={{ color: 'rgb(255,106,0)' }}>
+                  <Star size={11} />
+                  <span className="font-medium">Learn more</span>
+                  <ChevronRight size={11} className="group-hover:translate-x-1 transition-transform" />
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
       </section>
 
