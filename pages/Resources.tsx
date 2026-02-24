@@ -27,7 +27,7 @@ const Resources: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-bgDark py-20 px-4 md:px-8 space-y-32">
+    <div className="min-h-screen bg-bgDark py-20 px-4 md:px-8 space-y-24">
       {/* Hero Section */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
@@ -40,7 +40,7 @@ const Resources: React.FC = () => {
           <Sparkles size={12} /> Curated Learning Ecosystem
         </div>
 
-        <h1 className="text-6xl md:text-8xl font-display font-bold tracking-tight text-white leading-tight">
+        <h1 className="text-5xl md:text-7xl font-display font-bold tracking-tight text-white leading-tight">
           Learning <span className="bg-gradient-to-r from-primary to-orange-500 bg-clip-text text-transparent italic">Vault.</span>
         </h1>
         <p className="text-textMuted max-w-2xl mx-auto text-lg md:text-xl leading-relaxed">
@@ -72,7 +72,7 @@ const Resources: React.FC = () => {
           <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-bgDark to-transparent z-10 pointer-events-none"></div>
           <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-bgDark to-transparent z-10 pointer-events-none"></div>
 
-          <Marquee direction="left" speed={40}>
+          <Marquee direction="left" speed={60}>
             {videoResources.map((video) => (
               <motion.a
                 key={video.id}
@@ -80,7 +80,7 @@ const Resources: React.FC = () => {
                 target="_blank"
                 rel="noopener noreferrer"
                 whileHover={{ y: -8 }}
-                className="group block w-[380px] shrink-0 bg-white/5 backdrop-blur-xl border border-white/10 rounded-[2rem] overflow-hidden hover:border-red-500/40 transition-all duration-500 shadow-2xl"
+                className="group block w-[320px] shrink-0 bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden hover:border-red-500/40 transition-all duration-500 shadow-2xl"
               >
                 <div className="relative aspect-video overflow-hidden">
                   <img
@@ -139,7 +139,7 @@ const Resources: React.FC = () => {
           <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-bgDark to-transparent z-10 pointer-events-none"></div>
           <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-bgDark to-transparent z-10 pointer-events-none"></div>
 
-          <Marquee direction="right" speed={30}>
+          <Marquee direction="right" speed={50}>
             {linkResources.map((link) => {
               const domain = new URL(link.url).hostname;
               const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
@@ -148,7 +148,7 @@ const Resources: React.FC = () => {
                 <motion.div
                   key={link.id}
                   whileHover={{ scale: 1.02 }}
-                  className="w-[380px] shrink-0 bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-[2rem] hover:border-primary/50 transition-all duration-300 group shadow-xl relative overflow-hidden"
+                  className="w-[320px] shrink-0 bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-3xl hover:border-primary/50 transition-all duration-300 group shadow-xl relative overflow-hidden"
                 >
                   <div className="flex items-start justify-between mb-6 relative z-10">
                     <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center p-3 group-hover:bg-primary/10 border border-white/10 group-hover:border-primary/20 transition-all duration-500">
@@ -238,16 +238,16 @@ const Resources: React.FC = () => {
         viewport={{ once: true }}
         className="max-w-7xl mx-auto"
       >
-        <div className="relative overflow-hidden bg-gradient-to-br from-bgDark to-surface border border-white/10 rounded-[3rem] p-16 md:p-24 flex flex-col items-center justify-center text-center space-y-10 group shadow-2xl">
+        <div className="relative overflow-hidden bg-gradient-to-br from-bgDark to-surface/40 border border-white/10 rounded-[2.5rem] p-12 md:p-16 flex flex-col items-center justify-center text-center space-y-8 group shadow-2xl">
           <div className="absolute inset-0 bg-primary/5 opacity-30 blur-[150px] pointer-events-none transition-all duration-700 group-hover:scale-150"></div>
 
-          <div className="p-8 bg-primary/10 rounded-[2.5rem] border border-primary/20 relative z-10 shadow-inner">
-            <BookOpen size={80} className="text-primary animate-pulse" />
+          <div className="p-6 bg-primary/10 rounded-3xl border border-primary/20 relative z-10 shadow-inner">
+            <BookOpen size={48} className="text-primary animate-pulse" />
           </div>
 
-          <div className="space-y-4 relative z-10">
-            <h3 className="text-5xl md:text-6xl font-display font-bold text-white tracking-tighter uppercase">The Internal Archive</h3>
-            <p className="text-textMuted max-w-2xl mx-auto text-xl leading-relaxed">
+          <div className="space-y-3 relative z-10">
+            <h3 className="text-3xl md:text-5xl font-display font-bold text-white tracking-tighter uppercase">The Internal Archive</h3>
+            <p className="text-textMuted max-w-xl mx-auto text-lg leading-relaxed">
               Access 500+ leaked technical case studies, internal startup frameworks, and 1-on-1 mentorship blueprints.
             </p>
           </div>
@@ -255,7 +255,7 @@ const Resources: React.FC = () => {
           <motion.button
             whileHover={{ scale: 1.05, boxShadow: "0 0 40px rgba(255, 122, 0, 0.3)" }}
             whileTap={{ scale: 0.98 }}
-            className="bg-primary text-black font-extrabold px-14 py-6 rounded-2xl transition-all shadow-xl shadow-primary/20 relative z-10 text-xl tracking-tight uppercase"
+            className="bg-primary text-black font-extrabold px-10 py-4 rounded-xl transition-all shadow-xl shadow-primary/20 relative z-10 text-lg tracking-tight uppercase"
           >
             Authenticate with Student ID
           </motion.button>
