@@ -1,6 +1,7 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { Github, Linkedin, Crown, Code2, Palette, Settings } from 'lucide-react';
+import { EmbersBackground } from '../components/Achievements/GlowDots';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES
@@ -481,117 +482,100 @@ const Hero: React.FC = () => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.65, ease: [0.25, 0.46, 0.45, 0.94] }}
       style={{
-        padding: '80px 0 72px',
-        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        padding: '100px 0 80px',
         position: 'relative',
+        textAlign: 'center',
       }}
     >
-      {/* Horizontal rule top */}
+      {/* Small label */}
       <motion.div
-        initial={{ scaleX: 0 }}
-        animate={{ scaleX: 1 }}
-        transition={{ duration: 0.9, delay: 0.15 }}
-        style={{
-          height: 1,
-          background: 'linear-gradient(90deg, #f97316, rgba(249,115,22,0.1))',
-          marginBottom: 40,
-          transformOrigin: 'left',
-          width: 120,
-        }}
-      />
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="inline-flex items-center gap-2 mb-6 px-4 py-1.5 rounded-full border text-[11px] font-bold uppercase tracking-[0.2em]"
+        style={{ background: 'rgba(249,115,22,0.08)', borderColor: 'rgba(249,115,22,0.3)', color: '#f97316' }}
+      >
+        <Crown size={12} /> The Core Team · Code Vimarsh
+      </motion.div>
 
-      {/* Label */}
-      <div
+      {/* Main Headline */}
+      <h1
         style={{
-          fontFamily: 'JetBrains Mono, monospace',
-          fontSize: '0.68rem',
-          letterSpacing: '0.24em',
-          color: 'rgba(255,255,255,0.28)',
-          textTransform: 'uppercase',
-          marginBottom: 20,
+          fontFamily: 'Cinzel Decorative, Cinzel, serif',
+          fontWeight: 900,
+          fontSize: 'clamp(2.5rem, 6vw, 4.8rem)',
+          color: '#f5f0e8',
+          margin: '0 auto 16px',
+          letterSpacing: '0.04em',
+          lineHeight: 1.1,
+          maxWidth: 900,
         }}
       >
-        Code Vimarsh — Core Team
-      </div>
+        Meet the Architects of{' '}
+        <span
+          style={{
+            color: '#f97316',
+            textShadow: '0 0 40px rgba(249,115,22,0.55)',
+            display: 'inline-block',
+          }}
+        >
+          Innovation
+        </span>
+      </h1>
 
-      {/* Headline */}
+      {/* Professional Subtitle */}
+      <p style={{
+        color: '#6a5a4a',
+        fontFamily: 'JetBrains Mono, monospace',
+        fontSize: '11px',
+        letterSpacing: '0.2em',
+        textTransform: 'uppercase',
+        maxWidth: 600,
+        margin: '0 auto 48px'
+      }}>
+        A collective of engineers, designers, and visionaries building the community of tomorrow.
+      </p>
+
+      {/* Stats row - Centered */}
       <div
         style={{
           display: 'flex',
-          alignItems: 'flex-end',
-          justifyContent: 'space-between',
-          gap: 32,
+          justifyContent: 'center',
+          gap: 'clamp(2rem, 8vw, 6rem)',
+          paddingBottom: 8,
           flexWrap: 'wrap',
         }}
       >
-        <h1
-          style={{
-            fontFamily: 'Inter, sans-serif',
-            fontWeight: 900,
-            fontSize: 'clamp(2.8rem, 7vw, 5.5rem)',
-            color: '#f0ece6',
-            margin: 0,
-            letterSpacing: '-0.045em',
-            lineHeight: 1.0,
-            maxWidth: 600,
-          }}
-        >
-          Meet the{' '}
-          <span
-            style={{
-              background: 'linear-gradient(135deg, #f97316 0%, #fb923c 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-            }}
-          >
-            People
-          </span>
-          {' '}Behind It
-        </h1>
-
-        {/* Stats column */}
-        <div
-          style={{
-            display: 'flex',
-            gap: 36,
-            paddingBottom: 8,
-            flexWrap: 'wrap',
-          }}
-        >
-          {[
-            { value: String(totalMembers), label: 'Total Members' },
-            { value: String(SECTIONS.length), label: 'Teams' },
-            { value: '∞', label: 'Ambition' },
-          ].map(stat => (
-            <div key={stat.label}>
-              <div
-                style={{
-                  fontFamily: 'Inter, sans-serif',
-                  fontWeight: 900,
-                  fontSize: '2rem',
-                  color: '#f0ece6',
-                  letterSpacing: '-0.04em',
-                  lineHeight: 1,
-                }}
-              >
-                {stat.value}
-              </div>
-              <div
-                style={{
-                  fontFamily: 'JetBrains Mono, monospace',
-                  fontSize: '0.6rem',
-                  color: 'rgba(255,255,255,0.28)',
-                  letterSpacing: '0.14em',
-                  textTransform: 'uppercase',
-                  marginTop: 4,
-                }}
-              >
-                {stat.label}
-              </div>
+        {[
+          { value: String(totalMembers), label: 'Core Members' },
+          { value: String(SECTIONS.length), label: 'Specialized Teams' },
+          { value: '∞', label: 'Collaboration' },
+        ].map(stat => (
+          <div key={stat.label} style={{ textAlign: 'center' }}>
+            <div
+              style={{
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: 900,
+                fontSize: '2.5rem',
+                color: '#f0ece6',
+                lineHeight: 1,
+              }}
+            >
+              {stat.value}
             </div>
-          ))}
-        </div>
+            <div
+              style={{
+                fontFamily: 'JetBrains Mono, monospace',
+                fontSize: '0.6rem',
+                color: 'rgba(255,255,255,0.28)',
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                marginTop: 6,
+              }}
+            >
+              {stat.label}
+            </div>
+          </div>
+        ))}
       </div>
     </motion.div>
   );
@@ -600,50 +584,74 @@ const Hero: React.FC = () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // BACKGROUND — subtle, non-intrusive
 // ─────────────────────────────────────────────────────────────────────────────
-const PageBackground: React.FC = () => (
-  <div
-    style={{
-      position: 'fixed',
-      inset: 0,
-      zIndex: 0,
-      pointerEvents: 'none',
-      background: '#0b0f19',
-    }}
-  >
-    {/* Warm top-left glow */}
+const PageBackground: React.FC = () => {
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePos({ x: e.clientX, y: e.clientY });
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  return (
     <div
       style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: '50%',
-        height: '50%',
-        background: 'radial-gradient(ellipse at 20% 20%, rgba(249,115,22,0.06) 0%, transparent 65%)',
-      }}
-    />
-    {/* Subtle bottom-right */}
-    <div
-      style={{
-        position: 'absolute',
-        bottom: 0,
-        right: 0,
-        width: '40%',
-        height: '40%',
-        background: 'radial-gradient(ellipse at 80% 80%, rgba(251,146,60,0.04) 0%, transparent 65%)',
-      }}
-    />
-    {/* Fine dot grid */}
-    <div
-      style={{
-        position: 'absolute',
+        position: 'fixed',
         inset: 0,
-        backgroundImage: 'radial-gradient(rgba(249,115,22,0.07) 1px, transparent 1px)',
-        backgroundSize: '36px 36px',
-        opacity: 0.6,
+        zIndex: 0,
+        pointerEvents: 'none',
+        backgroundColor: '#0b0f19',
       }}
-    />
-  </div>
-);
+    >
+      {/* Generated professional tech background image */}
+      <div style={{
+        position: 'absolute', inset: 0, zIndex: 0,
+        backgroundImage: `url('/assets/team-bg.png')`,
+        backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.5
+      }} />
+
+      {/* Dark gradient overlay to blend */}
+      <div style={{
+        position: 'absolute', inset: 0, zIndex: 0,
+        background: 'linear-gradient(180deg,rgba(11,15,25,0.92) 0%,rgba(11,15,25,0.78) 45%,rgba(11,15,25,0.95) 100%)',
+      }} />
+
+      {/* Floating Embers - The "Fire Effects" */}
+      <EmbersBackground />
+
+      {/* Subtle mouse glow spotlight */}
+      <motion.div
+        animate={{
+          x: mousePos.x - 450,
+          y: mousePos.y - 450,
+        }}
+        transition={{ type: 'spring', damping: 40, stiffness: 50, mass: 1 }}
+        style={{
+          position: 'absolute',
+          width: 900,
+          height: 900,
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(249,115,22,0.08) 0%, transparent 70%)',
+          zIndex: 1,
+        }}
+      />
+
+      {/* Technical Mesh Grid */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundImage: 'radial-gradient(rgba(249,115,22,0.06) 1.2px, transparent 1.2px)',
+          backgroundSize: '40px 40px',
+          opacity: 0.4,
+          zIndex: 2,
+        }}
+      />
+    </div>
+  );
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MAIN PAGE
