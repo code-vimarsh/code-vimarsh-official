@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { useGlobalState } from '../context/GlobalContext';
-import { LayoutDashboard, Calendar, FolderHeart, ShieldAlert, Users, Plus, Trash2, ArrowLeft, BookOpen, Pencil, Upload, X, Save } from 'lucide-react';
+import { LayoutDashboard, Calendar, FolderHeart, ShieldAlert, Users, Plus, Trash2, ArrowLeft, BookOpen, Pencil, Upload, X, Save, Mail, Send, CheckCircle, AlertCircle, Loader2, Megaphone, UserPlus, UserCheck, Award } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import emailjs from '@emailjs/browser';
+import Certificates from './Certificates';
 
 const Admin: React.FC = () => {
   const {
@@ -9,9 +11,11 @@ const Admin: React.FC = () => {
     projects, addProject,
     admins, addAdmin,
     videoResources, addVideoResource, updateVideoResource, deleteVideoResource,
-    linkResources, addLinkResource, updateLinkResource, deleteLinkResource
+    linkResources, addLinkResource, updateLinkResource, deleteLinkResource,
+    participants, addParticipant, removeParticipant,
+    clubMembers, addClubMember, removeClubMember,
   } = useGlobalState();
-  const [activeTab, setActiveTab] = useState<'overview' | 'events' | 'projects' | 'admins' | 'resources'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'events' | 'projects' | 'admins' | 'resources' | 'email' | 'certificates'>('overview');
 
   // New Event State
   const [newEvent, setNewEvent] = useState({ title: '', date: '', type: 'Upcoming', description: '' });
@@ -25,6 +29,114 @@ const Admin: React.FC = () => {
   // New Resource State
   const [newVideo, setNewVideo] = useState({ title: '', url: '', thumbnail: '', tags: '' });
   const [newLink, setNewLink] = useState({ title: '', url: '', category: '', tags: '', bestFor: '', contentType: '' });
+
+  // ── Email Blast State ────────────────────────────────────────────────────
+  const SVC = 'service_txnmfop';
+  const TPL_ADMIN = 'template_o4gbipr';
+  const KEY = 'dc2UOFd7SrfFFz4ok';
+
+  // Send-mode: 'participants' | 'members' | 'specific'
+  const [sendMode, setSendMode] = useState<'participants' | 'members' | 'specific'>('specific');
+  // Sub-tab inside email: 'compose' | 'participants' | 'members'
+  const [emailSubTab, setEmailSubTab] = useState<'compose' | 'participants' | 'members'>('compose');
+
+  const [emailForm, setEmailForm] = useState({
+    to_name: '', to_email: '', email_type: 'Announcement', subject: '', admin_message: '',
+  });
+  const [selectedEventId, setSelectedEventId] = useState('');
+  // Bulk send progress
+  const [bulkProgress, setBulkProgress] = useState<{ sent: number; total: number; failed: number } | null>(null);
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+  const [emailErr, setEmailErr] = useState('');
+  const [emailLog, setEmailLog] = useState<{ name: string; email: string; subject: string; type: string; sentAt: string }[]>([]);
+
+  // New participant form
+  const [newParticipant, setNewParticipant] = useState({ name: '', email: '', eventId: '' });
+  // New member form
+  const [newMember, setNewMember] = useState({ name: '', email: '', role: 'Member' });
+
+  // Compute recipients based on send mode
+  const bulkRecipients = sendMode === 'participants'
+    ? participants.filter(p => !selectedEventId || p.eventId === selectedEventId)
+    : sendMode === 'members'
+      ? clubMembers
+      : [];
+
+  const sendOne = (to_name: string, to_email: string, subject: string, admin_message: string, email_type: string) =>
+    emailjs.send(SVC, TPL_ADMIN, {
+      to_name, to_email,
+      subject: `[${email_type}] ${subject}`,
+      admin_message,
+      from_name: 'Code Vimarsh',
+    }, KEY);
+
+  const handleSendEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setEmailStatus('sending');
+    setEmailErr('');
+
+    if (sendMode === 'specific') {
+      // Single send
+      try {
+        await sendOne(emailForm.to_name, emailForm.to_email, emailForm.subject, emailForm.admin_message, emailForm.email_type);
+        setEmailStatus('success');
+        setEmailLog(prev => [{ name: emailForm.to_name, email: emailForm.to_email, subject: emailForm.subject, type: emailForm.email_type, sentAt: new Date().toLocaleTimeString() }, ...prev]);
+        setEmailForm({ to_name: '', to_email: '', email_type: 'Announcement', subject: '', admin_message: '' });
+        setTimeout(() => setEmailStatus('idle'), 5000);
+      } catch (err: any) {
+        setEmailStatus('error');
+        setEmailErr(err?.text ?? err?.message ?? 'Failed to send.');
+        setTimeout(() => { setEmailStatus('idle'); setEmailErr(''); }, 5000);
+      }
+    } else {
+      // Bulk send — loop with 300ms delay
+      const recipients = bulkRecipients;
+      setBulkProgress({ sent: 0, total: recipients.length, failed: 0 });
+      let failed = 0;
+      for (let i = 0; i < recipients.length; i++) {
+        const r = recipients[i];
+        const name = 'name' in r ? r.name : '';
+        const email = 'email' in r ? r.email : '';
+        try {
+          await sendOne(name, email, emailForm.subject, emailForm.admin_message, emailForm.email_type);
+          setEmailLog(prev => [{ name, email, subject: emailForm.subject, type: emailForm.email_type, sentAt: new Date().toLocaleTimeString() }, ...prev]);
+        } catch { failed++; }
+        setBulkProgress({ sent: i + 1, total: recipients.length, failed });
+        if (i < recipients.length - 1) await new Promise(r => setTimeout(r, 300));
+      }
+      setEmailStatus(failed === recipients.length ? 'error' : 'success');
+      if (failed > 0) setEmailErr(`${failed} email(s) failed to send.`);
+      setTimeout(() => { setEmailStatus('idle'); setBulkProgress(null); setEmailErr(''); }, 7000);
+    }
+  };
+
+  const handleAddParticipant = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newParticipant.name || !newParticipant.email || !newParticipant.eventId) return;
+    const ev = events.find(ev => ev.id === newParticipant.eventId);
+    addParticipant({
+      id: Date.now().toString(),
+      name: newParticipant.name,
+      email: newParticipant.email,
+      eventId: newParticipant.eventId,
+      eventTitle: ev?.title ?? 'Unknown Event',
+      registeredAt: new Date().toISOString().split('T')[0],
+    });
+    setNewParticipant({ name: '', email: '', eventId: '' });
+  };
+
+  const handleAddMember = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMember.name || !newMember.email) return;
+    addClubMember({
+      id: Date.now().toString(),
+      name: newMember.name,
+      email: newMember.email,
+      role: newMember.role,
+      joinedAt: new Date().toISOString().split('T')[0],
+    });
+    setNewMember({ name: '', email: '', role: 'Member' });
+  };
 
   // Editing State
   const [editingVideo, setEditingVideo] = useState<string | null>(null);
@@ -151,7 +263,9 @@ const Admin: React.FC = () => {
             { id: 'events', icon: <Calendar size={18} />, label: 'Manage Events' },
             { id: 'projects', icon: <FolderHeart size={18} />, label: 'Manage Projects' },
             { id: 'resources', icon: <BookOpen size={18} />, label: 'Manage Resources' },
-            { id: 'admins', icon: <ShieldAlert size={18} />, label: 'Access Control' }
+            { id: 'admins', icon: <ShieldAlert size={18} />, label: 'Access Control' },
+            { id: 'email', icon: <Megaphone size={18} />, label: 'Email Blast' },
+            { id: 'certificates', icon: <Award size={18} />, label: '🏆 Certificates' },
           ].map(tab => (
             <button
               key={tab.id}
@@ -564,6 +678,388 @@ const Admin: React.FC = () => {
               </section>
             </div>
           </div>
+        )}
+
+        {/* EMAIL BLAST TAB */}
+        {activeTab === 'email' && (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div>
+              <h2 className="text-3xl font-display font-bold text-white mb-2">Email Blast</h2>
+              <p className="text-textMuted">Send branded Code Vimarsh emails to participants, members, or a specific person.</p>
+            </div>
+
+            {/* Sub-tab nav */}
+            <div className="flex gap-2 border-b border-surfaceLight pb-0">
+              {[
+                { id: 'compose', icon: <Mail size={14} />, label: 'Compose & Send' },
+                { id: 'participants', icon: <UserCheck size={14} />, label: `Participants (${participants.length})` },
+                { id: 'members', icon: <Users size={14} />, label: `Club Members (${clubMembers.length})` },
+              ].map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => setEmailSubTab(t.id as any)}
+                  className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold border-b-2 -mb-px transition-all ${emailSubTab === t.id
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-textMuted hover:text-white'
+                    }`}
+                >
+                  {t.icon}{t.label}
+                </button>
+              ))}
+            </div>
+
+            {/* ── COMPOSE & SEND ── */}
+            {emailSubTab === 'compose' && (
+              <div className="grid lg:grid-cols-5 gap-6 items-start">
+
+                {/* Form */}
+                <div className="lg:col-span-3 bg-surface border border-surfaceLight rounded-2xl p-6 relative overflow-hidden">
+                  <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+
+                  {/* Send Mode Toggle */}
+                  <div className="mb-5">
+                    <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest block mb-2">Send To</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { id: 'specific', label: '✉️ Specific Person' },
+                        { id: 'participants', label: `📋 Event Participants` },
+                        { id: 'members', label: `👥 Club Members` },
+                      ].map(m => (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => setSendMode(m.id as any)}
+                          className={`px-2 py-2.5 rounded-lg text-xs font-semibold border transition-all text-center ${sendMode === m.id
+                            ? 'bg-primary/10 border-primary/40 text-primary'
+                            : 'bg-bgDark border-surfaceLight text-textMuted hover:border-primary/20'
+                            }`}
+                        >{m.label}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Event picker (participants mode) */}
+                  {sendMode === 'participants' && (
+                    <div className="mb-4 p-3 bg-bgDark border border-surfaceLight rounded-xl">
+                      <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest block mb-2">Filter by Event (optional)</label>
+                      <select
+                        value={selectedEventId}
+                        onChange={e => setSelectedEventId(e.target.value)}
+                        className="w-full bg-surface border border-surfaceLight rounded-lg px-3 py-2 text-sm text-white focus:border-primary focus:outline-none"
+                      >
+                        <option value="">All Events ({participants.length} registrants)</option>
+                        {events.map(ev => (
+                          <option key={ev.id} value={ev.id}>
+                            {ev.title} ({participants.filter(p => p.eventId === ev.id).length} registrants)
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-xs text-primary mt-2 font-medium">
+                        📋 {bulkRecipients.length} recipient{bulkRecipients.length !== 1 ? 's' : ''} will receive this email
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Members mode info */}
+                  {sendMode === 'members' && (
+                    <div className="mb-4 p-3 bg-bgDark border border-surfaceLight rounded-xl">
+                      <p className="text-xs text-primary font-medium">👥 {clubMembers.length} club member{clubMembers.length !== 1 ? 's' : ''} will receive this email</p>
+                    </div>
+                  )}
+
+                  {/* Status feedback */}
+                  {emailStatus === 'success' && (
+                    <div className="flex items-center gap-3 p-3 rounded-xl bg-green-500/10 border border-green-500/25 mb-4">
+                      <CheckCircle size={14} className="text-green-400 flex-shrink-0" />
+                      <p className="text-green-400 text-sm font-medium">
+                        {bulkProgress ? `${bulkProgress.sent - bulkProgress.failed}/${bulkProgress.total} emails sent!` : 'Email sent!'}
+                        {bulkProgress?.failed ? ` (${bulkProgress.failed} failed)` : ''}
+                      </p>
+                    </div>
+                  )}
+                  {emailStatus === 'error' && !bulkProgress && (
+                    <div className="flex items-start gap-3 p-3 rounded-xl bg-red-500/10 border border-red-500/25 mb-4">
+                      <AlertCircle size={14} className="text-red-400 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-red-400 text-sm font-semibold">Failed to send</p>
+                        <p className="text-red-400/70 text-xs">{emailErr}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Bulk progress bar */}
+                  {emailStatus === 'sending' && bulkProgress && (
+                    <div className="mb-4 p-3 bg-bgDark border border-surfaceLight rounded-xl">
+                      <div className="flex justify-between text-xs text-textMuted mb-1.5">
+                        <span>Sending emails…</span>
+                        <span className="font-mono text-primary">{bulkProgress.sent}/{bulkProgress.total}</span>
+                      </div>
+                      <div className="h-1.5 bg-surfaceLight rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-primary to-secondary rounded-full transition-all duration-300"
+                          style={{ width: `${(bulkProgress.sent / bulkProgress.total) * 100}%` }}
+                        />
+                      </div>
+                      {bulkProgress.failed > 0 && <p className="text-xs text-red-400 mt-1">{bulkProgress.failed} failed</p>}
+                    </div>
+                  )}
+
+                  <form onSubmit={handleSendEmail} className="space-y-4">
+                    {/* Email type */}
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest">Email Type</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          { t: 'Announcement', i: '📢' },
+                          { t: 'Event Details', i: '📅' },
+                          { t: 'Certificate', i: '🏆' },
+                          { t: 'Feedback', i: '📝' },
+                          { t: 'Custom', i: '✉️' },
+                        ].map(({ t, i }) => (
+                          <button key={t} type="button"
+                            onClick={() => setEmailForm({ ...emailForm, email_type: t })}
+                            className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-all ${emailForm.email_type === t
+                              ? 'bg-primary/10 border-primary/40 text-primary'
+                              : 'bg-bgDark border-surfaceLight text-textMuted hover:border-primary/20'
+                              }`}
+                          >{i} {t}</button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Specific person fields */}
+                    {sendMode === 'specific' && (
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest">Recipient Name *</label>
+                          <input required value={emailForm.to_name}
+                            onChange={e => setEmailForm({ ...emailForm, to_name: e.target.value })}
+                            className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:outline-none transition-all"
+                            placeholder="e.g. Aarya Shah" />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest">Recipient Email *</label>
+                          <input required type="email" value={emailForm.to_email}
+                            onChange={e => setEmailForm({ ...emailForm, to_email: e.target.value })}
+                            className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:outline-none transition-all"
+                            placeholder="aarya@example.com" />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Subject */}
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest">Subject *</label>
+                      <input required value={emailForm.subject}
+                        onChange={e => setEmailForm({ ...emailForm, subject: e.target.value })}
+                        className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:outline-none transition-all"
+                        placeholder={emailForm.email_type === 'Certificate' ? 'Your Certificate of Completion 🏆' : emailForm.email_type === 'Feedback' ? 'Share Your Feedback 📝' : 'Subject line…'} />
+                    </div>
+
+                    {/* Message */}
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest">Message Body *</label>
+                      <textarea required rows={5} value={emailForm.admin_message}
+                        onChange={e => setEmailForm({ ...emailForm, admin_message: e.target.value })}
+                        className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-3 text-sm focus:border-primary focus:outline-none transition-all resize-none"
+                        placeholder="Write your message. Each recipient's name is personalized automatically." />
+                    </div>
+
+                    {/* Warning for big list */}
+                    {sendMode !== 'specific' && bulkRecipients.length > 50 && (
+                      <div className="flex items-start gap-2 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                        <AlertCircle size={13} className="text-yellow-400 mt-0.5 flex-shrink-0" />
+                        <p className="text-yellow-400 text-xs">Large list ({bulkRecipients.length} recipients). EmailJS free plan allows 200 emails/month. Consider upgrading if needed.</p>
+                      </div>
+                    )}
+
+                    <button type="submit" disabled={emailStatus === 'sending' || (sendMode !== 'specific' && bulkRecipients.length === 0)}
+                      className="w-full bg-primary hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed text-black font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all text-sm shadow-[0_0_18px_rgba(255,106,0,0.2)] hover:shadow-[0_0_28px_rgba(255,106,0,0.35)]"
+                    >
+                      {emailStatus === 'sending'
+                        ? <><Loader2 size={14} className="animate-spin" /><span>Sending{bulkProgress ? ` ${bulkProgress.sent}/${bulkProgress.total}` : ''}…</span></>
+                        : <><Send size={14} /><span>
+                          {sendMode === 'specific' ? `Send to ${emailForm.to_name || 'Recipient'}` :
+                            sendMode === 'members' ? `Send to ${clubMembers.length} Members` :
+                              `Send to ${bulkRecipients.length} Participant${bulkRecipients.length !== 1 ? 's' : ''}`}
+                        </span></>
+                      }
+                    </button>
+                  </form>
+                </div>
+
+                {/* Sent log sidebar */}
+                <div className="lg:col-span-2 bg-surface border border-surfaceLight rounded-2xl p-5 relative overflow-hidden">
+                  <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+                  <h4 className="text-xs font-bold text-textMuted uppercase tracking-widest mb-4">Sent This Session ({emailLog.length})</h4>
+                  {emailLog.length === 0 ? (
+                    <p className="text-xs text-textMuted italic">No emails sent yet.</p>
+                  ) : (
+                    <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+                      {emailLog.map((log, i) => (
+                        <div key={i} className="flex items-start gap-2 p-2 rounded-lg bg-bgDark border border-surfaceLight">
+                          <CheckCircle size={12} className="text-green-400 flex-shrink-0 mt-0.5" />
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-white truncate">{log.name}</p>
+                            <p className="text-[10px] text-textMuted truncate">{log.email}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 font-bold uppercase">{log.type}</span>
+                              <span className="text-[9px] text-textMuted font-mono">{log.sentAt}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+              </div>
+            )}
+
+            {/* ── MANAGE PARTICIPANTS ── */}
+            {emailSubTab === 'participants' && (
+              <div className="grid lg:grid-cols-5 gap-6 items-start">
+                {/* Add form */}
+                <div className="lg:col-span-2 bg-surface border border-surfaceLight rounded-2xl p-6 relative overflow-hidden h-fit">
+                  <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+                  <h3 className="font-bold text-base flex items-center gap-2 mb-5">
+                    <UserPlus size={16} className="text-primary" /> Add Participant
+                  </h3>
+                  <form onSubmit={handleAddParticipant} className="space-y-3">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest">Name *</label>
+                      <input required value={newParticipant.name}
+                        onChange={e => setNewParticipant({ ...newParticipant, name: e.target.value })}
+                        className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:outline-none transition-all"
+                        placeholder="Participant name" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest">Email *</label>
+                      <input required type="email" value={newParticipant.email}
+                        onChange={e => setNewParticipant({ ...newParticipant, email: e.target.value })}
+                        className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:outline-none transition-all"
+                        placeholder="email@example.com" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest">Event *</label>
+                      <select required value={newParticipant.eventId}
+                        onChange={e => setNewParticipant({ ...newParticipant, eventId: e.target.value })}
+                        className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-2.5 text-sm text-white focus:border-primary focus:outline-none">
+                        <option value="">Select event…</option>
+                        {events.map(ev => <option key={ev.id} value={ev.id}>{ev.title}</option>)}
+                      </select>
+                    </div>
+                    <button type="submit" className="w-full bg-primary text-black font-bold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 hover:bg-secondary transition-all">
+                      <Plus size={14} /> Add Participant
+                    </button>
+                  </form>
+                </div>
+
+                {/* List */}
+                <div className="lg:col-span-3 space-y-3">
+                  <h4 className="text-xs font-bold text-textMuted uppercase tracking-widest flex items-center gap-2">
+                    <div className="w-8 h-px bg-surfaceLight" /> All Registrants ({participants.length})
+                  </h4>
+                  {participants.length === 0 ? (
+                    <p className="text-sm text-textMuted italic bg-surface border border-surfaceLight rounded-xl p-4">No participants yet. Add some above.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {participants.map(p => (
+                        <div key={p.id} className="bg-surface border border-surfaceLight p-3 rounded-xl flex items-center justify-between group hover:bg-surfaceLight/30 transition-all">
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold text-white truncate">{p.name}</p>
+                            <p className="text-[11px] text-textMuted truncate">{p.email}</p>
+                            <span className="text-[9px] px-1.5 py-0.5 mt-1 inline-block rounded bg-primary/10 text-primary border border-primary/20 font-bold uppercase">{p.eventTitle}</span>
+                          </div>
+                          <button onClick={() => removeParticipant(p.id)} className="text-textMuted hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-bgDark flex-shrink-0">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ── MANAGE MEMBERS ── */}
+            {emailSubTab === 'members' && (
+              <div className="grid lg:grid-cols-5 gap-6 items-start">
+                {/* Add form */}
+                <div className="lg:col-span-2 bg-surface border border-surfaceLight rounded-2xl p-6 relative overflow-hidden h-fit">
+                  <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+                  <h3 className="font-bold text-base flex items-center gap-2 mb-5">
+                    <UserPlus size={16} className="text-primary" /> Add Club Member
+                  </h3>
+                  <form onSubmit={handleAddMember} className="space-y-3">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest">Name *</label>
+                      <input required value={newMember.name}
+                        onChange={e => setNewMember({ ...newMember, name: e.target.value })}
+                        className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:outline-none transition-all"
+                        placeholder="Member name" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest">Email *</label>
+                      <input required type="email" value={newMember.email}
+                        onChange={e => setNewMember({ ...newMember, email: e.target.value })}
+                        className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:outline-none transition-all"
+                        placeholder="email@example.com" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest">Role</label>
+                      <select value={newMember.role}
+                        onChange={e => setNewMember({ ...newMember, role: e.target.value })}
+                        className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-2.5 text-sm text-white focus:border-primary focus:outline-none">
+                        <option>Member</option>
+                        <option>Core Team</option>
+                        <option>Alumni</option>
+                        <option>Mentor</option>
+                      </select>
+                    </div>
+                    <button type="submit" className="w-full bg-primary text-black font-bold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 hover:bg-secondary transition-all">
+                      <Plus size={14} /> Add Member
+                    </button>
+                  </form>
+                </div>
+
+                {/* List */}
+                <div className="lg:col-span-3 space-y-3">
+                  <h4 className="text-xs font-bold text-textMuted uppercase tracking-widest flex items-center gap-2">
+                    <div className="w-8 h-px bg-surfaceLight" /> All Club Members ({clubMembers.length})
+                  </h4>
+                  {clubMembers.length === 0 ? (
+                    <p className="text-sm text-textMuted italic bg-surface border border-surfaceLight rounded-xl p-4">No members yet.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {clubMembers.map(m => (
+                        <div key={m.id} className="bg-surface border border-surfaceLight p-3 rounded-xl flex items-center justify-between group hover:bg-surfaceLight/30 transition-all">
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold text-white truncate">{m.name}</p>
+                            <p className="text-[11px] text-textMuted truncate">{m.email}</p>
+                            <span className={`text-[9px] px-1.5 py-0.5 mt-1 inline-block rounded font-bold uppercase border ${m.role === 'Core Team' ? 'bg-primary/10 text-primary border-primary/20' :
+                              m.role === 'Alumni' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
+                                m.role === 'Mentor' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
+                                  'bg-surfaceLight text-textMuted border-surfaceLight'
+                              }`}>{m.role}</span>
+                          </div>
+                          <button onClick={() => removeClubMember(m.id)} className="text-textMuted hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-bgDark flex-shrink-0">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+          </div>
+        )}
+
+        {/* CERTIFICATES TAB */}
+        {activeTab === 'certificates' && (
+          <Certificates />
         )}
 
       </main>

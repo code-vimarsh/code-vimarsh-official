@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { EventType, ProjectType, TeamMember, BlogPost, AchievementType, AdminUser, VideoResource, LinkResource } from '../types';
+import { EventType, ProjectType, TeamMember, BlogPost, AchievementType, AdminUser, VideoResource, LinkResource, Participant, ClubMember } from '../types';
 import { MOCK_EVENTS, MOCK_PROJECTS, MOCK_TEAM, MOCK_BLOGS, MOCK_ACHIEVEMENTS, MOCK_VIDEOS, MOCK_LINKS } from '../constants';
 
 interface GlobalContextType {
@@ -20,9 +20,29 @@ interface GlobalContextType {
   addLinkResource: (link: LinkResource) => void;
   updateLinkResource: (link: LinkResource) => void;
   deleteLinkResource: (id: string) => void;
+  // Bulk email registries
+  participants: Participant[];
+  addParticipant: (p: Participant) => void;
+  removeParticipant: (id: string) => void;
+  clubMembers: ClubMember[];
+  addClubMember: (m: ClubMember) => void;
+  removeClubMember: (id: string) => void;
 }
 
 const GlobalContext = createContext<GlobalContextType | undefined>(undefined);
+
+// ── Seed data ────────────────────────────────────────────────────────────────
+const MOCK_PARTICIPANTS: Participant[] = [
+  { id: 'p1', name: 'Aarya Shah', email: 'aarya@example.com', eventId: '1', eventTitle: 'Hackathon 2025', registeredAt: '2025-01-10' },
+  { id: 'p2', name: 'Dev Mehta', email: 'dev@example.com', eventId: '1', eventTitle: 'Hackathon 2025', registeredAt: '2025-01-11' },
+  { id: 'p3', name: 'Riya Patel', email: 'riya@example.com', eventId: '2', eventTitle: 'DSA Bootcamp', registeredAt: '2025-02-01' },
+];
+
+const MOCK_MEMBERS: ClubMember[] = [
+  { id: 'm1', name: 'Aryan Buha', email: 'aryan@vimarsh.dev', role: 'Core Team', joinedAt: '2023-08-01' },
+  { id: 'm2', name: 'Krish Modi', email: 'krish@vimarsh.dev', role: 'Member', joinedAt: '2024-01-15' },
+  { id: 'm3', name: 'Pooja Joshi', email: 'pooja@vimarsh.dev', role: 'Alumni', joinedAt: '2022-07-20' },
+];
 
 export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [events, setEvents] = useState<EventType[]>(MOCK_EVENTS);
@@ -36,6 +56,8 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   ]);
   const [videoResources, setVideoResources] = useState<VideoResource[]>(MOCK_VIDEOS);
   const [linkResources, setLinkResources] = useState<LinkResource[]>(MOCK_LINKS);
+  const [participants, setParticipants] = useState<Participant[]>(MOCK_PARTICIPANTS);
+  const [clubMembers, setClubMembers] = useState<ClubMember[]>(MOCK_MEMBERS);
 
   const addEvent = (event: EventType) => setEvents(prev => [event, ...prev]);
   const addProject = (project: ProjectType) => setProjects(prev => [project, ...prev]);
@@ -49,6 +71,12 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const updateLinkResource = (link: LinkResource) => setLinkResources(prev => prev.map(l => l.id === link.id ? link : l));
   const deleteLinkResource = (id: string) => setLinkResources(prev => prev.filter(l => l.id !== id));
 
+  const addParticipant = (p: Participant) => setParticipants(prev => [p, ...prev]);
+  const removeParticipant = (id: string) => setParticipants(prev => prev.filter(p => p.id !== id));
+
+  const addClubMember = (m: ClubMember) => setClubMembers(prev => [m, ...prev]);
+  const removeClubMember = (id: string) => setClubMembers(prev => prev.filter(m => m.id !== id));
+
   return (
     <GlobalContext.Provider value={{
       events, addEvent,
@@ -56,7 +84,9 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       team, blogs, achievements,
       admins, addAdmin,
       videoResources, addVideoResource, updateVideoResource, deleteVideoResource,
-      linkResources, addLinkResource, updateLinkResource, deleteLinkResource
+      linkResources, addLinkResource, updateLinkResource, deleteLinkResource,
+      participants, addParticipant, removeParticipant,
+      clubMembers, addClubMember, removeClubMember,
     }}>
       {children}
     </GlobalContext.Provider>

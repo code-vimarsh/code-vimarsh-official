@@ -86,3 +86,20 @@ export interface AdminUser {
   role: 'Super Admin' | 'Content Admin' | 'Moderator';
   addedAt: string;
 }
+
+export interface Participant {
+  id: string;
+  name: string;
+  email: string;
+  eventId: string;       // which event they registered for
+  eventTitle: string;    // denormalized for display
+  registeredAt: string;
+}
+
+export interface ClubMember {
+  id: string;
+  name: string;
+  email: string;
+  role: string;          // e.g. "Member", "Core Team", "Alumni"
+  joinedAt: string;
+}
