@@ -40,30 +40,22 @@ const Marquee: React.FC<MarqueeProps> = ({
             onMouseLeave={() => setHovered(false)}
         >
             <motion.div
-                className="flex shrink-0 min-w-full items-center justify-around gap-6"
+                className="flex shrink-0 min-w-full items-center justify-start gap-8 py-4"
                 variants={marqueeVariants}
                 animate={shouldPause ? "" : "animate"}
             >
-                <div className="flex shrink-0 items-center justify-around gap-6">
-                    {children}
-                </div>
-                <div className="flex shrink-0 items-center justify-around gap-6">
-                    {children}
-                </div>
+                {children}
+                {children}
             </motion.div>
 
             {/* Second set for seamless loop */}
             <motion.div
-                className="flex shrink-0 min-w-full items-center justify-around gap-6"
+                className="flex shrink-0 min-w-full items-center justify-start gap-8 py-4"
                 variants={marqueeVariants}
                 animate={shouldPause ? "" : "animate"}
             >
-                <div className="flex shrink-0 items-center justify-around gap-6">
-                    {children}
-                </div>
-                <div className="flex shrink-0 items-center justify-around gap-6">
-                    {children}
-                </div>
+                {children}
+                {children}
             </motion.div>
         </div>
     );

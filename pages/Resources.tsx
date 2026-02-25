@@ -139,7 +139,7 @@ const Resources: React.FC = () => {
           <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-bgDark to-transparent z-10 pointer-events-none"></div>
           <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-bgDark to-transparent z-10 pointer-events-none"></div>
 
-          <Marquee direction="right" speed={50}>
+          <Marquee direction="right" speed={80}>
             {linkResources.map((link) => {
               const domain = new URL(link.url).hostname;
               const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
@@ -147,28 +147,48 @@ const Resources: React.FC = () => {
               return (
                 <motion.div
                   key={link.id}
-                  whileHover={{ scale: 1.02 }}
-                  className="w-[320px] shrink-0 bg-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-3xl hover:border-primary/50 transition-all duration-300 group shadow-xl relative overflow-hidden"
+                  whileHover={{
+                    y: -12,
+                    scale: 1.02,
+                    transition: { duration: 0.4, ease: "easeOut" }
+                  }}
+                  className="w-[360px] shrink-0 bg-[#0A0A0A]/60 backdrop-blur-3xl border border-white/10 p-8 rounded-[2.5rem] hover:border-primary/40 transition-all duration-500 group shadow-2xl relative overflow-hidden"
                 >
-                  <div className="flex items-start justify-between mb-6 relative z-10">
-                    <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center p-3 group-hover:bg-primary/10 border border-white/10 group-hover:border-primary/20 transition-all duration-500">
-                      <img src={faviconUrl} alt="Logo" className="w-8 h-8 object-contain" />
+                  {/* Premium Background Effects */}
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-[60px] -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                  <div className="absolute bottom-0 left-0 w-24 h-24 bg-orange-500/5 rounded-full blur-[40px] translate-x-1/2 translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+
+                  <div className="flex items-start justify-between mb-8 relative z-10">
+                    <div className="w-16 h-16 bg-white/[0.03] rounded-2xl flex items-center justify-center p-3.5 group-hover:bg-primary/10 border border-white/10 group-hover:border-primary/20 transition-all duration-500 shadow-inner group-hover:rotate-6">
+                      <img
+                        src={faviconUrl}
+                        alt="Logo"
+                        className="w-full h-full object-contain filter grayscale group-hover:grayscale-0 transition-all duration-500"
+                      />
                     </div>
                   </div>
 
-                  <h3 className="text-xl font-bold mb-4 h-14 line-clamp-2 text-white group-hover:text-primary transition-colors tracking-tight uppercase leading-tight">{link.title}</h3>
+                  <h3 className="text-2xl font-display font-bold mb-6 h-16 line-clamp-2 text-white group-hover:text-primary transition-colors tracking-tight uppercase leading-tight">
+                    {link.title}
+                  </h3>
 
-                  <div className="space-y-4 mb-8 min-h-[100px]">
+                  <div className="space-y-5 mb-10 min-h-[110px] relative z-10">
                     {link.bestFor && (
-                      <div className="flex items-start gap-3">
-                        <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] flex-shrink-0" />
-                        <p className="text-xs text-textMuted leading-relaxed"><span className="text-white/80 font-bold uppercase tracking-wider text-[10px]">Best for:</span> {link.bestFor}</p>
+                      <div className="flex items-start gap-3.5 group/item">
+                        <div className="mt-1.5 w-2 h-2 rounded-full bg-green-500/80 shadow-[0_0_12px_rgba(34,197,94,0.4)] flex-shrink-0 group-hover/item:scale-125 transition-transform" />
+                        <p className="text-sm text-textMuted leading-relaxed">
+                          <span className="text-white/40 font-black uppercase tracking-widest text-[10px] block mb-0.5">Focus Areas</span>
+                          <span className="group-hover:text-white/80 transition-colors">{link.bestFor}</span>
+                        </p>
                       </div>
                     )}
                     {link.contentType && (
-                      <div className="flex items-start gap-3">
-                        <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(255,122,0,0.6)] flex-shrink-0" />
-                        <p className="text-xs text-textMuted leading-relaxed"><span className="text-white/80 font-bold uppercase tracking-wider text-[10px]">Type:</span> {link.contentType}</p>
+                      <div className="flex items-start gap-3.5 group/item">
+                        <div className="mt-1.5 w-2 h-2 rounded-full bg-primary/80 shadow-[0_0_12px_rgba(255,122,0,0.4)] flex-shrink-0 group-hover/item:scale-125 transition-transform" />
+                        <p className="text-sm text-textMuted leading-relaxed">
+                          <span className="text-white/40 font-black uppercase tracking-widest text-[10px] block mb-0.5">Resource Class</span>
+                          <span className="group-hover:text-white/80 transition-colors">{link.contentType}</span>
+                        </p>
                       </div>
                     )}
                   </div>
@@ -177,9 +197,11 @@ const Resources: React.FC = () => {
                     href={link.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="w-full flex items-center justify-center gap-3 py-4 rounded-2xl bg-white/5 border border-white/10 hover:border-primary hover:bg-primary/10 text-white font-bold transition-all text-sm group/btn"
+                    className="w-full flex items-center justify-between px-8 py-5 rounded-[1.5rem] bg-white/[0.03] border border-white/10 hover:border-primary/50 hover:bg-primary/5 text-white font-bold transition-all text-sm group/btn relative overflow-hidden"
                   >
-                    Explore Resources <ArrowRight size={16} className="group-hover/btn:translate-x-1 transition-transform" />
+                    <span className="relative z-10">Explore Collection</span>
+                    <ArrowRight size={18} className="relative z-10 group-hover/btn:translate-x-2 transition-transform duration-300" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover/btn:opacity-100 transition-opacity"></div>
                   </a>
                 </motion.div>
               );
