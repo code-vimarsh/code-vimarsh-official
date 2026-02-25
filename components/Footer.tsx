@@ -1,5 +1,5 @@
 import React from 'react';
-import { Terminal, Github, Twitter, Linkedin } from 'lucide-react';
+import { Github, Twitter, Linkedin } from 'lucide-react';
 
 const Footer: React.FC = () => {
   return (
@@ -7,15 +7,21 @@ const Footer: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="md:col-span-2">
-            <div className="flex items-center space-x-2 mb-4">
-              <Terminal className="text-primary" size={20} />
-              <span className="font-display font-bold text-lg text-white">_CodeVimarsh</span>
+            <div className="flex items-center space-x-3 mb-4">
+              <img
+                src="/CV LOGO.webp"
+                alt="Code Vimarsh"
+                className="h-10 w-auto object-contain"
+              />
+              <span className="font-display font-bold text-lg text-white">
+                Code<span className="text-primary">Vimarsh</span>
+              </span>
             </div>
             <p className="text-textMuted text-sm max-w-xs">
               The official coding ecosystem of MSU Baroda. Fostering innovation, engineering excellence, and a collaborative developer community.
             </p>
           </div>
-          
+
           <div>
             <h3 className="font-display font-semibold text-white mb-4">Platform</h3>
             <ul className="space-y-2 text-sm text-textMuted">
