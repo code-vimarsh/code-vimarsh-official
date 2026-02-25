@@ -1,288 +1,455 @@
-import React from 'react';
-import { useGlobalState } from '../context/GlobalContext';
-import { BookOpen, Terminal, Database, Shield, ChevronRight, Play, ExternalLink, Sparkles, Layers, Globe, Youtube, ArrowRight } from 'lucide-react';
-import Marquee from '../components/Marquee';
+import React, { useEffect, useRef } from 'react';
+import { Youtube, BookOpen, ArrowRight, Play, Sparkles } from 'lucide-react';
+import { Resource } from '../types';
 import { motion } from 'framer-motion';
 
-const paths = [
-  { id: 'frontend', title: 'Modern Frontend', icon: <Terminal size={24} />, desc: 'React, Next.js, WebGL' },
-  { id: 'backend', title: 'Backend Systems', icon: <Database size={24} />, desc: 'Node, Go, System Design' },
-  { id: 'security', title: 'Cybersecurity', icon: <Shield size={24} />, desc: 'CTFs, Network Security' }
+const YT_RESOURCES: Resource[] = [
+  {
+    id: "java-full",
+    title: "Java Full Course (Beginner to Advanced)",
+    category: "youtube",
+    url: "https://youtu.be/eIrMbAQSU34?si=6fk454xxKQu_ta-g",
+    thumbnail: "https://img.youtube.com/vi/eIrMbAQSU34/maxresdefault.jpg",
+    tags: ["Java", "Beginner", "OOP"]
+  },
+  {
+    id: "c-full",
+    title: "C Programming Full Course",
+    category: "youtube",
+    url: "https://youtu.be/rQoqCP7LX60?si=ldtuSiE543obcHa3",
+    thumbnail: "https://img.youtube.com/vi/rQoqCP7LX60/maxresdefault.jpg",
+    tags: ["C Language", "Basics", "Programming"]
+  },
+  {
+    id: "python-full",
+    title: "Python Full Course",
+    category: "youtube",
+    url: "https://youtu.be/UrsmFxEIp5k?si=YncVWzSPAXW0Ku5S",
+    thumbnail: "https://img.youtube.com/vi/UrsmFxEIp5k/maxresdefault.jpg",
+    tags: ["Python", "Beginner", "Programming"]
+  },
+  {
+    id: "dsa-series",
+    title: "Complete DSA Series",
+    category: "youtube",
+    url: "https://youtu.be/VTLCoHnyACE?si=hPPA-4nphOFHuY5J",
+    thumbnail: "https://img.youtube.com/vi/VTLCoHnyACE/maxresdefault.jpg",
+    tags: ["DSA", "Algorithms", "Problem Solving"]
+  },
+  {
+    id: "cpp-full",
+    title: "C++ Full Course",
+    category: "youtube",
+    url: "https://youtu.be/e7sAf4SbS_g?si=v_hQalT02OZIJN5K",
+    thumbnail: "https://img.youtube.com/vi/e7sAf4SbS_g/maxresdefault.jpg",
+    tags: ["C++", "OOP", "Placement Prep"]
+  }
+];
+
+const SITE_RESOURCES: Resource[] = [
+  {
+    id: '6',
+    title: "Striver's SDE Sheet",
+    category: 'website',
+    url: 'https://takeuforward.org/interviews/strivers-sde-sheet-top-coding-interview-problems/',
+    tags: ['Curated', 'Video Support'],
+    bestFor: 'Complete roadmap from basics to advanced',
+    contentType: 'Curated sheet + Video support'
+  },
+  {
+    id: '7',
+    title: "Love Babbar DSA 450",
+    category: 'website',
+    url: 'https://450dsa.com/',
+    tags: ['Topic-wise', 'Checklist'],
+    bestFor: 'Fixed checklist style revision',
+    contentType: 'Topic-wise categorized list'
+  },
+  {
+    id: '8',
+    title: "NeetCode 150",
+    category: 'website',
+    url: 'https://neetcode.io/practice',
+    tags: ['Patterns', 'LeetCode'],
+    bestFor: 'LeetCode-pattern mastery',
+    contentType: 'Patterns like DP, Graphs, Trees'
+  },
+  {
+    id: '9',
+    title: "Blind 75",
+    category: 'website',
+    url: 'https://www.teamblind.com/post/Blind-75-LeetCode-Questions-8pdhm1h2',
+    tags: ['FAANG', 'Fast Prep'],
+    bestFor: 'Fastest FAANG-style prep',
+    contentType: 'Only the most asked 75 questions'
+  },
+  {
+    id: '10',
+    title: "LeetCode Study Plans",
+    category: 'website',
+    url: 'https://leetcode.com/study-plan/',
+    tags: ['Structured', 'Daily Practice'],
+    bestFor: 'Guided daily structured practice',
+    contentType: 'Arrays, DP, SQL, Graphs tracks'
+  },
+  {
+    id: '11',
+    title: "InterviewBit Path",
+    category: 'website',
+    url: 'https://www.interviewbit.com/coding-interview-questions/',
+    tags: ['Competitive', 'Gamified'],
+    bestFor: 'Competitive interview-oriented prep',
+    contentType: 'Level progression + hints'
+  },
+  {
+    id: '12',
+    title: "GeeksforGeeks DSA",
+    category: 'website',
+    url: 'https://www.geeksforgeeks.org/must-do-coding-questions-for-product-based-companies/',
+    tags: ['Topic-wise', 'Explanations'],
+    bestFor: 'Topic explanation + questions',
+    contentType: 'Beginner-friendly'
+  },
+  {
+    id: '13',
+    title: "Coding Ninjas Paths",
+    category: 'website',
+    url: 'https://www.codingninjas.com/codestudio/guided-paths',
+    tags: ['Structured', 'Incremental'],
+    bestFor: 'Topic-wise structured lists',
+    contentType: 'Incremental difficulty'
+  },
+  {
+    id: '14',
+    title: "CS50 Harvard Problem Sets",
+    category: 'website',
+    url: 'https://cs50.harvard.edu/x/2024/psets/',
+    tags: ['Logic', 'Fundamentals'],
+    bestFor: 'Logic + fundamentals',
+    contentType: 'Strong conceptual base'
+  },
+  {
+    id: '15',
+    title: "AlgoExpert",
+    category: 'website',
+    url: 'https://www.algoexpert.io/',
+    tags: ['Premium', 'System Design'],
+    bestFor: 'Premium polished explanations',
+    contentType: 'Coding + system design'
+  },
 ];
 
 const Resources: React.FC = () => {
-  const { videoResources, linkResources } = useGlobalState();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const sheetsScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const scrollContainer = scrollRef.current;
+    if (!scrollContainer) return;
+
+    let scrollPosition = 0;
+    const scrollSpeed = 0.5;
+    let animationId: number;
+
+    const scroll = () => {
+      if (!scrollContainer) return;
+      scrollPosition += scrollSpeed;
+      const limit = scrollContainer.scrollWidth / 3;
+      if (scrollPosition >= limit) {
+        scrollPosition = 0;
+      }
+      scrollContainer.scrollLeft = scrollPosition;
+      animationId = requestAnimationFrame(scroll);
+    };
+
+    const timeoutId = setTimeout(() => {
+      animationId = requestAnimationFrame(scroll);
+    }, 500);
+
+    const handleMouseEnter = () => cancelAnimationFrame(animationId);
+    const handleMouseLeave = () => { animationId = requestAnimationFrame(scroll); };
+
+    scrollContainer.addEventListener('mouseenter', handleMouseEnter);
+    scrollContainer.addEventListener('mouseleave', handleMouseLeave);
+
+    return () => {
+      clearTimeout(timeoutId);
+      cancelAnimationFrame(animationId);
+      scrollContainer.removeEventListener('mouseenter', handleMouseEnter);
+      scrollContainer.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, []);
+
+  useEffect(() => {
+    const scrollContainer = sheetsScrollRef.current;
+    if (!scrollContainer) return;
+
+    let scrollPosition = 0;
+    const scrollSpeed = 0.5;
+    let animationId: number;
+
+    const scroll = () => {
+      if (!scrollContainer) return;
+      scrollPosition -= scrollSpeed;
+      const limit = scrollContainer.scrollWidth / 2;
+      if (scrollPosition <= 0) {
+        scrollPosition = limit;
+      }
+      scrollContainer.scrollLeft = scrollPosition;
+      animationId = requestAnimationFrame(scroll);
+    };
+
+    const timeoutId = setTimeout(() => {
+      scrollPosition = scrollContainer.scrollWidth / 2;
+      animationId = requestAnimationFrame(scroll);
+    }, 500);
+
+    const handleMouseEnter = () => cancelAnimationFrame(animationId);
+    const handleMouseLeave = () => { animationId = requestAnimationFrame(scroll); };
+
+    scrollContainer.addEventListener('mouseenter', handleMouseEnter);
+    scrollContainer.addEventListener('mouseleave', handleMouseLeave);
+
+    return () => {
+      clearTimeout(timeoutId);
+      cancelAnimationFrame(animationId);
+      scrollContainer.removeEventListener('mouseenter', handleMouseEnter);
+      scrollContainer.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, []);
 
   const containerVariants = {
     hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 }
-    }
+    visible: { opacity: 1, transition: { staggerChildren: 0.08 } }
   };
 
   const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: { y: 0, opacity: 1 }
+    hidden: { y: 16, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: { type: "spring" as const, stiffness: 120 }
+    }
   };
 
   return (
-    <div className="min-h-screen bg-bgDark py-20 px-4 md:px-8 space-y-24">
-      {/* Hero Section */}
+    <div className="pb-20 bg-bgDark min-h-screen">
+      {/* Hero */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-center space-y-6 relative"
+        className="bg-gradient-to-b from-primary/10 to-transparent pt-28 pb-24 px-6"
       >
-        <div className="absolute inset-0 -top-20 bg-primary/20 blur-[120px] rounded-full w-1/2 mx-auto h-64 opacity-20 pointer-events-none"></div>
-
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-primary text-xs font-bold uppercase tracking-widest backdrop-blur-md mb-4">
-          <Sparkles size={12} /> Curated Learning Ecosystem
+        <div className="container mx-auto text-center space-y-4">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest"
+          >
+            <Sparkles size={12} className="animate-pulse" /> Curated Learning Ecosystem
+          </motion.div>
+          <h1 className="text-4xl md:text-6xl font-black font-heading text-white tracking-tight">
+            Resources For <span className="text-primary italic">DSA</span>
+          </h1>
+          <p className="text-textMuted text-base md:text-lg max-w-2xl mx-auto">
+            Curated playlists and practice sheets to boost your interview preparation.
+          </p>
         </div>
-
-        <h1 className="text-5xl md:text-7xl font-display font-bold tracking-tight text-white leading-tight">
-          Learning <span className="bg-gradient-to-r from-primary to-orange-500 bg-clip-text text-transparent italic">Vault.</span>
-        </h1>
-        <p className="text-textMuted max-w-2xl mx-auto text-lg md:text-xl leading-relaxed">
-          Discover and learn from our curated collection of high-fidelity resources and expert roadmaps.
-        </p>
       </motion.header>
 
-      {/* YT Playlists - Infinite Scroll */}
-      <motion.section
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true }}
-        variants={containerVariants}
-        className="space-y-12"
-      >
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 px-2">
-          <div className="space-y-2">
-            <h2 className="text-3xl md:text-4xl font-bold flex items-center gap-4 text-white">
-              <div className="w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center border border-red-500/20 shadow-lg shadow-red-500/5">
-                <Youtube className="text-red-500" size={24} />
-              </div>
-              Youtube Playlists
-            </h2>
-            <p className="text-textMuted text-sm font-medium pl-16">Deep-dives into programming fundamentals and masterclasses.</p>
+      <div className="container mx-auto px-6 -mt-8 space-y-16 relative z-10">
+        {/* YT Playlists */}
+        <motion.section
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+        >
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-10 h-10 rounded-xl bg-[#B45309]/10 flex items-center justify-center border border-[#B45309]/30">
+              <Youtube className="text-[#B45309]" size={22} />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold font-heading text-white">Youtube Playlists</h2>
+              <p className="text-textMuted text-sm">Foundational deep-dives into data structures.</p>
+            </div>
           </div>
-        </div>
 
-        <div className="relative group">
-          <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-bgDark to-transparent z-10 pointer-events-none"></div>
-          <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-bgDark to-transparent z-10 pointer-events-none"></div>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-bgDark to-transparent z-10 pointer-events-none" />
+            <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-bgDark to-transparent z-10 pointer-events-none" />
 
-          <Marquee direction="left" speed={60}>
-            {videoResources.map((video) => (
-              <motion.a
-                key={video.id}
-                href={video.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                whileHover={{ y: -8 }}
-                className="group block w-[320px] shrink-0 bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden hover:border-red-500/40 transition-all duration-500 shadow-2xl"
-              >
-                <div className="relative aspect-video overflow-hidden">
-                  <img
-                    src={video.thumbnail}
-                    alt={video.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
-                    onError={(e) => {
-                      e.currentTarget.src = 'https://via.placeholder.com/400x225/1f2937/ef4444?text=YouTube+Video';
-                    }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity"></div>
-
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 scale-90 group-hover:scale-100">
-                    <div className="w-16 h-16 bg-red-600/90 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20 shadow-2xl shadow-red-500/40">
-                      <Play className="text-white fill-white ml-1" size={24} />
-                    </div>
-                  </div>
-                </div>
-                <div className="p-6 space-y-4">
-                  <h3 className="text-lg font-bold text-white line-clamp-2 min-h-[3.5rem] group-hover:text-red-400 transition-colors uppercase tracking-tight">{video.title}</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {video.tags?.map(t => (
-                      <span key={t} className="text-[10px] uppercase font-black bg-white/5 text-textMuted px-3 py-1 rounded-full border border-white/5">
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </motion.a>
-            ))}
-          </Marquee>
-        </div>
-      </motion.section>
-
-      {/* DSA Sheets - Infinite Scroll */}
-      <motion.section
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true }}
-        variants={containerVariants}
-        className="space-y-12"
-      >
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 px-2">
-          <div className="space-y-2">
-            <h2 className="text-3xl md:text-4xl font-bold flex items-center gap-4 text-white">
-              <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20 shadow-lg shadow-primary/5">
-                <BookOpen className="text-primary" size={24} />
-              </div>
-              DSA Practice Sheets
-            </h2>
-            <p className="text-textMuted text-sm font-medium pl-16">The gold standard for software engineering interview preparation.</p>
-          </div>
-        </div>
-
-        <div className="relative group">
-          <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-bgDark to-transparent z-10 pointer-events-none"></div>
-          <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-bgDark to-transparent z-10 pointer-events-none"></div>
-
-          <Marquee direction="right" speed={80}>
-            {linkResources.map((link) => {
-              const domain = new URL(link.url).hostname;
-              const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
-
-              return (
-                <motion.div
-                  key={link.id}
-                  whileHover={{
-                    y: -12,
-                    scale: 1.02,
-                    transition: { duration: 0.4, ease: "easeOut" }
-                  }}
-                  className="w-[360px] shrink-0 bg-[#0A0A0A]/60 backdrop-blur-3xl border border-white/10 p-8 rounded-[2.5rem] hover:border-primary/40 transition-all duration-500 group shadow-2xl relative overflow-hidden"
-                >
-                  {/* Premium Background Effects */}
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-[60px] -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-                  <div className="absolute bottom-0 left-0 w-24 h-24 bg-orange-500/5 rounded-full blur-[40px] translate-x-1/2 translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
-
-                  <div className="flex items-start justify-between mb-8 relative z-10">
-                    <div className="w-16 h-16 bg-white/[0.03] rounded-2xl flex items-center justify-center p-3.5 group-hover:bg-primary/10 border border-white/10 group-hover:border-primary/20 transition-all duration-500 shadow-inner group-hover:rotate-6">
-                      <img
-                        src={faviconUrl}
-                        alt="Logo"
-                        className="w-full h-full object-contain filter grayscale group-hover:grayscale-0 transition-all duration-500"
-                      />
-                    </div>
-                  </div>
-
-                  <h3 className="text-2xl font-display font-bold mb-6 h-16 line-clamp-2 text-white group-hover:text-primary transition-colors tracking-tight uppercase leading-tight">
-                    {link.title}
-                  </h3>
-
-                  <div className="space-y-5 mb-10 min-h-[110px] relative z-10">
-                    {link.bestFor && (
-                      <div className="flex items-start gap-3.5 group/item">
-                        <div className="mt-1.5 w-2 h-2 rounded-full bg-green-500/80 shadow-[0_0_12px_rgba(34,197,94,0.4)] flex-shrink-0 group-hover/item:scale-125 transition-transform" />
-                        <p className="text-sm text-textMuted leading-relaxed">
-                          <span className="text-white/40 font-black uppercase tracking-widest text-[10px] block mb-0.5">Focus Areas</span>
-                          <span className="group-hover:text-white/80 transition-colors">{link.bestFor}</span>
-                        </p>
-                      </div>
-                    )}
-                    {link.contentType && (
-                      <div className="flex items-start gap-3.5 group/item">
-                        <div className="mt-1.5 w-2 h-2 rounded-full bg-primary/80 shadow-[0_0_12px_rgba(255,122,0,0.4)] flex-shrink-0 group-hover/item:scale-125 transition-transform" />
-                        <p className="text-sm text-textMuted leading-relaxed">
-                          <span className="text-white/40 font-black uppercase tracking-widest text-[10px] block mb-0.5">Resource Class</span>
-                          <span className="group-hover:text-white/80 transition-colors">{link.contentType}</span>
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  <a
-                    href={link.url}
+            <div
+              ref={scrollRef}
+              className="overflow-x-hidden cursor-grab active:cursor-grabbing py-10"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              <div className="flex gap-5 px-8" style={{ width: 'max-content' }}>
+                {[...YT_RESOURCES, ...YT_RESOURCES, ...YT_RESOURCES].map((res, index) => (
+                  <motion.a
+                    key={`${res.id}-${index}`}
+                    href={res.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="w-full flex items-center justify-between px-8 py-5 rounded-[1.5rem] bg-white/[0.03] border border-white/10 hover:border-primary/50 hover:bg-primary/5 text-white font-bold transition-all text-sm group/btn relative overflow-hidden"
+                    variants={itemVariants}
+                    whileHover={{
+                      y: -8,
+                      scale: 1.02,
+                      borderColor: "#f97316",
+                      boxShadow: "0 0 30px -8px rgba(249, 115, 22, 0.5)"
+                    }}
+                    style={{ borderColor: '#B45309' }}
+                    className="flex-shrink-0 w-[260px] sm:w-[340px] group/card block bg-surface border-2 rounded-3xl overflow-hidden"
                   >
-                    <span className="relative z-10">Explore Collection</span>
-                    <ArrowRight size={18} className="relative z-10 group-hover/btn:translate-x-2 transition-transform duration-300" />
-                    <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover/btn:opacity-100 transition-opacity"></div>
-                  </a>
-                </motion.div>
-              );
-            })}
-          </Marquee>
-        </div>
-      </motion.section>
+                    <div className="flex flex-col">
+                      <div className="relative aspect-video overflow-hidden">
+                        <img
+                          src={res.thumbnail}
+                          alt={res.title}
+                          className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-500"
+                          onError={(e) => {
+                            e.currentTarget.src = 'https://via.placeholder.com/400x225/111/f97316?text=YouTube';
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/card:opacity-100 transition-opacity flex items-center justify-center">
+                          <div className="w-14 h-14 bg-primary rounded-full flex items-center justify-center shadow-xl">
+                            <Play className="text-white fill-white ml-1" size={22} />
+                          </div>
+                        </div>
+                      </div>
 
-      {/* Domain Masterclass (Static Grid) */}
-      <motion.section
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true }}
-        variants={containerVariants}
-        className="pt-20"
-      >
-        <div className="text-center space-y-4 mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight">Domain Masterclasses</h2>
-          <p className="text-textMuted max-w-xl mx-auto">Focused tracks for engineers who want to reach the top 1%.</p>
-        </div>
+                      <div className="p-5 flex flex-col gap-3">
+                        <h3 className="font-bold text-base text-white line-clamp-2 leading-snug group-hover/card:text-primary transition-colors">
+                          {res.title}
+                        </h3>
+                        <div className="flex flex-wrap gap-1.5">
+                          {res.tags.map(t => (
+                            <span
+                              key={t}
+                              className="text-[10px] uppercase font-bold tracking-wider bg-white/5 text-textMuted px-2.5 py-1 rounded-full border border-white/10 group-hover/card:border-primary/30 transition-all"
+                            >
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </motion.a>
+                ))}
+              </div>
+            </div>
+          </div>
+        </motion.section>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
-          {paths.map((path, idx) => (
-            <motion.div
-              key={path.id}
-              variants={itemVariants}
-              whileHover={{ y: -10 }}
-              className="group relative bg-white/5 border border-white/10 rounded-[2.5rem] p-10 hover:border-primary/40 transition-all duration-500 overflow-hidden shadow-2xl"
+        {/* DSA Sheets */}
+        <motion.section
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+        >
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-10 h-10 rounded-xl bg-[#B45309]/10 flex items-center justify-center border border-[#B45309]/30">
+              <BookOpen className="text-[#B45309]" size={22} />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold font-heading text-white">DSA Practice Sheets</h2>
+              <p className="text-textMuted text-sm">Structured roadmaps for interview mastery.</p>
+            </div>
+          </div>
+
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-bgDark to-transparent z-10 pointer-events-none" />
+            <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-bgDark to-transparent z-10 pointer-events-none" />
+
+            <div
+              ref={sheetsScrollRef}
+              className="overflow-x-hidden cursor-grab active:cursor-grabbing py-10"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
-              <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-full blur-[80px] translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="flex gap-5 px-8" style={{ width: 'max-content' }}>
+                {[...SITE_RESOURCES, ...SITE_RESOURCES].map((res, index) => {
+                  const domain = new URL(res.url).hostname;
+                  const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
 
-              <div className="text-primary mb-8 p-5 bg-primary/5 rounded-3xl w-fit border border-primary/20 scale-110 group-hover:scale-125 group-hover:rotate-6 transition-all duration-500">
-                {path.icon}
+                  return (
+                    <motion.div
+                      key={`${res.id}-${index}`}
+                      variants={itemVariants}
+                      whileHover={{
+                        y: -8,
+                        scale: 1.02,
+                        borderColor: "#f97316",
+                        boxShadow: "0 0 30px -8px rgba(249, 115, 22, 0.5)"
+                      }}
+                      style={{ borderColor: '#B45309' }}
+                      className="flex-shrink-0 w-[260px] sm:w-[340px] bg-surface border-2 rounded-3xl p-6 group/sheet transition-colors duration-300 flex flex-col gap-4"
+                    >
+                      {/* Icon row */}
+                      <div className="flex items-center justify-between">
+                        {res.id === '7' ? (
+                          <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/30 group-hover/sheet:scale-110 transition-transform duration-300">
+                            <span className="text-xl font-black text-primary">450</span>
+                          </div>
+                        ) : (
+                          <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center p-2.5 border border-white/10 group-hover/sheet:border-primary/30 group-hover/sheet:bg-primary/10 group-hover/sheet:scale-110 transition-all duration-300">
+                            <img
+                              src={faviconUrl}
+                              alt="Logo"
+                              className="w-8 h-8 object-contain filter grayscale group-hover/sheet:grayscale-0 transition-all duration-300"
+                            />
+                          </div>
+                        )}
+                        <div className="opacity-0 group-hover/sheet:opacity-100 transition-opacity duration-300">
+                          <Sparkles className="text-primary animate-pulse" size={18} />
+                        </div>
+                      </div>
+
+                      {/* Title */}
+                      <h3 className="text-base font-bold text-white line-clamp-2 leading-snug group-hover/sheet:text-primary transition-colors">
+                        {res.title}
+                      </h3>
+
+                      {/* Meta */}
+                      <div className="space-y-2 flex-grow">
+                        {res.bestFor && (
+                          <div className="flex items-start gap-2">
+                            <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-green-500 flex-shrink-0" />
+                            <p className="text-xs text-textMuted leading-relaxed">
+                              <span className="text-white/70 font-semibold">Best for: </span>
+                              {res.bestFor}
+                            </p>
+                          </div>
+                        )}
+                        {res.contentType && (
+                          <div className="flex items-start gap-2">
+                            <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#B45309] flex-shrink-0" />
+                            <p className="text-xs text-textMuted leading-relaxed">
+                              <span className="text-white/70 font-semibold">Type: </span>
+                              {res.contentType}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* CTA button */}
+                      <a
+                        href={res.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-2xl bg-white/5 border border-white/10 hover:border-primary hover:bg-primary/15 text-white text-sm font-semibold transition-all duration-300 group/btn"
+                      >
+                        Visit Website <ArrowRight size={15} className="group-hover/btn:translate-x-1 transition-transform" />
+                      </a>
+                    </motion.div>
+                  );
+                })}
               </div>
-
-              <h3 className="text-3xl font-bold mb-4 text-white group-hover:text-primary transition-colors uppercase tracking-tight">{path.title}</h3>
-              <p className="text-textMuted text-lg leading-relaxed mb-10">{path.desc}</p>
-
-              <div className="pt-6 border-t border-white/5 flex items-center justify-between">
-                <span className="text-xs font-bold text-white group-hover:text-primary transition-colors flex items-center gap-2 uppercase tracking-widest">
-                  Launch Roadmap <ChevronRight size={16} className="group-hover:translate-x-2 transition-transform" />
-                </span>
-                <div className="text-[10px] font-mono text-textMuted border border-white/10 px-2 py-1 rounded tracking-tighter uppercase font-bold">
-                  24+ Modules
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </motion.section>
-
-      {/* Authentic Library Access */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        whileInView={{ opacity: 1, scale: 1 }}
-        viewport={{ once: true }}
-        className="max-w-7xl mx-auto"
-      >
-        <div className="relative overflow-hidden bg-gradient-to-br from-bgDark to-surface/40 border border-white/10 rounded-[2.5rem] p-12 md:p-16 flex flex-col items-center justify-center text-center space-y-8 group shadow-2xl">
-          <div className="absolute inset-0 bg-primary/5 opacity-30 blur-[150px] pointer-events-none transition-all duration-700 group-hover:scale-150"></div>
-
-          <div className="p-6 bg-primary/10 rounded-3xl border border-primary/20 relative z-10 shadow-inner">
-            <BookOpen size={48} className="text-primary animate-pulse" />
+            </div>
           </div>
-
-          <div className="space-y-3 relative z-10">
-            <h3 className="text-3xl md:text-5xl font-display font-bold text-white tracking-tighter uppercase">The Internal Archive</h3>
-            <p className="text-textMuted max-w-xl mx-auto text-lg leading-relaxed">
-              Access 500+ leaked technical case studies, internal startup frameworks, and 1-on-1 mentorship blueprints.
-            </p>
-          </div>
-
-          <motion.button
-            whileHover={{ scale: 1.05, boxShadow: "0 0 40px rgba(255, 122, 0, 0.3)" }}
-            whileTap={{ scale: 0.98 }}
-            className="bg-primary text-black font-extrabold px-10 py-4 rounded-xl transition-all shadow-xl shadow-primary/20 relative z-10 text-lg tracking-tight uppercase"
-          >
-            Authenticate with Student ID
-          </motion.button>
-        </div>
-      </motion.div>
+        </motion.section>
+      </div>
     </div>
   );
 };

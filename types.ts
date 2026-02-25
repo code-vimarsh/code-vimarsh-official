@@ -68,6 +68,17 @@ export interface LinkResource {
   contentType?: string;
 }
 
+export interface Resource {
+  id: string;
+  title: string;
+  category: 'youtube' | 'website';
+  url: string;
+  thumbnail?: string;
+  tags: string[];
+  bestFor?: string;
+  contentType?: string;
+}
+
 export interface AdminUser {
   id: string;
   name: string;

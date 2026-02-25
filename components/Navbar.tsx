@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Terminal, Search, User, Menu, X, Settings } from 'lucide-react';
+import { Search, User, Menu, X, Settings } from 'lucide-react';
 import { NAV_ITEMS } from '../constants';
 
 const Navbar: React.FC = () => {
@@ -31,9 +31,13 @@ const Navbar: React.FC = () => {
 
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 group flex-shrink-0">
-          <Terminal className="text-primary group-hover:text-secondary transition-colors flex-shrink-0" size={22} />
+          <img
+            src="/CV LOGO.webp"
+            alt="Code Vimarsh"
+            className="h-8 w-auto object-contain group-hover:opacity-80 transition-opacity flex-shrink-0"
+          />
           <span className="font-display font-bold text-lg tracking-tight text-white group-hover:text-primary transition-colors whitespace-nowrap">
-            _Code<span className="text-primary">Vimarsh</span>
+            Code<span className="text-primary">Vimarsh</span>
           </span>
         </Link>
 
