@@ -57,8 +57,9 @@ const CertificateCanvas: React.FC<Props> = ({ data, certRef }) => {
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
+                justifyContent: 'space-between',
                 boxSizing: 'border-box',
-                padding: '36px 56px 32px',
+                padding: '32px 56px 28px',
                 fontFamily: "Georgia,'Times New Roman',serif",
                 flexShrink: 0,
             }}
@@ -188,17 +189,10 @@ const CertificateCanvas: React.FC<Props> = ({ data, certRef }) => {
                 Organized by Code Vimarsh — MSU Baroda
             </div>
 
-            {/* Divider */}
-            <div style={{
-                height: 1, width: '80%', zIndex: 1,
-                background: 'linear-gradient(90deg,transparent,#2a2a2a,transparent)',
-                marginBottom: 14,
-            }} />
-
             {/* 8. Footer row: date | seal | issued by */}
             <div style={{
                 ...S.row({ justifyContent: 'space-between', width: '100%' }),
-                zIndex: 1, marginTop: 'auto',
+                zIndex: 1,
             }}>
                 {/* Date */}
                 <div style={S.col({ alignItems: 'center', minWidth: 130 })}>
@@ -237,13 +231,7 @@ const CertificateCanvas: React.FC<Props> = ({ data, certRef }) => {
                 </div>
             </div>
 
-            {/* Certificate watermark */}
-            <div style={S.abs({
-                bottom: 16, right: 36,
-                fontSize: 8, color: '#3a3a3a', letterSpacing: '0.1em', fontFamily: 'Arial,sans-serif', zIndex: 1,
-            })}>
-                codevimarsh.in · {data.certType.toUpperCase()}
-            </div>
+
         </div>
     );
 };
