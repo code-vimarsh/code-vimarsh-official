@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { Github, Linkedin, Crown, Code2, Palette, Settings } from 'lucide-react';
+import { EmbersBackground } from '../components/Achievements/GlowDots';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES
@@ -13,10 +14,6 @@ interface TeamMember {
   github?: string;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// TEAM DATA  ← Edit this object to add / remove members
-// Images live in /public/  — use exact filename with extension
-// ─────────────────────────────────────────────────────────────────────────────
 const teamData: Record<string, TeamMember[]> = {
 
   // ── LEADS: President · VP · Secretary · All Dept Heads ───────────────────
@@ -106,7 +103,7 @@ const teamData: Record<string, TeamMember[]> = {
       linkedin: 'https://www.linkedin.com/in/ashishgokani',
       github: 'https://github.com/ashishgokani',
     },
-    
+
     {
       name: 'Deep Jaiswal',
       role: 'Web Team Member',
@@ -162,7 +159,7 @@ const teamData: Record<string, TeamMember[]> = {
       linkedin: 'https://www.linkedin.com/in/vaishnavi-patel-03431730b',
       github: 'https://github.com/Vaishnavi3406',
     },
-    
+
     {
       name: 'Priyal Dalal',
       role: 'Management Team Member',
@@ -412,6 +409,7 @@ const TeamSection: React.FC<{ section: typeof SECTIONS[number]; sectionIndex: nu
   const inView = useInView(ref, { once: true, margin: '-80px' });
   const Icon = section.icon;
   const members = teamData[section.key];
+  const isEven = sectionIndex % 2 === 0;
 
   return (
     <motion.div
@@ -547,117 +545,6 @@ const TeamSection: React.FC<{ section: typeof SECTIONS[number]; sectionIndex: nu
             ))}
           </div>
         </motion.div>
-      </div>
-    </motion.div>
-  );
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-// HERO
-// ─────────────────────────────────────────────────────────────────────────────
-const Hero: React.FC = () => {
-  const totalMembers = Object.values(teamData).flat().length;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.65, ease: [0.25, 0.46, 0.45, 0.94] }}
-      style={{
-        padding: '100px 0 80px',
-        position: 'relative',
-        textAlign: 'center',
-      }}
-    >
-      {/* Small label */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="inline-flex items-center gap-2 mb-6 px-4 py-1.5 rounded-full border text-[11px] font-bold uppercase tracking-[0.2em]"
-        style={{ background: 'rgba(249,115,22,0.08)', borderColor: 'rgba(249,115,22,0.3)', color: '#f97316' }}
-      >
-        <Crown size={12} /> The Core Team · Code Vimarsh
-      </motion.div>
-
-      {/* Main Headline */}
-      <h1
-        style={{
-          fontFamily: 'Cinzel Decorative, Cinzel, serif',
-          fontWeight: 900,
-          fontSize: 'clamp(2.5rem, 6vw, 4.8rem)',
-          color: '#f5f0e8',
-          margin: '0 auto 16px',
-          letterSpacing: '0.04em',
-          lineHeight: 1.1,
-          maxWidth: 900,
-        }}
-      >
-        Meet the Architects of{' '}
-        <span
-          style={{
-            color: '#f97316',
-            textShadow: '0 0 40px rgba(249,115,22,0.55)',
-            display: 'inline-block',
-          }}
-        >
-          Innovation
-        </span>
-      </h1>
-
-      {/* Professional Subtitle */}
-      <p style={{
-        color: '#6a5a4a',
-        fontFamily: 'JetBrains Mono, monospace',
-        fontSize: '11px',
-        letterSpacing: '0.2em',
-        textTransform: 'uppercase',
-        maxWidth: 600,
-        margin: '0 auto 48px'
-      }}>
-        A collective of engineers, designers, and visionaries building the community of tomorrow.
-      </p>
-
-      {/* Stats row - Centered */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'center',
-          gap: 'clamp(2rem, 8vw, 6rem)',
-          paddingBottom: 8,
-          flexWrap: 'wrap',
-        }}
-      >
-        {[
-          { value: String(totalMembers), label: 'Core Members' },
-          { value: String(SECTIONS.length), label: 'Specialized Teams' },
-          { value: '∞', label: 'Collaboration' },
-        ].map(stat => (
-          <div key={stat.label} style={{ textAlign: 'center' }}>
-            <div
-              style={{
-                fontFamily: 'Inter, sans-serif',
-                fontWeight: 900,
-                fontSize: '2.5rem',
-                color: '#f0ece6',
-                lineHeight: 1,
-              }}
-            >
-              {stat.value}
-            </div>
-            <div
-              style={{
-                fontFamily: 'JetBrains Mono, monospace',
-                fontSize: '0.6rem',
-                color: 'rgba(255,255,255,0.28)',
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase',
-                marginTop: 6,
-              }}
-            >
-              {stat.label}
-            </div>
-          </div>
-        ))}
       </div>
     </motion.div>
   );
