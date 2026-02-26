@@ -98,14 +98,14 @@ const MemberCard: React.FC<{ member: TeamMember; index: number }> = ({ member, i
         cursor: 'pointer',
         position: 'relative',
         background: 'linear-gradient(160deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)',
-        border: hovered ? '1px solid rgba(249,115,22,0.4)' : '1px solid rgba(255,255,255,0.09)',
+        border: hovered ? '1.5px solid rgba(249,115,22,0.8)' : '1px solid rgba(249,115,22,0.3)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
         boxShadow: hovered
-          ? '0 20px 50px -12px rgba(249,115,22,0.25), 0 8px 24px -8px rgba(0,0,0,0.6)'
+          ? '0 0 35px -5px rgba(249,115,22,0.5), 0 10px 40px -10px rgba(0,0,0,0.7)'
           : '0 8px 32px -12px rgba(0,0,0,0.5)',
-        transform: hovered ? 'translateY(-6px)' : 'translateY(0)',
-        transition: 'transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease',
+        transform: hovered ? 'translateY(-8px) scale(1.02)' : 'translateY(0) scale(1)',
+        transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
         scrollSnapAlign: 'start',
       }}
     >
@@ -191,11 +191,11 @@ const MemberCard: React.FC<{ member: TeamMember; index: number }> = ({ member, i
               style={{
                 position: 'absolute',
                 inset: 0,
-                background: 'rgba(0,0,0,0.38)',
+                background: 'rgba(0,0,0,0.42)',
                 display: 'flex',
                 alignItems: 'flex-start',
                 justifyContent: 'flex-end',
-                padding: 12,
+                padding: 10,
                 gap: 8,
               }}
             >
@@ -205,20 +205,48 @@ const MemberCard: React.FC<{ member: TeamMember; index: number }> = ({ member, i
                   target="_blank"
                   rel="noreferrer"
                   onClick={e => e.stopPropagation()}
-                  initial={{ scale: 0.7, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.05 }}
-                  whileHover={{ scale: 1.12 }}
+                  initial={{ scale: 0.6, opacity: 0, rotate: -10 }}
+                  animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                  transition={{ delay: 0.05, type: 'spring', stiffness: 260, damping: 18 }}
+                  whileHover={{ scale: 1.12, rotate: 3 }}
+                  whileTap={{ scale: 0.92, rotate: 0 }}
+                  className="group relative overflow-hidden"
                   style={{
-                    width: 34, height: 34,
+                    width: 38, height: 38,
                     borderRadius: '50%',
-                    background: 'rgba(10,102,194,0.92)',
+                    backdropFilter: 'blur(14px)',
+                    WebkitBackdropFilter: 'blur(14px)',
+                    background: 'linear-gradient(135deg, rgba(10,102,194,0.18) 0%, rgba(0,0,0,0.55) 100%)',
+                    border: '1px solid rgba(10,102,194,0.3)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    boxShadow: '0 2px 12px rgba(10,102,194,0.4)',
+                    boxShadow: '0 4px 20px rgba(10,102,194,0.25)',
                     textDecoration: 'none',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    transition: 'border-color 0.3s, box-shadow 0.3s',
+                  }}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLElement).style.borderColor = 'rgba(10,102,194,0.7)';
+                    (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 28px rgba(10,102,194,0.5)';
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLElement).style.borderColor = 'rgba(10,102,194,0.3)';
+                    (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 20px rgba(10,102,194,0.25)';
                   }}
                 >
-                  <Linkedin size={16} color="#fff" />
+                  {/* Shimmer sweep */}
+                  <motion.div
+                    initial={{ x: '-100%' }}
+                    whileHover={{ x: '100%' }}
+                    transition={{ duration: 0.6, ease: 'easeOut' }}
+                    style={{
+                      position: 'absolute', inset: 0,
+                      background: 'linear-gradient(90deg, transparent, rgba(10,102,194,0.35), transparent)',
+                      pointerEvents: 'none',
+                    }}
+                  />
+                  <Linkedin size={17} color="#60a5fa" style={{ position: 'relative', zIndex: 1 }} />
                 </motion.a>
               )}
               {member.github && (
@@ -227,21 +255,47 @@ const MemberCard: React.FC<{ member: TeamMember; index: number }> = ({ member, i
                   target="_blank"
                   rel="noreferrer"
                   onClick={e => e.stopPropagation()}
-                  initial={{ scale: 0.7, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.1 }}
-                  whileHover={{ scale: 1.12 }}
+                  initial={{ scale: 0.6, opacity: 0, rotate: 10 }}
+                  animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                  transition={{ delay: 0.1, type: 'spring', stiffness: 260, damping: 18 }}
+                  whileHover={{ scale: 1.12, rotate: -3 }}
+                  whileTap={{ scale: 0.92, rotate: 0 }}
                   style={{
-                    width: 34, height: 34,
+                    width: 38, height: 38,
                     borderRadius: '50%',
-                    background: 'rgba(22,22,22,0.95)',
-                    border: '1px solid rgba(255,255,255,0.2)',
+                    backdropFilter: 'blur(14px)',
+                    WebkitBackdropFilter: 'blur(14px)',
+                    background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0.55) 100%)',
+                    border: '1px solid rgba(255,255,255,0.12)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    boxShadow: '0 2px 12px rgba(0,0,0,0.5)',
+                    boxShadow: '0 4px 20px rgba(255,255,255,0.08)',
                     textDecoration: 'none',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    transition: 'border-color 0.3s, box-shadow 0.3s',
+                  }}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.35)';
+                    (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 28px rgba(255,255,255,0.2)';
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.12)';
+                    (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 20px rgba(255,255,255,0.08)';
                   }}
                 >
-                  <Github size={16} color="#fff" />
+                  {/* Shimmer sweep */}
+                  <motion.div
+                    initial={{ x: '-100%' }}
+                    whileHover={{ x: '100%' }}
+                    transition={{ duration: 0.6, ease: 'easeOut' }}
+                    style={{
+                      position: 'absolute', inset: 0,
+                      background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent)',
+                      pointerEvents: 'none',
+                    }}
+                  />
+                  <Github size={17} color="#e2e8f0" style={{ position: 'relative', zIndex: 1 }} />
                 </motion.a>
               )}
             </motion.div>
@@ -328,20 +382,52 @@ const TeamSection: React.FC<{ section: typeof SECTIONS[number]; sectionIndex: nu
           top: -20,
           right: isEven ? 'auto' : undefined,
           left: isEven ? undefined : 0,
-          fontFamily: 'Inter, sans-serif',
-          fontWeight: 900,
+          fontFamily: "'Space Grotesk', 'Inter', sans-serif",
+          fontWeight: 700,
           fontSize: 'clamp(7rem, 18vw, 14rem)',
           lineHeight: 1,
           color: 'transparent',
-          WebkitTextStroke: '1px rgba(249,115,22,0.08)',
+          WebkitTextStroke: '1.5px rgba(249,115,22,0.35)',
           userSelect: 'none',
-          letterSpacing: '-0.05em',
+          letterSpacing: '0.01em',
           pointerEvents: 'none',
           zIndex: 0,
+          opacity: 1,
         }}
       >
         {section.number}
       </div>
+
+      {/* ── Section Divider (except for last) ── */}
+      {sectionIndex < SECTIONS.length - 1 && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: '5%',
+            right: '5%',
+            height: '2px',
+            background: 'linear-gradient(90deg, transparent 0%, rgba(249,115,22,0.65) 30%, rgba(249,115,22,0.85) 50%, rgba(249,115,22,0.65) 70%, transparent 100%)',
+            boxShadow: '0 0 12px rgba(249,115,22,0.4)',
+            zIndex: 1,
+          }}
+        >
+          {/* Center glow dot */}
+          <div
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 4,
+              height: 4,
+              borderRadius: '50%',
+              background: '#f97316',
+              boxShadow: '0 0 10px #f97316',
+            }}
+          />
+        </div>
+      )}
 
       {/* ── Two-column layout: left info | right cards ── */}
       <div
@@ -478,70 +564,121 @@ const Hero: React.FC = () => {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.65, ease: [0.25, 0.46, 0.45, 0.94] }}
+      transition={{ duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] }}
       style={{
-        padding: '100px 0 80px',
+        padding: '110px 0 90px',
         position: 'relative',
         textAlign: 'center',
       }}
     >
-      {/* Small label */}
+      {/* ── Label pill ── */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="inline-flex items-center gap-2 mb-6 px-4 py-1.5 rounded-full border text-[11px] font-bold uppercase tracking-[0.2em]"
-        style={{ background: 'rgba(249,115,22,0.08)', borderColor: 'rgba(249,115,22,0.3)', color: '#f97316' }}
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 8,
+          marginBottom: 28,
+          padding: '6px 16px 6px 12px',
+          borderRadius: 999,
+          background: 'rgba(249,115,22,0.1)',
+          border: '1px solid rgba(249,115,22,0.35)',
+          color: '#f97316',
+          fontSize: 11,
+          fontFamily: 'JetBrains Mono, monospace',
+          fontWeight: 700,
+          letterSpacing: '0.18em',
+          textTransform: 'uppercase' as const,
+          boxShadow: '0 0 24px rgba(249,115,22,0.15)',
+        }}
       >
-        <Crown size={12} /> The Core Team · Code Vimarsh
+        <Crown size={12} />
+        The Core Team · Code Vimarsh
       </motion.div>
 
-      {/* Main Headline */}
-      <h1
+      {/* ── Main Headline ── */}
+      <motion.h1
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.65, delay: 0.18 }}
         style={{
           fontFamily: 'Cinzel Decorative, Cinzel, serif',
           fontWeight: 900,
-          fontSize: 'clamp(2.5rem, 6vw, 4.8rem)',
+          fontSize: 'clamp(2.6rem, 6.5vw, 5rem)',
           color: '#f5f0e8',
-          margin: '0 auto 16px',
+          margin: '0 auto 20px',
           letterSpacing: '0.04em',
           lineHeight: 1.1,
-          maxWidth: 900,
+          maxWidth: 920,
+          textShadow: '0 2px 40px rgba(0,0,0,0.5)',
         }}
       >
         Meet the Architects of{' '}
         <span
           style={{
             color: '#f97316',
-            textShadow: '0 0 40px rgba(249,115,22,0.55)',
+            textShadow: '0 0 50px rgba(249,115,22,0.65), 0 0 120px rgba(249,115,22,0.2)',
             display: 'inline-block',
           }}
         >
           Innovation
         </span>
-      </h1>
+      </motion.h1>
 
-      {/* Professional Subtitle */}
-      <p style={{
-        color: '#6a5a4a',
-        fontFamily: 'JetBrains Mono, monospace',
-        fontSize: '11px',
-        letterSpacing: '0.2em',
-        textTransform: 'uppercase',
-        maxWidth: 600,
-        margin: '0 auto 48px'
-      }}>
+      {/* ── Decorative divider ── */}
+      <motion.div
+        initial={{ scaleX: 0, opacity: 0 }}
+        animate={{ scaleX: 1, opacity: 1 }}
+        transition={{ duration: 0.7, delay: 0.3 }}
+        style={{
+          width: 200,
+          height: 1,
+          margin: '0 auto 24px',
+          background: 'linear-gradient(90deg, transparent, rgba(249,115,22,0.7), transparent)',
+          position: 'relative',
+        }}
+      >
+        <div style={{
+          position: 'absolute', top: '50%', left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 6, height: 6, borderRadius: '50%',
+          background: '#f97316',
+          boxShadow: '0 0 14px #f97316',
+        }} />
+      </motion.div>
+
+      {/* ── Subtitle ── */}
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6, delay: 0.32 }}
+        style={{
+          color: 'rgba(255,255,255,0.45)',
+          fontFamily: 'JetBrains Mono, monospace',
+          fontSize: '11.5px',
+          letterSpacing: '0.18em',
+          textTransform: 'uppercase' as const,
+          maxWidth: 560,
+          margin: '0 auto 56px',
+          lineHeight: 1.9,
+        }}
+      >
         A collective of engineers, designers, and visionaries building the community of tomorrow.
-      </p>
+      </motion.p>
 
-      {/* Stats row - Centered */}
-      <div
+      {/* ── Stats row ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.42 }}
         style={{
           display: 'flex',
           justifyContent: 'center',
-          gap: 'clamp(2rem, 8vw, 6rem)',
-          paddingBottom: 8,
+          gap: 'clamp(1.5rem, 6vw, 4rem)',
           flexWrap: 'wrap',
         }}
       >
@@ -549,15 +686,39 @@ const Hero: React.FC = () => {
           { value: String(totalMembers), label: 'Core Members' },
           { value: String(SECTIONS.length), label: 'Specialized Teams' },
           { value: '∞', label: 'Collaboration' },
-        ].map(stat => (
-          <div key={stat.label} style={{ textAlign: 'center' }}>
+        ].map((stat, i) => (
+          <motion.div
+            key={stat.label}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.48 + i * 0.08 }}
+            style={{
+              textAlign: 'center',
+              padding: '20px 32px',
+              borderRadius: 16,
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(249,115,22,0.15)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+              minWidth: 130,
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Top glow accent line */}
+            <div style={{
+              position: 'absolute', top: 0, left: '20%', right: '20%',
+              height: 1,
+              background: 'linear-gradient(90deg, transparent, rgba(249,115,22,0.5), transparent)',
+            }} />
             <div
               style={{
-                fontFamily: 'Inter, sans-serif',
-                fontWeight: 900,
-                fontSize: '2.5rem',
-                color: '#f0ece6',
+                fontFamily: 'Space Grotesk, Inter, sans-serif',
+                fontWeight: 800,
+                fontSize: '2.8rem',
+                color: '#f97316',
                 lineHeight: 1,
+                textShadow: '0 0 30px rgba(249,115,22,0.4)',
               }}
             >
               {stat.value}
@@ -565,18 +726,18 @@ const Hero: React.FC = () => {
             <div
               style={{
                 fontFamily: 'JetBrains Mono, monospace',
-                fontSize: '0.6rem',
-                color: 'rgba(255,255,255,0.28)',
-                letterSpacing: '0.14em',
-                textTransform: 'uppercase',
-                marginTop: 6,
+                fontSize: '0.58rem',
+                color: 'rgba(255,255,255,0.38)',
+                letterSpacing: '0.16em',
+                textTransform: 'uppercase' as const,
+                marginTop: 8,
               }}
             >
               {stat.label}
             </div>
-          </div>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
     </motion.div>
   );
 };
@@ -609,13 +770,13 @@ const PageBackground: React.FC = () => {
       <div style={{
         position: 'absolute', inset: 0, zIndex: 0,
         backgroundImage: `url('/assets/team-bg.png')`,
-        backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.5
+        backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.7
       }} />
 
       {/* Dark gradient overlay to blend */}
       <div style={{
         position: 'absolute', inset: 0, zIndex: 0,
-        background: 'linear-gradient(180deg,rgba(11,15,25,0.92) 0%,rgba(11,15,25,0.78) 45%,rgba(11,15,25,0.95) 100%)',
+        background: 'linear-gradient(180deg,rgba(11,15,25,0.85) 0%,rgba(11,15,25,0.65) 45%,rgba(11,15,25,0.88) 100%)',
       }} />
 
       {/* Floating Embers - The "Fire Effects" */}
