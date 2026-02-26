@@ -106,3 +106,17 @@ export interface ClubMember {
   role: string;          // e.g. "Member", "Core Team", "Alumni"
   joinedAt: string;
 }
+
+export type CertType = 'Participation' | 'Completion' | 'Winner' | 'Merit';
+export type CertificateTemplate = 'Nexus' | 'Signature' | 'Minimal' | 'Academic' | 'Cyber' | 'Creative' | 'Vintage' | 'Corporate' | 'Royal' | 'Space' | 'Eco' | 'Geometric';
+
+export interface CertificateData {
+  recipientName: string;
+  eventName: string;
+  certType: CertType;
+  date: string;
+  issuedBy: string;
+  description: string;
+  templateId?: CertificateTemplate;
+  themeColor?: string; // Hex color for custom design variations
+}

@@ -21,7 +21,10 @@ const Admin: React.FC = () => {
   const [newEvent, setNewEvent] = useState({ title: '', date: '', type: 'Upcoming', description: '' });
 
   // New Project State
-  const [newProject, setNewProject] = useState({ title: '', author: '', tech: '', github: '' });
+  const [newProject, setNewProject] = useState({
+    title: '', author: '', tech: '', github: '',
+    description: '', category: 'Web' as any
+  });
 
   // New Admin State
   const [newAdmin, setNewAdmin] = useState({ name: '', email: '', role: 'Moderator' });
@@ -95,108 +98,163 @@ const Admin: React.FC = () => {
   const buildHtmlEmail = (name: string, message: string, type: string, subject: string): string => {
     const cfg = typeConfig[type] || typeConfig['Custom'];
     const formattedMessage = message.replace(/\n/g, '<br>');
-    const logoUrl = `${window.location.origin}/CV%20LOGO.webp`;
+    // Use GitHub raw URL for the logo to ensure it loads in email clients
+    const logoUrl = window.location.origin.includes('localhost')
+      ? 'https://raw.githubusercontent.com/Aryanbuha89/Code_Vimarsh_Frontend/main/public/CV%20LOGO.webp'
+      : `${window.location.origin}/CV%20LOGO.webp`;
     return `<!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
-  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>${subject}</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
+<title>${subject}</title>
+<style>
+  :root { color-scheme: light dark; supported-color-schemes: light dark; }
+  
+  /* Mobile Specific Styles */
+  @media only screen and (max-width: 600px) {
+    .main-table { width: 100% !important; border-radius: 0 !important; }
+    .content-padding { padding: 25px 20px !important; }
+    .hero-text { font-size: 24px !important; }
+    .header-stack { display: block !important; width: 100% !important; text-align: center !important; }
+    .header-logo { padding-right: 0 !important; margin-bottom: 15px !important; display: inline-block !important; }
+    .header-badge { text-align: center !important; margin-top: 15px !important; }
+    .footer-stack { display: block !important; text-align: center !important; }
+    .footer-left { margin-bottom: 20px !important; }
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .body-bg { background-color: #0c0c0e !important; }
+    .content-bg { background-color: #1a1a1e !important; }
+    .footer-bg { background-color: #0c0c0e !important; }
+    .text-primary { color: #ffffff !important; }
+    .text-muted { color: #a1a1aa !important; }
+    .border-subtle { border-color: #27272a !important; }
+  }
+
+  /* Gmail Dark Mode Override */
+  [data-ogsc] .body-bg { background-color: #0c0c0e !important; }
+  [data-ogsc] .content-bg { background-color: #1a1a1e !important; }
+  [data-ogsc] .footer-bg { background-color: #0c0c0e !important; }
+  [data-ogsc] .text-primary { color: #ffffff !important; }
+  [data-ogsc] .text-muted { color: #a1a1aa !important; }
+  [data-ogsc] .border-subtle { border-color: #27272a !important; }
+
+  body, table, td, p, a { -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%; }
+</style>
 </head>
-<body style="margin:0;padding:0;background-color:#f0f2f5;font-family:Arial,Helvetica,sans-serif;" bgcolor="#f0f2f5">
-<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f0f2f5" style="background-color:#f0f2f5;">
-<tr><td align="center" style="padding:32px 16px;">
-<table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
-  <!-- TOP ACCENT BAR -->
-  <tr><td height="5" bgcolor="${cfg.accent}" style="background-color:${cfg.accent};font-size:0;line-height:0;height:5px;">&nbsp;</td></tr>
-  <!-- HEADER -->
-  <tr><td bgcolor="#111111" style="background-color:#111111;padding:26px 36px;" valign="middle">
-    <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-      <td valign="middle">
-        <table cellpadding="0" cellspacing="0" border="0"><tr>
-          <td valign="middle" style="padding-right:12px;">
-            <img src="${logoUrl}" width="44" height="44" alt="CV" style="display:block;border-radius:8px;border:0;" />
-          </td>
-          <td valign="middle">
-            <p style="margin:0;font-size:19px;font-weight:800;color:#ffffff;font-family:Arial,Helvetica,sans-serif;">Code Vimarsh</p>
-            <p style="margin:2px 0 0;font-size:10px;color:#888888;font-family:Arial,Helvetica,sans-serif;letter-spacing:1.5px;text-transform:uppercase;">CSE Coding Club &middot; MSU Baroda</p>
-          </td>
-        </tr></table>
-      </td>
-      <td align="right" valign="middle">
-        <table cellpadding="0" cellspacing="0" border="0"><tr>
-          <td bgcolor="${cfg.accent}" style="background-color:${cfg.accent};border-radius:20px;padding:7px 16px;">
-            <p style="margin:0;font-size:10px;font-weight:800;color:#000000;letter-spacing:1.5px;text-transform:uppercase;font-family:Arial,Helvetica,sans-serif;">${cfg.badge}</p>
-          </td>
-        </tr></table>
-      </td>
-    </tr></table>
-  </td></tr>
-  <!-- HERO -->
-  <tr><td bgcolor="#1a1a1a" style="background-color:#1a1a1a;padding:36px 36px 20px;">
-    <p style="margin:0 0 8px;font-size:27px;font-weight:800;color:#ffffff;line-height:1.25;font-family:Arial,Helvetica,sans-serif;">${subject}</p>
-    <p style="margin:0;font-size:13px;color:${cfg.accent};font-family:Arial,Helvetica,sans-serif;">${cfg.tagline}</p>
-  </td></tr>
-  <!-- ACCENT DIVIDER -->
-  <tr><td bgcolor="#1a1a1a" style="background-color:#1a1a1a;padding:0 36px 4px;">
-    <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-      <td height="2" bgcolor="${cfg.accent}" style="background-color:${cfg.accent};font-size:0;line-height:0;height:2px;">&nbsp;</td>
-    </tr></table>
-  </td></tr>
-  <!-- BODY -->
-  <tr><td bgcolor="#1a1a1a" style="background-color:#1a1a1a;padding:28px 36px;">
-    <p style="margin:0 0 16px;font-size:15px;color:#cccccc;line-height:1.65;font-family:Arial,Helvetica,sans-serif;">Dear <strong style="color:#ffffff;">${name}</strong>,</p>
-    <p style="margin:0;font-size:15px;color:#bbbbbb;line-height:1.8;font-family:Arial,Helvetica,sans-serif;">${formattedMessage}</p>
-  </td></tr>
-  <!-- SIGNATURE -->
-  <tr><td bgcolor="#1a1a1a" style="background-color:#1a1a1a;padding:0 36px 32px;">
-    <table cellpadding="0" cellspacing="0" border="0"><tr>
-      <td width="3" bgcolor="${cfg.accent}" style="background-color:${cfg.accent};border-radius:2px;width:3px;">&nbsp;</td>
-      <td style="padding-left:14px;">
-        <p style="margin:0;font-size:14px;font-weight:700;color:#ffffff;font-family:Arial,Helvetica,sans-serif;">The Code Vimarsh Team</p>
-        <p style="margin:3px 0 0;font-size:12px;color:#888888;font-family:Arial,Helvetica,sans-serif;">CSE Coding Club, MSU Baroda</p>
-      </td>
-    </tr></table>
-  </td></tr>
-  <!-- SOCIAL -->
-  <tr><td bgcolor="#222222" style="background-color:#222222;padding:22px 36px;">
-    <p style="margin:0 0 14px;font-size:10px;color:#666666;letter-spacing:2px;text-transform:uppercase;font-family:Arial,Helvetica,sans-serif;">Connect With Us</p>
-    <table cellpadding="0" cellspacing="0" border="0"><tr>
-      <td style="padding-right:10px;"><table cellpadding="0" cellspacing="0" border="0"><tr>
-        <td bgcolor="#0077B5" style="background-color:#0077B5;border-radius:8px;padding:9px 15px;">
-          <a href="https://linkedin.com/company/code-vimarsh" style="text-decoration:none;color:#ffffff;font-size:11px;font-weight:700;font-family:Arial,Helvetica,sans-serif;white-space:nowrap;">in LinkedIn</a>
+<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:Arial,Helvetica,sans-serif;" bgcolor="#f1f5f9">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f1f5f9" class="body-bg" style="background-color:#f1f5f9;">
+<tr><td align="center" style="padding:40px 0;">
+<table width="600" cellpadding="0" cellspacing="0" border="0" class="content-bg main-table" style="max-width:600px;width:100%;border-collapse:separate;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;background-color:#ffffff;box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);">
+<!-- TOP ACCENT BAR -->
+<tr><td height="4" bgcolor="${cfg.accent}" style="background-color:${cfg.accent};font-size:0;line-height:0;height:4px;">&nbsp;</td></tr>
+<!-- HEADER -->
+<tr><td bgcolor="#ffffff" class="content-bg content-padding" style="background-color:#ffffff;padding:30px 40px;" valign="middle">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+    <td valign="middle" class="header-stack">
+      <table cellpadding="0" cellspacing="0" border="0" align="left" class="header-stack"><tr>
+        <td valign="middle" style="padding-right:12px;" class="header-logo">
+          <img src="${logoUrl}" width="48" height="48" alt="CV" style="display:block;border-radius:10px;border:0;margin:0 auto;" />
         </td>
-      </tr></table></td>
-      <td style="padding-right:10px;"><table cellpadding="0" cellspacing="0" border="0"><tr>
-        <td bgcolor="#24292e" style="background-color:#24292e;border-radius:8px;padding:9px 15px;border:1px solid #444444;">
-          <a href="https://github.com/code-vimarsh" style="text-decoration:none;color:#ffffff;font-size:11px;font-weight:700;font-family:Arial,Helvetica,sans-serif;white-space:nowrap;">GitHub</a>
+        <td valign="middle">
+          <p class="text-primary" style="margin:0;font-size:20px;font-weight:800;color:#0f172a;font-family:Arial,Helvetica,sans-serif;">Code Vimarsh</p>
+          <p class="text-muted" style="margin:2px 0 0;font-size:10px;color:#64748b;font-family:Arial,Helvetica,sans-serif;letter-spacing:1.5px;text-transform:uppercase;">CSE Coding Club &middot; MSU Baroda</p>
         </td>
-      </tr></table></td>
-      <td style="padding-right:10px;"><table cellpadding="0" cellspacing="0" border="0"><tr>
-        <td bgcolor="#C13584" style="background-color:#C13584;border-radius:8px;padding:9px 15px;">
-          <a href="https://instagram.com/codevimarsh" style="text-decoration:none;color:#ffffff;font-size:11px;font-weight:700;font-family:Arial,Helvetica,sans-serif;white-space:nowrap;">Instagram</a>
+      </tr></table>
+    </td>
+    <td align="right" valign="middle" class="header-stack header-badge" style="padding-top:10px;">
+      <table cellpadding="0" cellspacing="0" border="0" align="right" class="header-stack"><tr>
+        <td bgcolor="${cfg.accent}" style="background-color:${cfg.accent};border-radius:20px;padding:7px 16px;">
+          <p style="margin:0;font-size:10px;font-weight:800;color:#0f172a;letter-spacing:1.5px;text-transform:uppercase;font-family:Arial,Helvetica,sans-serif;">${cfg.badge}</p>
         </td>
-      </tr></table></td>
-      <td><table cellpadding="0" cellspacing="0" border="0"><tr>
-        <td bgcolor="${cfg.accent}" style="background-color:${cfg.accent};border-radius:8px;padding:9px 15px;">
-          <a href="https://codevimarsh.com" style="text-decoration:none;color:#000000;font-size:11px;font-weight:700;font-family:Arial,Helvetica,sans-serif;white-space:nowrap;">Website</a>
+      </tr></table>
+    </td>
+  </tr></table>
+</td></tr>
+<!-- HERO -->
+<tr><td bgcolor="#ffffff" class="content-bg border-subtle content-padding" style="background-color:#ffffff;padding:30px 40px 20px;border-top:1px solid #f1f5f9;">
+  <p class="text-primary hero-text" style="margin:0 0 10px;font-size:28px;font-weight:800;color:#0f172a;line-height:1.2;font-family:Arial,Helvetica,sans-serif;">${subject}</p>
+  <p style="margin:0;font-size:14px;color:${cfg.accent};font-family:Arial,Helvetica,sans-serif;font-weight:600;">${cfg.tagline}</p>
+</td></tr>
+<!-- BODY -->
+<tr><td bgcolor="#ffffff" class="content-bg content-padding" style="background-color:#ffffff;padding:10px 40px 30px;">
+  <p class="text-primary" style="margin:0 0 20px;font-size:16px;color:#334155;line-height:1.6;font-family:Arial,Helvetica,sans-serif;">Dear <strong class="text-primary" style="color:#0f172a;">${name}</strong>,</p>
+  <p class="text-muted" style="margin:0;font-size:16px;color:#475569;line-height:1.8;font-family:Arial,Helvetica,sans-serif;">${formattedMessage}</p>
+</td></tr>
+<!-- SIGNATURE -->
+<tr><td bgcolor="#ffffff" class="content-bg content-padding" style="background-color:#ffffff;padding:0 40px 40px;">
+  <table cellpadding="0" cellspacing="0" border="0"><tr>
+    <td width="3" bgcolor="${cfg.accent}" style="background-color:${cfg.accent};border-radius:2px;width:3px;">&nbsp;</td>
+    <td style="padding-left:14px;">
+      <p class="text-primary" style="margin:0;font-size:14px;font-weight:700;color:#1e293b;font-family:Arial,Helvetica,sans-serif;">The Code Vimarsh Team</p>
+      <p class="text-muted" style="margin:3px 0 0;font-size:12px;color:#64748b;font-family:Arial,Helvetica,sans-serif;">CSE Coding Club, MSU Baroda</p>
+    </td>
+  </tr></table>
+</td></tr>
+<!-- SOCIAL -->
+<tr><td bgcolor="#f8fafc" class="footer-bg border-subtle content-padding" style="background-color:#f8fafc;padding:24px 40px;border-top:1px solid #f1f5f9;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+    <td class="footer-stack footer-left">
+      <table cellpadding="0" cellspacing="0" border="0" align="left" class="footer-stack"><tr>
+        <td style="padding-right:12px;">
+          <a href="https://www.instagram.com/code_vimarsh/" style="text-decoration:none;"><img src="https://img.icons8.com/ios-glyphs/30/1e293b/instagram-new.png" class="text-primary" width="20" height="20" alt="IG" style="display:block;border:0;margin:0 auto;" /></a>
         </td>
-      </tr></table></td>
-    </tr></table>
-  </td></tr>
-  <!-- FOOTER -->
-  <tr><td bgcolor="#0d0d0d" style="background-color:#0d0d0d;padding:20px 36px;border-top:2px solid #2a2a2a;">
-    <p style="margin:0 0 4px;font-size:12px;color:#555555;font-family:Arial,Helvetica,sans-serif;">${CLUB_EMAIL}</p>
-    <p style="margin:0 0 12px;font-size:11px;color:#444444;font-family:Arial,Helvetica,sans-serif;">Code Vimarsh &middot; CSE Dept, MSU Baroda &middot; Gujarat, India</p>
-    <p style="margin:0;font-size:10px;color:#333333;font-family:Arial,Helvetica,sans-serif;line-height:1.5;">You received this email because you are a registered member or participant of Code Vimarsh.</p>
-  </td></tr>
-  <!-- BOTTOM ACCENT -->
-  <tr><td height="4" bgcolor="${cfg.accent}" style="background-color:${cfg.accent};font-size:0;line-height:0;height:4px;">&nbsp;</td></tr>
+        <td style="padding-right:12px;">
+          <a href="https://www.linkedin.com/company/code-vimarsh/" style="text-decoration:none;"><img src="https://img.icons8.com/ios-glyphs/30/1e293b/linkedin.png" class="text-primary" width="20" height="20" alt="IN" style="display:block;border:0;margin:0 auto;" /></a>
+        </td>
+        <td style="padding-right:12px;">
+          <a href="https://github.com/Aryanbuha89/Code_Vimarsh_Frontend" style="text-decoration:none;"><img src="https://img.icons8.com/ios-glyphs/30/1e293b/github.png" class="text-primary" width="20" height="20" alt="GH" style="display:block;border:0;margin:0 auto;" /></a>
+        </td>
+        <td>
+          <a href="https://codevimarsh.vercel.app/" style="text-decoration:none;"><img src="https://img.icons8.com/ios-glyphs/30/1e293b/globe.png" class="text-primary" width="20" height="20" alt="WEB" style="display:block;border:0;margin:0 auto;" /></a>
+        </td>
+      </tr></table>
+    </td>
+    <td align="right" class="footer-stack">
+      <p class="text-muted" style="margin:0;font-size:11px;color:#94a3b8;font-family:Arial,Helvetica,sans-serif;">&copy; 2024 Code Vimarsh</p>
+    </td>
+  </tr></table>
+</td></tr>
+<!-- DISCLAMER -->
+<tr><td bgcolor="#f8fafc" class="footer-bg content-padding" style="background-color:#f8fafc;padding:0 40px 24px;text-align:center;">
+    <p class="text-muted" style="margin:0 0 14px;font-size:11px;color:#94a3b8;font-family:Arial,Helvetica,sans-serif;">Code Vimarsh &middot; CSE Dept, MSU Baroda &middot; Gujarat, India</p>
+    <p class="text-muted" style="margin:0;font-size:10px;color:#cbd5e1;font-family:Arial,Helvetica,sans-serif;line-height:1.6;">You received this email because you are a registered member or participant of Code Vimarsh.</p>
+</td></tr>
+<!-- BOTTOM ACCENT -->
+<tr><td height="4" bgcolor="${cfg.accent}" style="background-color:${cfg.accent};font-size:0;line-height:0;height:4px;">&nbsp;</td></tr>
 </table>
 </td></tr>
 </table>
 </body>
 </html>`;
+  };
+
+  const handleLoadSample = () => {
+    setEmailForm({
+      ...emailForm,
+      subject: 'Important Community Update & Upcoming Hackathon 📢',
+      admin_message: `Hello everyone!
+
+We have some exciting news to share with the Code Vimarsh community. Our club is growing faster than ever, and we are preparing for our flagship event: The Nexus Hackathon 2024.
+
+Upcoming Highlights:
+• New Projects: Check out the revamped Projects section on our website.
+• Resource Hub: 20+ new curated roadmaps added.
+• Workshop Series: Advanced development sessions starting next week.
+
+Action Required:
+If you haven't joined our official community groups yet, please do so via the website links to stay updated in real-time.
+
+We look forward to seeing your innovative contributions!
+
+Best Regards,
+The Code Vimarsh Core Team`,
+      email_type: 'Announcement'
+    });
   };
 
   // ── Copy rich HTML to clipboard ─────────────────────────────────────────────────
@@ -297,10 +355,12 @@ const Admin: React.FC = () => {
       id: Date.now().toString(),
       title: newProject.title,
       author: newProject.author,
+      description: newProject.description,
+      category: newProject.category,
       tech: newProject.tech.split(',').map(t => t.trim()),
       links: { github: newProject.github }
     });
-    setNewProject({ title: '', author: '', tech: '', github: '' });
+    setNewProject({ title: '', author: '', tech: '', github: '', description: '', category: 'Web' });
   };
 
   const handleAddAdmin = (e: React.FormEvent) => {
@@ -531,8 +591,22 @@ const Admin: React.FC = () => {
                     <input required value={newProject.author} onChange={e => setNewProject({ ...newProject, author: e.target.value })} className="w-full bg-bgDark border border-surfaceLight rounded-md px-3 py-2 text-sm focus:border-primary focus:outline-none" />
                   </div>
                   <div>
+                    <label className="text-xs text-textMuted mb-1 block">Category</label>
+                    <select value={newProject.category} onChange={e => setNewProject({ ...newProject, category: e.target.value as any })} className="w-full bg-bgDark border border-surfaceLight rounded-md px-3 py-2 text-sm focus:border-primary focus:outline-none text-white">
+                      <option>Web</option>
+                      <option>Mobile</option>
+                      <option>AI / ML</option>
+                      <option>Systems</option>
+                      <option>Open Source</option>
+                    </select>
+                  </div>
+                  <div>
                     <label className="text-xs text-textMuted mb-1 block">Tech Stack (comma separated)</label>
                     <input required value={newProject.tech} onChange={e => setNewProject({ ...newProject, tech: e.target.value })} className="w-full bg-bgDark border border-surfaceLight rounded-md px-3 py-2 text-sm focus:border-primary focus:outline-none" placeholder="React, Node, MongoDB" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-textMuted mb-1 block">Description</label>
+                    <textarea rows={2} required value={newProject.description} onChange={e => setNewProject({ ...newProject, description: e.target.value })} className="w-full bg-bgDark border border-surfaceLight rounded-md px-3 py-2 text-sm focus:border-primary focus:outline-none resize-none" placeholder="Short pitch..." />
                   </div>
                   <div>
                     <label className="text-xs text-textMuted mb-1 block">GitHub Link</label>
@@ -979,8 +1053,16 @@ const Admin: React.FC = () => {
 
                   {/* Message */}
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest">Message Body *</label>
-                    <textarea rows={5} value={emailForm.admin_message}
+                    <div className="flex justify-between items-end">
+                      <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest pl-1">Message Body *</label>
+                      <button
+                        onClick={handleLoadSample}
+                        className="text-[10px] font-bold text-primary hover:text-secondary uppercase tracking-widest mb-1 transition-colors flex items-center gap-1"
+                      >
+                        <Megaphone size={10} /> Load Professional Sample
+                      </button>
+                    </div>
+                    <textarea rows={6} value={emailForm.admin_message}
                       onChange={e => setEmailForm({ ...emailForm, admin_message: e.target.value })}
                       className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-3 text-sm focus:border-primary focus:outline-none transition-all resize-none"
                       placeholder="Write your message here. Club signature is appended automatically." />
