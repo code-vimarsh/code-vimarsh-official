@@ -8,7 +8,7 @@ import {
 import { EmbersBackground } from '../components/Achievements/GlowDots';
 
 /* ── Domain meta ─────────────────────────────────────────────── */
-type Domain = 'Software Dev' | 'Machine Learning' | 'Backend / DevOps' | 'Cybersecurity' | 'UI/UX Design' | 'Data Engineering';
+type Domain = 'Software Dev' | 'Machine Learning' | 'Backend / DevOps' | 'Cybersecurity' | 'UI/UX Design' | 'Data Engineering' | 'Frontend / Web';
 
 const DM: Record<Domain, { icon: React.ReactNode; color: string; bg: string }> = {
   'Software Dev': { icon: <Code2 size={11} />, color: '#ff6a00', bg: 'rgba(255,106,0,0.12)' },
@@ -17,6 +17,7 @@ const DM: Record<Domain, { icon: React.ReactNode; color: string; bg: string }> =
   'Cybersecurity': { icon: <Shield size={11} />, color: '#ef4444', bg: 'rgba(239,68,68,0.12)' },
   'UI/UX Design': { icon: <Palette size={11} />, color: '#ec4899', bg: 'rgba(236,72,153,0.12)' },
   'Data Engineering': { icon: <Database size={11} />, color: '#3b82f6', bg: 'rgba(59,130,246,0.12)' },
+  'Frontend / Web': { icon: <Globe size={11} />, color: '#06b6d4', bg: 'rgba(6,182,212,0.12)' },
 };
 
 interface Alum {
@@ -46,7 +47,7 @@ const ALUMNI: Alum[] = [
   },
   {
     id: '2', name: 'Sneha Rao', initials: 'SR',
-    role: 'Frontend Engineer', company: 'Vercel', batch: '2022', location: 'Remote, India', domain: 'Software Dev',
+    role: 'Frontend Engineer', company: 'Vercel', batch: '2022', location: 'Remote, India', domain: 'Frontend / Web',
     bio: 'Obsessed with web performance, DX and building the future of the web at Vercel.',
     advice: "Ship early, iterate fast. Your first project will be bad — that's the point.",
     tech: ['React', 'Next.js', 'TypeScript', 'Rust/WASM', 'Turbo'],
@@ -259,10 +260,10 @@ const AlumniCard: React.FC<{ alum: Alum; side: 'left' | 'right'; onOpen: () => v
       viewport={{ once: true, margin: '-60px' }}
       transition={{ duration: 0.55, ease: 'easeOut' }}
       /* Zigzag: left cards push left margin, right cards push right margin */
-      className={`flex cursor-pointer rounded-2xl overflow-hidden group transition-all duration-300 ${isLeft ? 'mr-auto' : 'ml-auto'
+      className={`flex rounded-2xl overflow-hidden group transition-all duration-300 w-full md:w-[60%] ${isLeft ? 'mr-auto' : 'ml-auto'
         }`}
       style={{
-        width: '68%',
+        zIndex: 10,
         minHeight: '140px',
         background: 'rgba(11,15,25,0.85)',
         border: `1px solid rgba(255,255,255,0.07)`,
@@ -283,7 +284,14 @@ const AlumniCard: React.FC<{ alum: Alum; side: 'left' | 'right'; onOpen: () => v
         }}
       >
         {alum.photo ? (
-          <img src={alum.photo} alt={alum.name} className="w-full h-full object-cover" />
+          <div className="w-full h-full overflow-hidden flex items-start justify-center">
+            <img
+              src={alum.photo}
+              alt={alum.name}
+              className="w-full h-full object-cover object-top scale-100 group-hover:scale-110 transition-transform duration-500"
+              style={{ minHeight: '140px' }}
+            />
+          </div>
         ) : (
           <div
             className="w-[68px] h-[68px] rounded-2xl flex items-center justify-center text-xl font-black select-none"
@@ -360,7 +368,7 @@ const AlumniCard: React.FC<{ alum: Alum; side: 'left' | 'right'; onOpen: () => v
           </div>
           <button
             onClick={onOpen}
-            className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-all"
+            className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-all cursor-pointer"
             style={{ background: dm.bg, color: dm.color, border: `1px solid ${dm.color}30` }}
           >
             View Roadmap <ArrowRight size={11} />
@@ -457,7 +465,7 @@ const Alumni: React.FC = () => {
           }}
         >
           {/* Vertical center line */}
-          <div style={{
+          <div className="hidden md:block" style={{
             position: 'absolute',
             top: 0, bottom: 0,
             left: '50%',
@@ -465,6 +473,7 @@ const Alumni: React.FC = () => {
             background: 'linear-gradient(180deg, transparent, rgba(249,115,22,0.25) 20%, rgba(249,115,22,0.25) 80%, transparent)',
             transform: 'translateX(-50%)',
             pointerEvents: 'none',
+            zIndex: 0,
           }} />
 
           {ALUMNI.map((alum, i) => {
@@ -472,7 +481,7 @@ const Alumni: React.FC = () => {
             return (
               <div key={alum.id} className="relative">
                 {/* Center dot */}
-                <div style={{
+                <div className="hidden md:block" style={{
                   position: 'absolute',
                   top: '50%',
                   left: '50%',
@@ -482,7 +491,7 @@ const Alumni: React.FC = () => {
                   background: '#f97316',
                   border: '2px solid #0b0f19',
                   boxShadow: '0 0 12px rgba(249,115,22,0.7)',
-                  zIndex: 20,
+                  zIndex: 0,
                 }} />
                 <AlumniCard alum={alum} side={side} onOpen={() => setModalAlum(alum)} />
               </div>

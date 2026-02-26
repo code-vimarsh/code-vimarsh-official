@@ -15,8 +15,11 @@ export interface EventType {
 export interface ProjectType {
   id: string;
   title: string;
+  description: string;
+  category: 'Web' | 'Mobile' | 'AI / ML' | 'Systems' | 'Open Source';
   tech: string[];
   author: string;
+  image?: string;
   links: {
     github?: string;
     live?: string;

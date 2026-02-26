@@ -19,9 +19,60 @@ export const MOCK_EVENTS: EventType[] = [
 ];
 
 export const MOCK_PROJECTS: ProjectType[] = [
-  { id: '1', title: 'Vimarsh OS', tech: ['Rust', 'C', 'Assembly'], author: 'System Group', links: { github: '#' } },
-  { id: '2', title: 'Campus Connect App', tech: ['React Native', 'Node.js', 'PostgreSQL'], author: 'App Dev Team', links: { live: '#' } },
-  { id: '3', title: 'AI Study Assistant', tech: ['Python', 'TensorFlow', 'FastAPI'], author: 'AI/ML Cohort', links: { github: '#' } },
+  {
+    id: '1',
+    title: 'Nexus OS',
+    description: 'A microkernel-based operating system focused on real-time processing and extreme security.',
+    category: 'Systems',
+    tech: ['Rust', 'C', 'Assembly', 'QEMU'],
+    author: 'Code Vimarsh Core',
+    links: { github: '#' }
+  },
+  {
+    id: '2',
+    title: 'Vimarsh Connect',
+    description: 'A decentralized social platform for student developers to collaborate and share snippets.',
+    category: 'Web',
+    tech: ['Next.js', 'TypeScript', 'Prisma', 'PostgreSQL'],
+    author: 'Web Dev Team',
+    links: { live: '#', github: '#' }
+  },
+  {
+    id: '3',
+    title: 'Visionary AR',
+    description: 'An augmented reality assistant that identifies electronic components and displays data sheets in real-time.',
+    category: 'AI / ML',
+    tech: ['Python', 'PyTorch', 'OpenCV', 'Unity'],
+    author: 'AI Research Group',
+    links: { github: '#' }
+  },
+  {
+    id: '4',
+    title: 'SwiftPay Mobile',
+    description: 'A ultra-fast, secure mobile wallet with offline transaction capabilities using Bluetooth Low Energy.',
+    category: 'Mobile',
+    tech: ['Flutter', 'Dart', 'Firebase', 'BLE'],
+    author: 'Mobile Squad',
+    links: { live: '#' }
+  },
+  {
+    id: '5',
+    title: 'Aether Engine',
+    description: 'A high-performance 2D game engine written in C++ with a custom rendering pipeline.',
+    category: 'Open Source',
+    tech: ['C++', 'OpenGL', 'SDL2', 'Lua'],
+    author: 'Game Dev Collective',
+    links: { github: '#' }
+  },
+  {
+    id: '6',
+    title: 'Neural Scribe',
+    description: 'An AI-powered documentation generator that translates complex codebase logic into human-readable wiki pages.',
+    category: 'AI / ML',
+    tech: ['TypeScript', 'LLMs', 'Node.js', 'Vector DBs'],
+    author: 'NLP Team',
+    links: { github: '#' }
+  }
 ];
 
 export const MOCK_ACHIEVEMENTS: AchievementType[] = [

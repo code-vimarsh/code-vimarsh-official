@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import Layout from './components/Layout';
 import TerminalLoader from './components/TerminalLoader';
@@ -30,6 +30,11 @@ const App: React.FC = () => {
   const [appState, setAppState] = useState<'intro' | 'booting' | 'ready'>('intro');
   const location = useLocation();
 
+  // Scroll to top on route change
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   // Do not wrap the Admin panel in standard Layout to allow for a full-screen dashboard feel
   const isAdminRoute = location.pathname.startsWith('/admin');
 
@@ -47,19 +52,19 @@ const App: React.FC = () => {
 
       {/* Phase 3: The Main Application Ecosystem */}
       {appState === 'ready' && (
-        <motion.div 
-          key="app" 
-          initial={{ opacity: 0 }} 
-          animate={{ opacity: 1 }} 
+        <motion.div
+          key="app"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
           className="w-full h-full min-h-screen flex flex-col"
         >
           {isAdminRoute ? (
-             <React.Suspense fallback={<PageLoader />}>
-                <Routes>
-                  <Route path="/admin" element={<Admin />} />
-                </Routes>
-             </React.Suspense>
+            <React.Suspense fallback={<PageLoader />}>
+              <Routes>
+                <Route path="/admin" element={<Admin />} />
+              </Routes>
+            </React.Suspense>
           ) : (
             <Layout>
               <React.Suspense fallback={<PageLoader />}>

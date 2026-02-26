@@ -264,14 +264,14 @@ const MemberCard: React.FC<{ member: TeamMember; index: number }> = ({ member, i
         cursor: 'default',
         position: 'relative',
         background: 'linear-gradient(160deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)',
-        border: hovered ? '1px solid rgba(249,115,22,0.4)' : '1px solid rgba(255,255,255,0.09)',
+        border: hovered ? '1.5px solid rgba(249,115,22, 0.9)' : '1px solid rgba(249,115,22, 0.45)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
         boxShadow: hovered
-          ? '0 20px 50px -12px rgba(249,115,22,0.25), 0 8px 24px -8px rgba(0,0,0,0.6)'
-          : '0 8px 32px -12px rgba(0,0,0,0.5)',
-        transform: hovered ? 'translateY(-6px)' : 'translateY(0)',
-        transition: 'transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease',
+          ? '0 0 50px -5px rgba(249,115,22, 0.6), 0 15px 40px -10px rgba(0,0,0,0.8)'
+          : '0 0 25px -10px rgba(249,115,22, 0.35), 0 8px 30px -15px rgba(0,0,0,0.6)',
+        transform: hovered ? 'translateY(-10px) scale(1.02)' : 'translateY(0) scale(1)',
+        transition: 'all 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
         scrollSnapAlign: 'start',
       }}
     >
@@ -425,59 +425,6 @@ const TeamSection: React.FC<{ section: typeof SECTIONS[number]; sectionIndex: nu
         overflow: 'hidden',
       }}
     >
-      {/* Ghost section number */}
-      <div
-        style={{
-          position: 'absolute',
-          top: -20,
-          right: isEven ? 'auto' : undefined,
-          left: isEven ? undefined : 0,
-          fontFamily: 'Inter, sans-serif',
-          fontWeight: 900,
-          fontSize: 'clamp(7rem, 18vw, 14rem)',
-          lineHeight: 1,
-          color: 'transparent',
-          WebkitTextStroke: '1px rgba(249,115,22,0.08)',
-          userSelect: 'none',
-          letterSpacing: '0.01em',
-          pointerEvents: 'none',
-          zIndex: 0,
-          opacity: 1,
-        }}
-      >
-        {section.number}
-      </div>
-
-      {/* ── Section Divider (except for last) ── */}
-      {sectionIndex < SECTIONS.length - 1 && (
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            left: '5%',
-            right: '5%',
-            height: '2px',
-            background: 'linear-gradient(90deg, transparent 0%, rgba(249,115,22,0.65) 30%, rgba(249,115,22,0.85) 50%, rgba(249,115,22,0.65) 70%, transparent 100%)',
-            boxShadow: '0 0 12px rgba(249,115,22,0.4)',
-            zIndex: 1,
-          }}
-        >
-          {/* Center glow dot */}
-          <div
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: 4,
-              height: 4,
-              borderRadius: '50%',
-              background: '#f97316',
-              boxShadow: '0 0 10px #f97316',
-            }}
-          />
-        </div>
-      )}
 
       {/* Layout: left sidebar | right grid */}
       <div
@@ -556,9 +503,21 @@ const TeamSection: React.FC<{ section: typeof SECTIONS[number]; sectionIndex: nu
 const PageBackground: React.FC = () => {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
+  const [bgLoaded, setBgLoaded] = useState(false);
+
   useEffect(() => {
     const fn = (e: MouseEvent) => setMousePos({ x: e.clientX, y: e.clientY });
     window.addEventListener('mousemove', fn, { passive: true });
+
+    // Robust preloader
+    const img = new Image();
+    img.src = '/assets/team-bg.png';
+    if (img.complete) {
+      setBgLoaded(true);
+    } else {
+      img.onload = () => setBgLoaded(true);
+    }
+
     return () => window.removeEventListener('mousemove', fn);
   }, []);
 
@@ -576,7 +535,9 @@ const PageBackground: React.FC = () => {
       <div style={{
         position: 'absolute', inset: 0, zIndex: 0,
         backgroundImage: `url('/assets/team-bg.png')`,
-        backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.5
+        backgroundSize: 'cover', backgroundPosition: 'center',
+        opacity: bgLoaded ? 0.5 : 0,
+        transition: 'opacity 1.2s ease-in-out'
       }} />
 
       {/* Dark gradient overlay to blend */}
@@ -612,53 +573,93 @@ const Hero: React.FC = () => {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 18 }}
+      initial={{ opacity: 0, y: 32 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
-      style={{ padding: '90px 0 70px', position: 'relative' }}
+      transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1] }}
+      style={{ padding: '120px 0 80px', position: 'relative', textAlign: 'center' }}
     >
+      {/* Decorative label */}
       <motion.div
-        initial={{ scaleX: 0 }}
-        animate={{ scaleX: 1 }}
-        transition={{ duration: 0.8, delay: 0.1 }}
-        style={{ height: 1, width: 100, background: 'linear-gradient(90deg,#f97316,transparent)', marginBottom: 36, transformOrigin: 'left' }}
-      />
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.2 }}
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: 10,
+          padding: '8px 20px', borderRadius: 999,
+          background: 'rgba(249,115,22, 0.08)', border: '1px solid rgba(249,115,22, 0.2)',
+          color: '#f97316', fontSize: '0.7rem', fontFamily: 'JetBrains Mono, monospace',
+          letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 32,
+          boxShadow: '0 0 20px rgba(249,115,22, 0.1)'
+        }}
+      >
+        <Crown size={14} />
+        Core Community Architects
+      </motion.div>
 
-      <div style={{ fontFamily: 'JetBrains Mono,monospace', fontSize: '0.65rem', letterSpacing: '0.24em', color: 'rgba(255,255,255,0.25)', textTransform: 'uppercase', marginBottom: 18 }}>
-        Code Vimarsh — Core Team
-      </div>
+      <h1
+        style={{
+          fontFamily: 'Inter, sans-serif', fontWeight: 900,
+          fontSize: 'clamp(3rem, 10vw, 6.5rem)',
+          color: '#f0ece6', margin: '0 auto 28px',
+          letterSpacing: '-0.06em', lineHeight: 0.95, maxWidth: 1000,
+        }}
+      >
+        Engineering the{' '}
+        <span style={{
+          background: 'linear-gradient(135deg, #f97316 10%, #fb923c 90%)',
+          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+          filter: 'drop-shadow(0 0 30px rgba(249,115,22, 0.5))',
+        }}>
+          Future
+        </span>
+        {' '}Together
+      </h1>
 
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 32, flexWrap: 'wrap' }}>
-        <h1
-          style={{
-            fontFamily: 'Inter,sans-serif', fontWeight: 900,
-            fontSize: 'clamp(2.6rem,7vw,5rem)',
-            color: '#f0ece6', margin: 0,
-            letterSpacing: '-0.045em', lineHeight: 1.0, maxWidth: 560,
-          }}
-        >
-          Meet the{' '}
-          <span style={{ background: 'linear-gradient(135deg,#f97316 0%,#fb923c 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-            People
-          </span>
-          {' '}Behind It
-        </h1>
+      <p style={{
+        fontFamily: 'Inter, sans-serif', fontSize: '1.1rem',
+        color: 'rgba(255,255,255,0.4)', lineHeight: 1.6,
+        maxWidth: 600, margin: '0 auto 50px'
+      }}>
+        A diverse collective of designers, developers, and strategists dedicated to pushing the boundaries of digital innovation.
+      </p>
 
-        <div style={{ display: 'flex', gap: 36, paddingBottom: 6, flexWrap: 'wrap' }}>
-          {[
-            { v: String(total), l: 'Total Members' },
-            { v: String(SECTIONS.length), l: 'Teams' },
-            { v: '∞', l: 'Ambition' },
-          ].map(s => (
-            <div key={s.l}>
-              <div style={{ fontFamily: 'Inter,sans-serif', fontWeight: 900, fontSize: '1.9rem', color: '#f0ece6', letterSpacing: '-0.04em', lineHeight: 1 }}>{s.v}</div>
-              <div style={{ fontFamily: 'JetBrains Mono,monospace', fontSize: '0.58rem', color: 'rgba(255,255,255,0.26)', letterSpacing: '0.14em', textTransform: 'uppercase', marginTop: 5 }}>{s.l}</div>
+      {/* Stats row */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 48, flexWrap: 'wrap' }}>
+        {[
+          { v: String(total), l: 'Total Members' },
+          { v: String(SECTIONS.length), l: 'Specialized Teams' },
+          { v: '∞', l: 'Shared Ambition' },
+        ].map((s, i) => (
+          <motion.div
+            key={s.l}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 + i * 0.1 }}
+            style={{ textAlign: 'center' }}
+          >
+            <div style={{
+              fontFamily: 'Inter, sans-serif', fontWeight: 900, fontSize: '2.5rem',
+              color: '#f0ece6', letterSpacing: '-0.04em', lineHeight: 1,
+              marginBottom: 8
+            }}>
+              {s.v}
             </div>
-          ))}
-        </div>
+            <div style={{
+              fontFamily: 'JetBrains Mono, monospace', fontSize: '0.6rem',
+              color: '#f97316', letterSpacing: '0.15em',
+              textTransform: 'uppercase', opacity: 0.7
+            }}>
+              {s.l}
+            </div>
+          </motion.div>
+        ))}
       </div>
 
-      <div style={{ height: 1, background: 'linear-gradient(90deg,transparent,rgba(249,115,22,0.2),transparent)', marginTop: 50 }} />
+      <div style={{
+        height: 1, width: '100%', maxWidth: 800, margin: '60px auto 0',
+        background: 'linear-gradient(90deg, transparent, rgba(249,115,22,0.2), transparent)'
+      }} />
     </motion.div>
   );
 };
