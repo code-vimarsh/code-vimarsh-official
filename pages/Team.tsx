@@ -267,14 +267,15 @@ const MemberCard: React.FC<{ member: TeamMember; index: number }> = ({ member, i
         cursor: 'default',
         position: 'relative',
         background: 'linear-gradient(160deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%)',
-        border: hovered ? '1px solid rgba(249,115,22,0.45)' : '1px solid rgba(255,255,255,0.08)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
+        border: hovered ? '1px solid rgba(249,115,22,0.4)' : '1px solid rgba(255,255,255,0.09)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
         boxShadow: hovered
-          ? '0 16px 48px -10px rgba(249,115,22,0.22), 0 4px 16px -4px rgba(0,0,0,0.6)'
-          : '0 4px 24px -8px rgba(0,0,0,0.5)',
-        transform: hovered ? 'translateY(-5px)' : 'translateY(0)',
-        transition: 'transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease',
+          ? '0 20px 50px -12px rgba(249,115,22,0.25), 0 8px 24px -8px rgba(0,0,0,0.6)'
+          : '0 8px 32px -12px rgba(0,0,0,0.5)',
+        transform: hovered ? 'translateY(-6px)' : 'translateY(0)',
+        transition: 'transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease',
+        scrollSnapAlign: 'start',
       }}
     >
       {/* Image */}
@@ -318,27 +319,38 @@ const MemberCard: React.FC<{ member: TeamMember; index: number }> = ({ member, i
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.18 }}
-              style={{ position: 'absolute', top: 10, right: 10, display: 'flex', gap: 7 }}
+              transition={{ duration: 0.2 }}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                background: 'rgba(0,0,0,0.38)',
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'flex-end',
+                padding: 12,
+                gap: 8,
+              }}
             >
               {member.linkedin && (
                 <motion.a
                   href={member.linkedin}
                   target="_blank"
                   rel="noreferrer"
-                  initial={{ scale: 0.75, opacity: 0 }}
+                  onClick={e => e.stopPropagation()}
+                  initial={{ scale: 0.7, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.04 }}
-                  whileHover={{ scale: 1.14 }}
+                  transition={{ delay: 0.05 }}
+                  whileHover={{ scale: 1.12 }}
                   style={{
-                    width: 32, height: 32, borderRadius: '50%',
-                    background: 'rgba(10,102,194,0.9)',
+                    width: 34, height: 34,
+                    borderRadius: '50%',
+                    background: 'rgba(10,102,194,0.92)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    boxShadow: '0 2px 10px rgba(10,102,194,0.45)',
+                    boxShadow: '0 2px 12px rgba(10,102,194,0.4)',
                     textDecoration: 'none',
                   }}
                 >
-                  <Linkedin size={15} color="#fff" />
+                  <Linkedin size={16} color="#fff" />
                 </motion.a>
               )}
               {member.github && (
@@ -346,20 +358,22 @@ const MemberCard: React.FC<{ member: TeamMember; index: number }> = ({ member, i
                   href={member.github}
                   target="_blank"
                   rel="noreferrer"
-                  initial={{ scale: 0.75, opacity: 0 }}
+                  onClick={e => e.stopPropagation()}
+                  initial={{ scale: 0.7, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.09 }}
-                  whileHover={{ scale: 1.14 }}
+                  transition={{ delay: 0.1 }}
+                  whileHover={{ scale: 1.12 }}
                   style={{
-                    width: 32, height: 32, borderRadius: '50%',
-                    background: 'rgba(20,20,20,0.95)',
-                    border: '1px solid rgba(255,255,255,0.18)',
+                    width: 34, height: 34,
+                    borderRadius: '50%',
+                    background: 'rgba(22,22,22,0.95)',
+                    border: '1px solid rgba(255,255,255,0.2)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    boxShadow: '0 2px 10px rgba(0,0,0,0.5)',
+                    boxShadow: '0 2px 12px rgba(0,0,0,0.5)',
                     textDecoration: 'none',
                   }}
                 >
-                  <Github size={15} color="#fff" />
+                  <Github size={16} color="#fff" />
                 </motion.a>
               )}
             </motion.div>
@@ -417,22 +431,55 @@ const TeamSection: React.FC<{ section: typeof SECTIONS[number]; sectionIndex: nu
       <div
         style={{
           position: 'absolute',
-          top: -10,
-          right: 0,
-          fontFamily: 'Inter,sans-serif',
+          top: -20,
+          right: isEven ? 'auto' : undefined,
+          left: isEven ? undefined : 0,
+          fontFamily: 'Inter, sans-serif',
           fontWeight: 900,
-          fontSize: 'clamp(6rem,16vw,12rem)',
+          fontSize: 'clamp(7rem, 18vw, 14rem)',
           lineHeight: 1,
           color: 'transparent',
-          WebkitTextStroke: '1px rgba(249,115,22,0.07)',
+          WebkitTextStroke: '1px rgba(249,115,22,0.08)',
           userSelect: 'none',
-          letterSpacing: '-0.05em',
+          letterSpacing: '0.01em',
           pointerEvents: 'none',
           zIndex: 0,
+          opacity: 1,
         }}
       >
         {section.number}
       </div>
+
+      {/* ── Section Divider (except for last) ── */}
+      {sectionIndex < SECTIONS.length - 1 && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: '5%',
+            right: '5%',
+            height: '2px',
+            background: 'linear-gradient(90deg, transparent 0%, rgba(249,115,22,0.65) 30%, rgba(249,115,22,0.85) 50%, rgba(249,115,22,0.65) 70%, transparent 100%)',
+            boxShadow: '0 0 12px rgba(249,115,22,0.4)',
+            zIndex: 1,
+          }}
+        >
+          {/* Center glow dot */}
+          <div
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 4,
+              height: 4,
+              borderRadius: '50%',
+              background: '#f97316',
+              boxShadow: '0 0 10px #f97316',
+            }}
+          />
+        </div>
+      )}
 
       {/* Layout: left sidebar | right grid */}
       <div
@@ -506,7 +553,118 @@ const TeamSection: React.FC<{ section: typeof SECTIONS[number]; sectionIndex: nu
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// BACKGROUND
+// HERO
+// ─────────────────────────────────────────────────────────────────────────────
+const Hero: React.FC = () => {
+  const totalMembers = Object.values(teamData).flat().length;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.65, ease: [0.25, 0.46, 0.45, 0.94] }}
+      style={{
+        padding: '100px 0 80px',
+        position: 'relative',
+        textAlign: 'center',
+      }}
+    >
+      {/* Small label */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="inline-flex items-center gap-2 mb-6 px-4 py-1.5 rounded-full border text-[11px] font-bold uppercase tracking-[0.2em]"
+        style={{ background: 'rgba(249,115,22,0.08)', borderColor: 'rgba(249,115,22,0.3)', color: '#f97316' }}
+      >
+        <Crown size={12} /> The Core Team · Code Vimarsh
+      </motion.div>
+
+      {/* Main Headline */}
+      <h1
+        style={{
+          fontFamily: 'Cinzel Decorative, Cinzel, serif',
+          fontWeight: 900,
+          fontSize: 'clamp(2.5rem, 6vw, 4.8rem)',
+          color: '#f5f0e8',
+          margin: '0 auto 16px',
+          letterSpacing: '0.04em',
+          lineHeight: 1.1,
+          maxWidth: 900,
+        }}
+      >
+        Meet the Architects of{' '}
+        <span
+          style={{
+            color: '#f97316',
+            textShadow: '0 0 40px rgba(249,115,22,0.55)',
+            display: 'inline-block',
+          }}
+        >
+          Innovation
+        </span>
+      </h1>
+
+      {/* Professional Subtitle */}
+      <p style={{
+        color: '#6a5a4a',
+        fontFamily: 'JetBrains Mono, monospace',
+        fontSize: '11px',
+        letterSpacing: '0.2em',
+        textTransform: 'uppercase',
+        maxWidth: 600,
+        margin: '0 auto 48px'
+      }}>
+        A collective of engineers, designers, and visionaries building the community of tomorrow.
+      </p>
+
+      {/* Stats row - Centered */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          gap: 'clamp(2rem, 8vw, 6rem)',
+          paddingBottom: 8,
+          flexWrap: 'wrap',
+        }}
+      >
+        {[
+          { value: String(totalMembers), label: 'Core Members' },
+          { value: String(SECTIONS.length), label: 'Specialized Teams' },
+          { value: '∞', label: 'Collaboration' },
+        ].map(stat => (
+          <div key={stat.label} style={{ textAlign: 'center' }}>
+            <div
+              style={{
+                fontFamily: 'Inter, sans-serif',
+                fontWeight: 900,
+                fontSize: '2.5rem',
+                color: '#f0ece6',
+                lineHeight: 1,
+              }}
+            >
+              {stat.value}
+            </div>
+            <div
+              style={{
+                fontFamily: 'JetBrains Mono, monospace',
+                fontSize: '0.6rem',
+                color: 'rgba(255,255,255,0.28)',
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                marginTop: 6,
+              }}
+            >
+              {stat.label}
+            </div>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BACKGROUND — subtle, non-intrusive
 // ─────────────────────────────────────────────────────────────────────────────
 const PageBackground: React.FC = () => {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -518,12 +676,32 @@ const PageBackground: React.FC = () => {
   }, []);
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', background: '#0b0f19' }}>
-      {/* Orange glow top-left */}
-      <div style={{ position: 'absolute', top: 0, left: 0, width: '55%', height: '55%', background: 'radial-gradient(ellipse at 20% 20%, rgba(249,115,22,0.07) 0%, transparent 65%)' }} />
-      {/* Bottom-right */}
-      <div style={{ position: 'absolute', bottom: 0, right: 0, width: '40%', height: '40%', background: 'radial-gradient(ellipse at 80% 80%, rgba(251,146,60,0.05) 0%, transparent 65%)' }} />
-      {/* Mouse glow */}
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 0,
+        pointerEvents: 'none',
+        backgroundColor: '#0b0f19',
+      }}
+    >
+      {/* Generated professional tech background image */}
+      <div style={{
+        position: 'absolute', inset: 0, zIndex: 0,
+        backgroundImage: `url('/assets/team-bg.png')`,
+        backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.5
+      }} />
+
+      {/* Dark gradient overlay to blend */}
+      <div style={{
+        position: 'absolute', inset: 0, zIndex: 0,
+        background: 'linear-gradient(180deg,rgba(11,15,25,0.92) 0%,rgba(11,15,25,0.78) 45%,rgba(11,15,25,0.95) 100%)',
+      }} />
+
+      {/* Floating Embers - The "Fire Effects" */}
+      <EmbersBackground />
+
+      {/* Subtle mouse glow spotlight */}
       <motion.div
         animate={{ x: mousePos.x - 300, y: mousePos.y - 300 }}
         transition={{ type: 'spring', damping: 45, stiffness: 40 }}
