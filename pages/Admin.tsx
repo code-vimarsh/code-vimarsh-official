@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useGlobalState } from '../context/GlobalContext';
 import { LayoutDashboard, Calendar, FolderHeart, ShieldAlert, Users, Plus, Trash2, ArrowLeft, BookOpen, Pencil, Upload, X, Save, Mail, Send, CheckCircle, AlertCircle, Loader2, Megaphone, UserPlus, UserCheck, Award } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import emailjs from '@emailjs/browser';
+import { Copy, ExternalLink } from 'lucide-react';
 import Certificates from './Certificates';
 
 const Admin: React.FC = () => {
@@ -30,25 +30,22 @@ const Admin: React.FC = () => {
   const [newVideo, setNewVideo] = useState({ title: '', url: '', thumbnail: '', tags: '' });
   const [newLink, setNewLink] = useState({ title: '', url: '', category: '', tags: '', bestFor: '', contentType: '' });
 
-  // ── Email Blast State ────────────────────────────────────────────────────
-  const SVC = 'service_txnmfop';
-  const TPL_ADMIN = 'template_o4gbipr';
-  const KEY = 'dc2UOFd7SrfFFz4ok';
+  // ── Email Blast State ───────────────────────────────────────────────────
+  const CLUB_EMAIL = 'codingclub-cse@msubaroda.ac.in';
+  const BCC_CHUNK_SIZE = 40;
 
   // Send-mode: 'participants' | 'members' | 'specific'
   const [sendMode, setSendMode] = useState<'participants' | 'members' | 'specific'>('specific');
   // Sub-tab inside email: 'compose' | 'participants' | 'members'
   const [emailSubTab, setEmailSubTab] = useState<'compose' | 'participants' | 'members'>('compose');
+  const [htmlCopied, setHtmlCopied] = useState(false);
+  const [copiedChunk, setCopiedChunk] = useState<number | null>(null);
 
   const [emailForm, setEmailForm] = useState({
     to_name: '', to_email: '', email_type: 'Announcement', subject: '', admin_message: '',
   });
   const [selectedEventId, setSelectedEventId] = useState('');
-  // Bulk send progress
-  const [bulkProgress, setBulkProgress] = useState<{ sent: number; total: number; failed: number } | null>(null);
-  const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
-  const [emailErr, setEmailErr] = useState('');
-  const [emailLog, setEmailLog] = useState<{ name: string; email: string; subject: string; type: string; sentAt: string }[]>([]);
+  const [emailLog, setEmailLog] = useState<{ label: string; count: number; subject: string; type: string; sentAt: string; batches: number }[]>([]);
 
   // New participant form
   const [newParticipant, setNewParticipant] = useState({ name: '', email: '', eventId: '' });
@@ -62,52 +59,190 @@ const Admin: React.FC = () => {
       ? clubMembers
       : [];
 
-  const sendOne = (to_name: string, to_email: string, subject: string, admin_message: string, email_type: string) =>
-    emailjs.send(SVC, TPL_ADMIN, {
-      to_name, to_email,
-      subject: `[${email_type}] ${subject}`,
-      admin_message,
-      from_name: 'Code Vimarsh',
-    }, KEY);
+  // Helper: chunk array into batches
+  const chunkArray = <T,>(arr: T[], size: number): T[][] => {
+    const result: T[][] = [];
+    for (let i = 0; i < arr.length; i += size) result.push(arr.slice(i, i + size));
+    return result;
+  };
 
-  const handleSendEmail = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setEmailStatus('sending');
-    setEmailErr('');
+  // Helper: open mailto reliably (bypasses popup blockers)
+  const openMailto = (href: string) => {
+    const a = document.createElement('a');
+    a.href = href;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
 
-    if (sendMode === 'specific') {
-      // Single send
-      try {
-        await sendOne(emailForm.to_name, emailForm.to_email, emailForm.subject, emailForm.admin_message, emailForm.email_type);
-        setEmailStatus('success');
-        setEmailLog(prev => [{ name: emailForm.to_name, email: emailForm.to_email, subject: emailForm.subject, type: emailForm.email_type, sentAt: new Date().toLocaleTimeString() }, ...prev]);
-        setEmailForm({ to_name: '', to_email: '', email_type: 'Announcement', subject: '', admin_message: '' });
-        setTimeout(() => setEmailStatus('idle'), 5000);
-      } catch (err: any) {
-        setEmailStatus('error');
-        setEmailErr(err?.text ?? err?.message ?? 'Failed to send.');
-        setTimeout(() => { setEmailStatus('idle'); setEmailErr(''); }, 5000);
-      }
-    } else {
-      // Bulk send — loop with 300ms delay
-      const recipients = bulkRecipients;
-      setBulkProgress({ sent: 0, total: recipients.length, failed: 0 });
-      let failed = 0;
-      for (let i = 0; i < recipients.length; i++) {
-        const r = recipients[i];
-        const name = 'name' in r ? r.name : '';
-        const email = 'email' in r ? r.email : '';
-        try {
-          await sendOne(name, email, emailForm.subject, emailForm.admin_message, emailForm.email_type);
-          setEmailLog(prev => [{ name, email, subject: emailForm.subject, type: emailForm.email_type, sentAt: new Date().toLocaleTimeString() }, ...prev]);
-        } catch { failed++; }
-        setBulkProgress({ sent: i + 1, total: recipients.length, failed });
-        if (i < recipients.length - 1) await new Promise(r => setTimeout(r, 300));
-      }
-      setEmailStatus(failed === recipients.length ? 'error' : 'success');
-      if (failed > 0) setEmailErr(`${failed} email(s) failed to send.`);
-      setTimeout(() => { setEmailStatus('idle'); setBulkProgress(null); setEmailErr(''); }, 7000);
+  // Build a mailto: URL with BCC batch
+  const buildMailto = (bcc: string[], subject: string): string => {
+    const plain = `You have a new message from Code Vimarsh.\n\nPlease view this email in a proper email client to see the full formatted version.\n\n- Code Vimarsh Team\n${CLUB_EMAIL}`;
+    return `mailto:${CLUB_EMAIL}?bcc=${encodeURIComponent(bcc.join(','))}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(plain)}`;
+  };
+
+  // ── HTML Email Template ───────────────────────────────────────────────────
+  const typeConfig: Record<string, { accent: string; badge: string; tagline: string }> = {
+    'Announcement': { accent: '#FF6A00', badge: 'ANNOUNCEMENT', tagline: 'Important update from Code Vimarsh' },
+    'Event Details': { accent: '#7C3AED', badge: 'EVENT DETAILS', tagline: 'You are invited - mark your calendar!' },
+    'Certificate': { accent: '#059669', badge: 'CERTIFICATE', tagline: 'Congratulations on your achievement!' },
+    'Feedback': { accent: '#2563EB', badge: 'FEEDBACK', tagline: 'We value your opinion' },
+    'Newsletter': { accent: '#D97706', badge: 'NEWSLETTER', tagline: "Here's what's happening at Code Vimarsh" },
+    'Custom': { accent: '#FF6A00', badge: 'MESSAGE', tagline: 'A message from the Code Vimarsh team' },
+  };
+
+  const buildHtmlEmail = (name: string, message: string, type: string, subject: string): string => {
+    const cfg = typeConfig[type] || typeConfig['Custom'];
+    const formattedMessage = message.replace(/\n/g, '<br>');
+    const logoUrl = `${window.location.origin}/CV%20LOGO.webp`;
+    return `<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>${subject}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f0f2f5;font-family:Arial,Helvetica,sans-serif;" bgcolor="#f0f2f5">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f0f2f5" style="background-color:#f0f2f5;">
+<tr><td align="center" style="padding:32px 16px;">
+<table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
+  <!-- TOP ACCENT BAR -->
+  <tr><td height="5" bgcolor="${cfg.accent}" style="background-color:${cfg.accent};font-size:0;line-height:0;height:5px;">&nbsp;</td></tr>
+  <!-- HEADER -->
+  <tr><td bgcolor="#111111" style="background-color:#111111;padding:26px 36px;" valign="middle">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+      <td valign="middle">
+        <table cellpadding="0" cellspacing="0" border="0"><tr>
+          <td valign="middle" style="padding-right:12px;">
+            <img src="${logoUrl}" width="44" height="44" alt="CV" style="display:block;border-radius:8px;border:0;" />
+          </td>
+          <td valign="middle">
+            <p style="margin:0;font-size:19px;font-weight:800;color:#ffffff;font-family:Arial,Helvetica,sans-serif;">Code Vimarsh</p>
+            <p style="margin:2px 0 0;font-size:10px;color:#888888;font-family:Arial,Helvetica,sans-serif;letter-spacing:1.5px;text-transform:uppercase;">CSE Coding Club &middot; MSU Baroda</p>
+          </td>
+        </tr></table>
+      </td>
+      <td align="right" valign="middle">
+        <table cellpadding="0" cellspacing="0" border="0"><tr>
+          <td bgcolor="${cfg.accent}" style="background-color:${cfg.accent};border-radius:20px;padding:7px 16px;">
+            <p style="margin:0;font-size:10px;font-weight:800;color:#000000;letter-spacing:1.5px;text-transform:uppercase;font-family:Arial,Helvetica,sans-serif;">${cfg.badge}</p>
+          </td>
+        </tr></table>
+      </td>
+    </tr></table>
+  </td></tr>
+  <!-- HERO -->
+  <tr><td bgcolor="#1a1a1a" style="background-color:#1a1a1a;padding:36px 36px 20px;">
+    <p style="margin:0 0 8px;font-size:27px;font-weight:800;color:#ffffff;line-height:1.25;font-family:Arial,Helvetica,sans-serif;">${subject}</p>
+    <p style="margin:0;font-size:13px;color:${cfg.accent};font-family:Arial,Helvetica,sans-serif;">${cfg.tagline}</p>
+  </td></tr>
+  <!-- ACCENT DIVIDER -->
+  <tr><td bgcolor="#1a1a1a" style="background-color:#1a1a1a;padding:0 36px 4px;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+      <td height="2" bgcolor="${cfg.accent}" style="background-color:${cfg.accent};font-size:0;line-height:0;height:2px;">&nbsp;</td>
+    </tr></table>
+  </td></tr>
+  <!-- BODY -->
+  <tr><td bgcolor="#1a1a1a" style="background-color:#1a1a1a;padding:28px 36px;">
+    <p style="margin:0 0 16px;font-size:15px;color:#cccccc;line-height:1.65;font-family:Arial,Helvetica,sans-serif;">Dear <strong style="color:#ffffff;">${name}</strong>,</p>
+    <p style="margin:0;font-size:15px;color:#bbbbbb;line-height:1.8;font-family:Arial,Helvetica,sans-serif;">${formattedMessage}</p>
+  </td></tr>
+  <!-- SIGNATURE -->
+  <tr><td bgcolor="#1a1a1a" style="background-color:#1a1a1a;padding:0 36px 32px;">
+    <table cellpadding="0" cellspacing="0" border="0"><tr>
+      <td width="3" bgcolor="${cfg.accent}" style="background-color:${cfg.accent};border-radius:2px;width:3px;">&nbsp;</td>
+      <td style="padding-left:14px;">
+        <p style="margin:0;font-size:14px;font-weight:700;color:#ffffff;font-family:Arial,Helvetica,sans-serif;">The Code Vimarsh Team</p>
+        <p style="margin:3px 0 0;font-size:12px;color:#888888;font-family:Arial,Helvetica,sans-serif;">CSE Coding Club, MSU Baroda</p>
+      </td>
+    </tr></table>
+  </td></tr>
+  <!-- SOCIAL -->
+  <tr><td bgcolor="#222222" style="background-color:#222222;padding:22px 36px;">
+    <p style="margin:0 0 14px;font-size:10px;color:#666666;letter-spacing:2px;text-transform:uppercase;font-family:Arial,Helvetica,sans-serif;">Connect With Us</p>
+    <table cellpadding="0" cellspacing="0" border="0"><tr>
+      <td style="padding-right:10px;"><table cellpadding="0" cellspacing="0" border="0"><tr>
+        <td bgcolor="#0077B5" style="background-color:#0077B5;border-radius:8px;padding:9px 15px;">
+          <a href="https://linkedin.com/company/code-vimarsh" style="text-decoration:none;color:#ffffff;font-size:11px;font-weight:700;font-family:Arial,Helvetica,sans-serif;white-space:nowrap;">in LinkedIn</a>
+        </td>
+      </tr></table></td>
+      <td style="padding-right:10px;"><table cellpadding="0" cellspacing="0" border="0"><tr>
+        <td bgcolor="#24292e" style="background-color:#24292e;border-radius:8px;padding:9px 15px;border:1px solid #444444;">
+          <a href="https://github.com/code-vimarsh" style="text-decoration:none;color:#ffffff;font-size:11px;font-weight:700;font-family:Arial,Helvetica,sans-serif;white-space:nowrap;">GitHub</a>
+        </td>
+      </tr></table></td>
+      <td style="padding-right:10px;"><table cellpadding="0" cellspacing="0" border="0"><tr>
+        <td bgcolor="#C13584" style="background-color:#C13584;border-radius:8px;padding:9px 15px;">
+          <a href="https://instagram.com/codevimarsh" style="text-decoration:none;color:#ffffff;font-size:11px;font-weight:700;font-family:Arial,Helvetica,sans-serif;white-space:nowrap;">Instagram</a>
+        </td>
+      </tr></table></td>
+      <td><table cellpadding="0" cellspacing="0" border="0"><tr>
+        <td bgcolor="${cfg.accent}" style="background-color:${cfg.accent};border-radius:8px;padding:9px 15px;">
+          <a href="https://codevimarsh.com" style="text-decoration:none;color:#000000;font-size:11px;font-weight:700;font-family:Arial,Helvetica,sans-serif;white-space:nowrap;">Website</a>
+        </td>
+      </tr></table></td>
+    </tr></table>
+  </td></tr>
+  <!-- FOOTER -->
+  <tr><td bgcolor="#0d0d0d" style="background-color:#0d0d0d;padding:20px 36px;border-top:2px solid #2a2a2a;">
+    <p style="margin:0 0 4px;font-size:12px;color:#555555;font-family:Arial,Helvetica,sans-serif;">${CLUB_EMAIL}</p>
+    <p style="margin:0 0 12px;font-size:11px;color:#444444;font-family:Arial,Helvetica,sans-serif;">Code Vimarsh &middot; CSE Dept, MSU Baroda &middot; Gujarat, India</p>
+    <p style="margin:0;font-size:10px;color:#333333;font-family:Arial,Helvetica,sans-serif;line-height:1.5;">You received this email because you are a registered member or participant of Code Vimarsh.</p>
+  </td></tr>
+  <!-- BOTTOM ACCENT -->
+  <tr><td height="4" bgcolor="${cfg.accent}" style="background-color:${cfg.accent};font-size:0;line-height:0;height:4px;">&nbsp;</td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
+  };
+
+  // ── Copy rich HTML to clipboard ─────────────────────────────────────────────────
+  const handleCopyRichHtml = async (name: string) => {
+    const { email_type, subject, admin_message } = emailForm;
+    if (!subject || !admin_message) return;
+    const html = buildHtmlEmail(name || 'there', admin_message, email_type, subject);
+    try {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'text/html': new Blob([html], { type: 'text/html' }),
+          'text/plain': new Blob([`Dear ${name},\n\n${admin_message}\n\n- Code Vimarsh Team\n${CLUB_EMAIL}`], { type: 'text/plain' }),
+        }),
+      ]);
+      setHtmlCopied(true);
+      setTimeout(() => setHtmlCopied(false), 3000);
+    } catch {
+      navigator.clipboard.writeText(`Dear ${name},\n\n${admin_message}\n\n- Code Vimarsh\n${CLUB_EMAIL}`);
+      setHtmlCopied(true);
+      setTimeout(() => setHtmlCopied(false), 3000);
     }
+  };
+
+  const handleSendSpecific = () => {
+    const { to_email, to_name, email_type, subject } = emailForm;
+    if (!to_email || !subject) return;
+    const fullSubject = `[Code Vimarsh | ${email_type}] ${subject}`;
+    openMailto(`mailto:${to_email}?subject=${encodeURIComponent(fullSubject)}`);
+    setEmailLog(prev => [{ label: to_name || to_email, count: 1, subject, type: email_type, sentAt: new Date().toLocaleTimeString(), batches: 1 }, ...prev]);
+  };
+
+  const handleOpenBulkDrafts = () => {
+    const emails = bulkRecipients.map((r: any) => r.email).filter(Boolean);
+    if (!emails.length || !emailForm.subject) return;
+    const fullSubject = `[Code Vimarsh | ${emailForm.email_type}] ${emailForm.subject}`;
+    const chunks = chunkArray(emails, BCC_CHUNK_SIZE);
+    chunks.forEach((chunkEmails, idx) => {
+      setTimeout(() => { openMailto(buildMailto(chunkEmails, fullSubject)); }, idx * 700);
+    });
+    setEmailLog(prev => [{ label: sendMode === 'members' ? 'Club Members' : 'Event Participants', count: emails.length, subject: emailForm.subject, type: emailForm.email_type, sentAt: new Date().toLocaleTimeString(), batches: chunks.length }, ...prev]);
+  };
+
+  const handleCopyEmails = (emails: string[], chunkIdx: number) => {
+    navigator.clipboard.writeText(emails.join(', '));
+    setCopiedChunk(chunkIdx);
+    setTimeout(() => setCopiedChunk(null), 2000);
   };
 
   const handleAddParticipant = (e: React.FormEvent) => {
@@ -683,9 +818,31 @@ const Admin: React.FC = () => {
         {/* EMAIL BLAST TAB */}
         {activeTab === 'email' && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div>
-              <h2 className="text-3xl font-display font-bold text-white mb-2">Email Blast</h2>
-              <p className="text-textMuted">Send branded Code Vimarsh emails to participants, members, or a specific person.</p>
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <h2 className="text-3xl font-display font-bold text-white">Email Blast</h2>
+                  <span className="px-2.5 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-[10px] font-bold text-green-400 flex items-center gap-1.5 uppercase tracking-wider">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                    Direct Gmail | No 3rd Party
+                  </span>
+                </div>
+                <p className="text-textMuted">Compose and send directly from <span className="text-primary font-semibold">{CLUB_EMAIL}</span></p>
+              </div>
+            </div>
+
+            {/* How it works info box */}
+            <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 flex gap-4 items-start">
+              <div className="p-2 bg-primary/10 rounded-xl text-primary flex-shrink-0">
+                <CheckCircle size={18} />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-white">How it works</h4>
+                <p className="text-xs text-textMuted leading-relaxed">
+                  Click <strong>'Step 1 - Copy Formatted Email'</strong> to put the beautiful HTML on your clipboard. Then click <strong>'Step 2 - Open Gmail Draft'</strong>.
+                  Your club Gmail will open pre-filled with recipients in BCC. Just <strong>Paste (Ctrl+V)</strong> into the body and hit Send.
+                </p>
+              </div>
             </div>
 
             {/* Sub-tab nav */}
@@ -767,152 +924,148 @@ const Admin: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Status feedback */}
-                  {emailStatus === 'success' && (
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-green-500/10 border border-green-500/25 mb-4">
-                      <CheckCircle size={14} className="text-green-400 flex-shrink-0" />
-                      <p className="text-green-400 text-sm font-medium">
-                        {bulkProgress ? `${bulkProgress.sent - bulkProgress.failed}/${bulkProgress.total} emails sent!` : 'Email sent!'}
-                        {bulkProgress?.failed ? ` (${bulkProgress.failed} failed)` : ''}
-                      </p>
-                    </div>
-                  )}
-                  {emailStatus === 'error' && !bulkProgress && (
-                    <div className="flex items-start gap-3 p-3 rounded-xl bg-red-500/10 border border-red-500/25 mb-4">
-                      <AlertCircle size={14} className="text-red-400 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <p className="text-red-400 text-sm font-semibold">Failed to send</p>
-                        <p className="text-red-400/70 text-xs">{emailErr}</p>
-                      </div>
-                    </div>
-                  )}
 
-                  {/* Bulk progress bar */}
-                  {emailStatus === 'sending' && bulkProgress && (
-                    <div className="mb-4 p-3 bg-bgDark border border-surfaceLight rounded-xl">
-                      <div className="flex justify-between text-xs text-textMuted mb-1.5">
-                        <span>Sending emails…</span>
-                        <span className="font-mono text-primary">{bulkProgress.sent}/{bulkProgress.total}</span>
-                      </div>
-                      <div className="h-1.5 bg-surfaceLight rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-primary to-secondary rounded-full transition-all duration-300"
-                          style={{ width: `${(bulkProgress.sent / bulkProgress.total) * 100}%` }}
-                        />
-                      </div>
-                      {bulkProgress.failed > 0 && <p className="text-xs text-red-400 mt-1">{bulkProgress.failed} failed</p>}
-                    </div>
-                  )}
-
-                  <form onSubmit={handleSendEmail} className="space-y-4">
-                    {/* Email type */}
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest">Email Type</label>
-                      <div className="grid grid-cols-2 gap-2">
-                        {[
-                          { t: 'Announcement', i: '📢' },
-                          { t: 'Event Details', i: '📅' },
-                          { t: 'Certificate', i: '🏆' },
-                          { t: 'Feedback', i: '📝' },
-                          { t: 'Custom', i: '✉️' },
-                        ].map(({ t, i }) => (
-                          <button key={t} type="button"
-                            onClick={() => setEmailForm({ ...emailForm, email_type: t })}
-                            className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-all ${emailForm.email_type === t
-                              ? 'bg-primary/10 border-primary/40 text-primary'
-                              : 'bg-bgDark border-surfaceLight text-textMuted hover:border-primary/20'
-                              }`}
-                          >{i} {t}</button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Specific person fields */}
-                    {sendMode === 'specific' && (
-                      <div className="grid sm:grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest">Recipient Name *</label>
-                          <input required value={emailForm.to_name}
-                            onChange={e => setEmailForm({ ...emailForm, to_name: e.target.value })}
-                            className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:outline-none transition-all"
-                            placeholder="e.g. Aarya Shah" />
-                        </div>
-                        <div className="space-y-1.5">
-                          <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest">Recipient Email *</label>
-                          <input required type="email" value={emailForm.to_email}
-                            onChange={e => setEmailForm({ ...emailForm, to_email: e.target.value })}
-                            className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:outline-none transition-all"
-                            placeholder="aarya@example.com" />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Subject */}
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest">Subject *</label>
-                      <input required value={emailForm.subject}
-                        onChange={e => setEmailForm({ ...emailForm, subject: e.target.value })}
-                        className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:outline-none transition-all"
-                        placeholder={emailForm.email_type === 'Certificate' ? 'Your Certificate of Completion 🏆' : emailForm.email_type === 'Feedback' ? 'Share Your Feedback 📝' : 'Subject line…'} />
-                    </div>
-
-                    {/* Message */}
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest">Message Body *</label>
-                      <textarea required rows={5} value={emailForm.admin_message}
-                        onChange={e => setEmailForm({ ...emailForm, admin_message: e.target.value })}
-                        className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-3 text-sm focus:border-primary focus:outline-none transition-all resize-none"
-                        placeholder="Write your message. Each recipient's name is personalized automatically." />
-                    </div>
-
-                    {/* Warning for big list */}
-                    {sendMode !== 'specific' && bulkRecipients.length > 50 && (
-                      <div className="flex items-start gap-2 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-                        <AlertCircle size={13} className="text-yellow-400 mt-0.5 flex-shrink-0" />
-                        <p className="text-yellow-400 text-xs">Large list ({bulkRecipients.length} recipients). EmailJS free plan allows 200 emails/month. Consider upgrading if needed.</p>
-                      </div>
-                    )}
-
-                    <button type="submit" disabled={emailStatus === 'sending' || (sendMode !== 'specific' && bulkRecipients.length === 0)}
-                      className="w-full bg-primary hover:bg-secondary disabled:opacity-50 disabled:cursor-not-allowed text-black font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all text-sm shadow-[0_0_18px_rgba(255,106,0,0.2)] hover:shadow-[0_0_28px_rgba(255,106,0,0.35)]"
-                    >
-                      {emailStatus === 'sending'
-                        ? <><Loader2 size={14} className="animate-spin" /><span>Sending{bulkProgress ? ` ${bulkProgress.sent}/${bulkProgress.total}` : ''}…</span></>
-                        : <><Send size={14} /><span>
-                          {sendMode === 'specific' ? `Send to ${emailForm.to_name || 'Recipient'}` :
-                            sendMode === 'members' ? `Send to ${clubMembers.length} Members` :
-                              `Send to ${bulkRecipients.length} Participant${bulkRecipients.length !== 1 ? 's' : ''}`}
-                        </span></>
-                      }
-                    </button>
-                  </form>
-                </div>
-
-                {/* Sent log sidebar */}
-                <div className="lg:col-span-2 bg-surface border border-surfaceLight rounded-2xl p-5 relative overflow-hidden">
-                  <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
-                  <h4 className="text-xs font-bold text-textMuted uppercase tracking-widest mb-4">Sent This Session ({emailLog.length})</h4>
-                  {emailLog.length === 0 ? (
-                    <p className="text-xs text-textMuted italic">No emails sent yet.</p>
-                  ) : (
-                    <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
-                      {emailLog.map((log, i) => (
-                        <div key={i} className="flex items-start gap-2 p-2 rounded-lg bg-bgDark border border-surfaceLight">
-                          <CheckCircle size={12} className="text-green-400 flex-shrink-0 mt-0.5" />
-                          <div className="min-w-0">
-                            <p className="text-xs font-semibold text-white truncate">{log.name}</p>
-                            <p className="text-[10px] text-textMuted truncate">{log.email}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 font-bold uppercase">{log.type}</span>
-                              <span className="text-[9px] text-textMuted font-mono">{log.sentAt}</span>
-                            </div>
-                          </div>
-                        </div>
+                  {/* Email type */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest">Email Type</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { t: 'Announcement', i: '📢' },
+                        { t: 'Event Details', i: '📅' },
+                        { t: 'Certificate', i: '🏆' },
+                        { t: 'Feedback', i: '📝' },
+                        { t: 'Newsletter', i: '📰' },
+                        { t: 'Custom', i: '✉️' },
+                      ].map(({ t, i }) => (
+                        <button key={t} type="button"
+                          onClick={() => setEmailForm({ ...emailForm, email_type: t })}
+                          className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-all ${emailForm.email_type === t
+                            ? 'bg-primary/10 border-primary/40 text-primary'
+                            : 'bg-bgDark border-surfaceLight text-textMuted hover:border-primary/20'
+                            }`}
+                        >{i} {t}</button>
                       ))}
                     </div>
+                  </div>
+
+                  {/* Specific person fields */}
+                  {sendMode === 'specific' && (
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest">Recipient Name</label>
+                        <input value={emailForm.to_name}
+                          onChange={e => setEmailForm({ ...emailForm, to_name: e.target.value })}
+                          className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:outline-none transition-all"
+                          placeholder="e.g. Aarya Shah" />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest">Recipient Email *</label>
+                        <input required type="email" value={emailForm.to_email}
+                          onChange={e => setEmailForm({ ...emailForm, to_email: e.target.value })}
+                          className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:outline-none transition-all"
+                          placeholder="aarya@example.com" />
+                      </div>
+                    </div>
                   )}
+
+                  {/* Subject */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest">Subject *</label>
+                    <input value={emailForm.subject}
+                      onChange={e => setEmailForm({ ...emailForm, subject: e.target.value })}
+                      className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:outline-none transition-all"
+                      placeholder="e.g. Important update from Code Vimarsh" />
+                  </div>
+
+                  {/* Message */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest">Message Body *</label>
+                    <textarea rows={5} value={emailForm.admin_message}
+                      onChange={e => setEmailForm({ ...emailForm, admin_message: e.target.value })}
+                      className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-3 text-sm focus:border-primary focus:outline-none transition-all resize-none"
+                      placeholder="Write your message here. Club signature is appended automatically." />
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="flex flex-col gap-2">
+                    <button type="button"
+                      onClick={() => sendMode === 'specific'
+                        ? handleCopyRichHtml(emailForm.to_name || 'there')
+                        : handleCopyRichHtml('Member')}
+                      disabled={!emailForm.subject || !emailForm.admin_message}
+                      className="w-full flex items-center justify-center gap-2 bg-surface border border-primary/30 hover:bg-primary/10 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-xl transition-all text-sm"
+                    >
+                      {htmlCopied ? <CheckCircle size={14} className="text-green-400" /> : <Copy size={14} className="text-primary" />}
+                      <span>{htmlCopied ? 'Copied! Paste in Gmail compose' : 'Step 1 - Copy Formatted Email'}</span>
+                    </button>
+                    <button type="button"
+                      onClick={() => sendMode === 'specific' ? handleSendSpecific() : handleOpenBulkDrafts()}
+                      disabled={!emailForm.subject || (sendMode === 'specific' ? !emailForm.to_email : bulkRecipients.length === 0)}
+                      className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed text-black font-bold py-2.5 rounded-xl transition-all text-sm shadow-[0_0_18px_rgba(255,106,0,0.2)]"
+                    >
+                      <ExternalLink size={14} />
+                      <span>Step 2 - Open Gmail Draft</span>
+                    </button>
+                    <p className="text-[10px] text-textMuted text-center">Copy email &rarr; Open Gmail draft &rarr; Paste (Ctrl+V) &rarr; Send</p>
+                  </div>
                 </div>
 
+                {/* Right side: preview + log */}
+                <div className="lg:col-span-2 flex flex-col gap-4">
+                  {/* Live preview */}
+                  <div className="bg-surface border border-surfaceLight rounded-2xl p-4 relative overflow-hidden">
+                    <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2 text-xs font-bold text-textMuted uppercase tracking-widest">
+                        <Mail size={12} />EMAIL PREVIEW
+                      </div>
+                      <span className="text-[9px] font-bold text-green-400 bg-green-400/10 border border-green-400/20 px-2 py-0.5 rounded-full">LIVE</span>
+                    </div>
+                    {emailForm.subject && emailForm.admin_message ? (
+                      <iframe
+                        srcDoc={buildHtmlEmail(emailForm.to_name || 'there', emailForm.admin_message, emailForm.email_type, emailForm.subject)}
+                        className="w-full rounded-xl border border-surfaceLight"
+                        style={{ height: '320px' }}
+                        sandbox="allow-same-origin"
+                        title="Email Preview"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-40 text-textMuted gap-2">
+                        <Mail size={24} className="opacity-30" />
+                        <p className="text-xs">Fill in subject and message to see a live preview</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Session log */}
+                  <div className="bg-surface border border-surfaceLight rounded-2xl p-4 relative overflow-hidden">
+                    <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+                    <h4 className="text-xs font-bold text-textMuted uppercase tracking-widest mb-3 flex items-center gap-2">
+                      <Send size={12} />SESSION LOG ({emailLog.length})
+                    </h4>
+                    {emailLog.length === 0 ? (
+                      <p className="text-xs text-textMuted italic">No emails sent yet.</p>
+                    ) : (
+                      <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                        {emailLog.map((log, i) => (
+                          <div key={i} className="flex items-start gap-2 p-2 rounded-lg bg-bgDark border border-surfaceLight">
+                            <CheckCircle size={12} className="text-green-400 flex-shrink-0 mt-0.5" />
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold text-white truncate">{log.label}</p>
+                              <p className="text-[10px] text-textMuted">{log.count} recipient{log.count !== 1 ? 's' : ''} | {log.batches} draft{log.batches !== 1 ? 's' : ''} opened</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 font-bold uppercase">{log.type}</span>
+                                <span className="text-[9px] text-textMuted font-mono">{log.sentAt}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+
+                </div>
               </div>
             )}
 
@@ -945,7 +1098,7 @@ const Admin: React.FC = () => {
                       <select required value={newParticipant.eventId}
                         onChange={e => setNewParticipant({ ...newParticipant, eventId: e.target.value })}
                         className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-2.5 text-sm text-white focus:border-primary focus:outline-none">
-                        <option value="">Select event…</option>
+                        <option value="">Select event...</option>
                         {events.map(ev => <option key={ev.id} value={ev.id}>{ev.title}</option>)}
                       </select>
                     </div>
