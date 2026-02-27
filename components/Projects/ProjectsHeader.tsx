@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { Plus, Search } from 'lucide-react';
 
 interface ProjectsHeaderProps {
@@ -10,35 +11,102 @@ interface ProjectsHeaderProps {
   isLoggedIn?: boolean;
 }
 
+// Word-level stagger variants
+const CONTAINER = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.13, delayChildren: 0.08 } },
+};
+const WORD = {
+  hidden:  { opacity: 0, y: 30, skewY: 4 },
+  visible: { opacity: 1, y: 0,  skewY: 0, transition: { duration: 0.65, ease: [0.22, 1, 0.36, 1] as [number,number,number,number] } },
+};
+
 export const ProjectsHeader: React.FC<ProjectsHeaderProps> = ({
-  totalCount,
   publishedCount,
   searchTerm,
   onSearchChange,
   onCreateClick,
   isLoggedIn = false,
 }) => (
-  <div className="space-y-6">
-    {/* Title + Submit Button */}
+  <div className="space-y-8">
+    {/* Title row + submit button */}
     <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-      <div className="space-y-3">
+      <div className="space-y-4">
+
         {/* Eyebrow */}
-        <p className="text-xs font-mono tracking-[0.2em] uppercase text-primary">
+        <motion.p
+          initial={{ opacity: 0, x: -12 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.4, ease: 'easeOut' }}
+          className="text-xs font-mono tracking-[0.22em] uppercase text-primary"
+        >
           // community builds
-        </p>
-        <h1 className="text-4xl md:text-5xl font-display font-bold text-textMain leading-tight">
-          The Build Vault.
-        </h1>
-        <p className="text-textMuted max-w-xl text-sm leading-relaxed">
+        </motion.p>
+
+        {/* Main title — Cinzel Decorative, staggered words */}
+        <motion.h1
+          variants={CONTAINER}
+          initial="hidden"
+          animate="visible"
+          className="flex flex-wrap items-baseline gap-x-3 leading-none"
+          style={{ fontFamily: 'Cinzel Decorative, Cinzel, serif' }}
+        >
+          {/* "The" + "Build" — white */}
+          {['The', 'Build'].map((w) => (
+            <motion.span
+              key={w}
+              variants={WORD}
+              className="font-black text-white"
+              style={{
+                fontSize: 'clamp(2rem, 5vw, 3.6rem)',
+                letterSpacing: '0.04em',
+                textShadow: '0 2px 24px rgba(0,0,0,0.6)',
+              }}
+            >
+              {w}
+            </motion.span>
+          ))}
+
+          {/* "Vault." — orange glow */}
+          <motion.span
+            variants={WORD}
+            className="font-black"
+            style={{
+              fontSize: 'clamp(2rem, 5vw, 3.6rem)',
+              letterSpacing: '0.04em',
+              color: '#f97316',
+              textShadow: '0 0 40px rgba(249,115,22,0.65), 0 0 80px rgba(249,115,22,0.25)',
+            }}
+          >
+            Vault.
+          </motion.span>
+        </motion.h1>
+
+        {/* Subtitle */}
+        <motion.p
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.55, duration: 0.45, ease: 'easeOut' }}
+          className="text-textMuted max-w-xl leading-relaxed"
+          style={{
+            fontFamily: 'JetBrains Mono, monospace',
+            fontSize: 'clamp(0.68rem, 1.3vw, 0.82rem)',
+            letterSpacing: '0.16em',
+            textTransform: 'uppercase',
+          }}
+        >
           Explore projects built by the Vimarsh community — from low-level systems to modern web apps.{' '}
-          <span className="text-textMain">
+          <span className="text-textMain font-semibold">
             {publishedCount} project{publishedCount !== 1 ? 's' : ''} published.
           </span>
-        </p>
+        </motion.p>
       </div>
 
       {isLoggedIn && (
-        <button
+        <motion.button
+          initial={{ opacity: 0, scale: 0.92 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.6, duration: 0.35, ease: 'easeOut' }}
           onClick={onCreateClick}
           className="
             group flex items-center gap-2 whitespace-nowrap
@@ -56,12 +124,17 @@ export const ProjectsHeader: React.FC<ProjectsHeaderProps> = ({
             className="transition-transform duration-200 group-hover:rotate-90"
           />
           Submit Project
-        </button>
+        </motion.button>
       )}
     </div>
 
     {/* Search */}
-    <div className="relative max-w-lg">
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.5, duration: 0.4, ease: 'easeOut' }}
+      className="relative max-w-lg"
+    >
       <Search
         size={16}
         className="absolute left-4 top-1/2 -translate-y-1/2 text-textMuted pointer-events-none"
@@ -78,6 +151,7 @@ export const ProjectsHeader: React.FC<ProjectsHeaderProps> = ({
           transition-colors duration-200
         "
       />
-    </div>
+    </motion.div>
   </div>
 );
+

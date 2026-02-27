@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Calendar, MapPin, ChevronRight } from 'lucide-react';
 import type { Event } from './types';
 import EventBadge from './EventBadge';
+import ImageCarousel from '../shared/ImageCarousel';
 
 interface EventCardProps {
   event: Event;
@@ -25,6 +26,14 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
     },
     [goToDetails]
   );
+
+  // Build gallery: prefer event.images array, fall back to single event.image
+  const galleryImages: string[] =
+    event.images && event.images.length > 0
+      ? event.images
+      : event.image
+      ? [event.image]
+      : [];
 
   return (
     <motion.article
@@ -61,47 +70,47 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
         aria-hidden="true"
       />
 
-      {/* ── Banner image ── */}
-      <div className="relative h-44 overflow-hidden bg-surfaceLight shrink-0">
-        {event.image ? (
-          <motion.img
-            src={event.image}
-            alt={event.title}
-            loading="lazy"
-            className="w-full h-full object-cover"
-            variants={{ hover: { scale: 1.06 } }}
-            transition={{ duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-surfaceLight to-bgDark">
-            <span className="text-4xl opacity-20">⚡</span>
-          </div>
-        )}
-        {/* Bottom gradient overlay for readability */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              'linear-gradient(to top, rgba(15,15,15,0.85) 0%, rgba(15,15,15,0.1) 55%, transparent 100%)',
-          }}
-          aria-hidden="true"
-        />
-        {/* Badge – top right */}
-        <div className="absolute top-3 right-3 z-10">
-          <EventBadge status={event.status} />
-        </div>
-        {/* Live pulsing overlay */}
-        {event.status === 'live' && (
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background:
-                'radial-gradient(ellipse at 50% 100%, rgba(239,68,68,0.10) 0%, transparent 70%)',
-            }}
-            aria-hidden="true"
-          />
-        )}
-      </div>
+      {/* ── Banner image / Carousel ── */}
+      <ImageCarousel
+        images={galleryImages}
+        alt={event.title}
+        className="h-44 shrink-0"
+        autoPlayMs={galleryImages.length > 1 ? 4500 : 0}
+        overlay={
+          <>
+            {/* Bottom gradient overlay */}
+            <div
+              className="absolute inset-0 z-10 pointer-events-none"
+              style={{
+                background:
+                  'linear-gradient(to top, rgba(15,15,15,0.85) 0%, rgba(15,15,15,0.1) 55%, transparent 100%)',
+              }}
+              aria-hidden="true"
+            />
+            {/* Badge – top right */}
+            <div className="absolute top-3 right-3 z-20">
+              <EventBadge status={event.status} />
+            </div>
+            {/* Live pulsing overlay */}
+            {event.status === 'live' && (
+              <div
+                className="absolute inset-0 z-[5] pointer-events-none"
+                style={{
+                  background:
+                    'radial-gradient(ellipse at 50% 100%, rgba(239,68,68,0.10) 0%, transparent 70%)',
+                }}
+                aria-hidden="true"
+              />
+            )}
+            {/* Placeholder when no images */}
+            {galleryImages.length === 0 && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-surfaceLight to-bgDark">
+                <span className="text-4xl opacity-20">⚡</span>
+              </div>
+            )}
+          </>
+        }
+      />
 
       {/* ── Body ── */}
       <div className="flex flex-col flex-1 p-5 gap-3">

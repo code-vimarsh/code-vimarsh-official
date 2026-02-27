@@ -1,10 +1,12 @@
 ﻿import React, { useState } from 'react';
 import { useGlobalState } from '../context/GlobalContext';
-import { LayoutDashboard, Calendar, FolderHeart, ShieldAlert, Users, Plus, Trash2, ArrowLeft, BookOpen, Pencil, Upload, X, Save, Mail, Send, CheckCircle, AlertCircle, Loader2, Megaphone, UserPlus, UserCheck, Award } from 'lucide-react';
+import { LayoutDashboard, Calendar, FolderHeart, ShieldAlert, Users, Plus, Trash2, ArrowLeft, BookOpen, Pencil, Upload, X, Save, Mail, Send, CheckCircle, AlertCircle, Loader2, Megaphone, UserPlus, UserCheck, Award, Newspaper, Trophy } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Copy, ExternalLink } from 'lucide-react';
 import Certificates from './Certificates';
 import ManageEvents from '../components/admin/ManageEvents';
+import ManageBlogs from '../components/admin/blogs/ManageBlogs';
+import ManageAchievements from '../components/admin/achievements/ManageAchievements';
 
 const Admin: React.FC = () => {
   const {
@@ -16,7 +18,7 @@ const Admin: React.FC = () => {
     participants, addParticipant, removeParticipant,
     clubMembers, addClubMember, removeClubMember,
   } = useGlobalState();
-  const [activeTab, setActiveTab] = useState<'overview' | 'events' | 'projects' | 'admins' | 'resources' | 'email' | 'certificates'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'events' | 'projects' | 'admins' | 'resources' | 'email' | 'certificates' | 'blogs' | 'achievements'>('overview');
 
   // New Event State
   const [newEvent, setNewEvent] = useState({ title: '', date: '', type: 'Upcoming', description: '' });
@@ -462,6 +464,8 @@ The Code Vimarsh Core Team`,
             { id: 'admins', icon: <ShieldAlert size={18} />, label: 'Access Control' },
             { id: 'email', icon: <Megaphone size={18} />, label: 'Email Blast' },
             { id: 'certificates', icon: <Award size={18} />, label: '🏆 Certificates' },
+            { id: 'blogs', icon: <Newspaper size={18} />, label: 'Manage Blogs' },
+            { id: 'achievements', icon: <Trophy size={18} />, label: 'Achievements' },
           ].map(tab => (
             <button
               key={tab.id}
@@ -1252,6 +1256,20 @@ The Code Vimarsh Core Team`,
         {/* CERTIFICATES TAB */}
         {activeTab === 'certificates' && (
           <Certificates />
+        )}
+
+        {/* BLOGS TAB */}
+        {activeTab === 'blogs' && (
+          <div className="p-6">
+            <ManageBlogs />
+          </div>
+        )}
+
+        {/* ACHIEVEMENTS TAB */}
+        {activeTab === 'achievements' && (
+          <div className="p-6">
+            <ManageAchievements />
+          </div>
         )}
 
       </main>

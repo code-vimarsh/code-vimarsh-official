@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Youtube, BookOpen, ArrowRight, Play, Sparkles } from 'lucide-react';
 import { Resource } from '../types';
 import { motion } from 'framer-motion';
+import { EmbersBackground } from '../components/Achievements/GlowDots';
 
 const YT_RESOURCES: Resource[] = [
   {
@@ -233,12 +234,26 @@ const Resources: React.FC = () => {
   };
 
   return (
-    <div className="pb-20 bg-bgDark min-h-screen">
+    <>
+      {/* ── Full-viewport fixed background ── bypasses Layout's max-w-7xl ── */}
+      <div style={{ position: 'fixed', inset: 0, zIndex: -2, pointerEvents: 'none', overflow: 'hidden' }}>
+        {/* Castle background image */}
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: `url('/assets/castle-bg.jpeg')`, backgroundSize: 'cover', backgroundPosition: 'center top', backgroundRepeat: 'no-repeat' }} />
+        {/* Dark overlay */}
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(11,15,25,0.78) 0%,rgba(11,15,25,0.65) 45%,rgba(11,15,25,0.88) 100%)' }} />
+        {/* Ember / dot particles — fills fixed container = full viewport */}
+        <EmbersBackground />
+      </div>
+
+      {/* Page content — sits in normal flow above the fixed background */}
+      <div className="pb-20" style={{ position: 'relative', minHeight: '100vh' }}>
+
       {/* Hero */}
       <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-b from-primary/10 to-transparent pt-28 pb-24 px-6"
+        style={{ position: 'relative', zIndex: 10 }}
+        className="pt-28 pb-24 px-6"
       >
         <div className="container mx-auto text-center space-y-4">
           <motion.div
@@ -249,8 +264,9 @@ const Resources: React.FC = () => {
           >
             <Sparkles size={12} className="animate-pulse" /> Curated Learning Ecosystem
           </motion.div>
-          <h1 className="text-4xl md:text-6xl font-black font-heading text-white tracking-tight">
-            Resources For <span className="text-primary italic">DSA</span>
+          <h1 style={{ fontFamily: 'Cinzel Decorative,Cinzel,serif', fontWeight: 900, fontSize: 'clamp(2rem,5vw,3.5rem)', color: '#f5f0e8', margin: 0, letterSpacing: '0.04em' }}>
+            Resources For{' '}
+            <span style={{ color: '#f97316', textShadow: '0 0 40px rgba(249,115,22,0.55)' }}>DSA</span>
           </h1>
           <p className="text-textMuted text-base md:text-lg max-w-2xl mx-auto">
             Curated playlists and practice sheets to boost your interview preparation.
@@ -450,7 +466,8 @@ const Resources: React.FC = () => {
           </div>
         </motion.section>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 

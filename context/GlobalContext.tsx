@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { EventType, ProjectType, TeamMember, BlogPost, AchievementType, AdminUser, VideoResource, LinkResource, Participant, ClubMember } from '../types';
-import { MOCK_EVENTS, MOCK_PROJECTS, MOCK_TEAM, MOCK_BLOGS, MOCK_ACHIEVEMENTS, MOCK_VIDEOS, MOCK_LINKS } from '../constants';
+import { EventType, ProjectType, TeamMember, BlogPost, ManagedBlog, ManagedAchievement, AchievementType, AdminUser, VideoResource, LinkResource, Participant, ClubMember } from '../types';
+import { MOCK_EVENTS, MOCK_PROJECTS, MOCK_TEAM, MOCK_BLOGS, MOCK_MANAGED_BLOGS, MOCK_MANAGED_ACHIEVEMENTS, MOCK_ACHIEVEMENTS, MOCK_VIDEOS, MOCK_LINKS } from '../constants';
 
 const AUTH_KEY = 'cv_loggedin';
 
@@ -13,7 +13,16 @@ interface GlobalContextType {
   addProject: (project: ProjectType) => void;
   team: TeamMember[];
   blogs: BlogPost[];
+  managedBlogs: ManagedBlog[];
+  addManagedBlog: (blog: ManagedBlog) => void;
+  updateManagedBlog: (blog: ManagedBlog) => void;
+  deleteManagedBlog: (id: string) => void;
+  toggleBlogStatus: (id: string) => void;
   achievements: AchievementType[];
+  managedAchievements: ManagedAchievement[];
+  addManagedAchievement: (a: ManagedAchievement) => void;
+  updateManagedAchievement: (a: ManagedAchievement) => void;
+  deleteManagedAchievement: (id: string) => void;
   admins: AdminUser[];
   addAdmin: (admin: AdminUser) => void;
   videoResources: VideoResource[];
@@ -63,7 +72,9 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [projects, setProjects] = useState<ProjectType[]>(MOCK_PROJECTS);
   const [team, setTeam] = useState<TeamMember[]>(MOCK_TEAM);
   const [blogs, setBlogs] = useState<BlogPost[]>(MOCK_BLOGS);
+  const [managedBlogs, setManagedBlogs] = useState<ManagedBlog[]>(MOCK_MANAGED_BLOGS);
   const [achievements, setAchievements] = useState<AchievementType[]>(MOCK_ACHIEVEMENTS);
+  const [managedAchievements, setManagedAchievements] = useState<ManagedAchievement[]>(MOCK_MANAGED_ACHIEVEMENTS);
   const [admins, setAdmins] = useState<AdminUser[]>([
     { id: '1', name: 'Aarav Patel', email: 'aarav@vimarsh.dev', role: 'Super Admin', addedAt: '2023-08-10' },
     { id: '2', name: 'System Core', email: 'root@vimarsh.dev', role: 'Super Admin', addedAt: '2023-01-01' }
@@ -76,6 +87,17 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const addEvent = (event: EventType) => setEvents(prev => [event, ...prev]);
   const addProject = (project: ProjectType) => setProjects(prev => [project, ...prev]);
   const addAdmin = (admin: AdminUser) => setAdmins(prev => [admin, ...prev]);
+
+  const addManagedBlog = (blog: ManagedBlog) => setManagedBlogs(prev => [blog, ...prev]);
+  const updateManagedBlog = (blog: ManagedBlog) => setManagedBlogs(prev => prev.map(b => b.id === blog.id ? blog : b));
+  const deleteManagedBlog = (id: string) => setManagedBlogs(prev => prev.filter(b => b.id !== id));
+  const toggleBlogStatus = (id: string) => setManagedBlogs(prev => prev.map(b =>
+    b.id === id ? { ...b, status: b.status === 'Published' ? 'Draft' : 'Published', updatedAt: new Date().toISOString() } : b
+  ));
+
+  const addManagedAchievement = (a: ManagedAchievement) => setManagedAchievements(prev => [...prev, a].sort((x, y) => x.order - y.order));
+  const updateManagedAchievement = (a: ManagedAchievement) => setManagedAchievements(prev => prev.map(x => x.id === a.id ? a : x).sort((x, y) => x.order - y.order));
+  const deleteManagedAchievement = (id: string) => setManagedAchievements(prev => prev.filter(x => x.id !== id));
 
   const addVideoResource = (video: VideoResource) => setVideoResources(prev => [video, ...prev]);
   const updateVideoResource = (video: VideoResource) => setVideoResources(prev => prev.map(v => v.id === video.id ? video : v));
@@ -97,6 +119,8 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       events, addEvent,
       projects, addProject,
       team, blogs, achievements,
+      managedBlogs, addManagedBlog, updateManagedBlog, deleteManagedBlog, toggleBlogStatus,
+      managedAchievements, addManagedAchievement, updateManagedAchievement, deleteManagedAchievement,
       admins, addAdmin,
       videoResources, addVideoResource, updateVideoResource, deleteVideoResource,
       linkResources, addLinkResource, updateLinkResource, deleteLinkResource,

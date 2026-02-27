@@ -15,6 +15,7 @@ const ProjectDetails = React.lazy(() => import('./pages/ProjectDetails'));
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 const Team = React.lazy(() => import('./pages/Team'));
 const Blog = React.lazy(() => import('./pages/Blog'));
+const BlogDetail = React.lazy(() => import('./pages/BlogDetail'));
 const Achievements = React.lazy(() => import('./pages/Achievements'));
 const Alumni = React.lazy(() => import('./pages/Alumni'));
 const Contact = React.lazy(() => import('./pages/Contact'));
@@ -105,6 +106,7 @@ const App: React.FC = () => {
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/team" element={<Team />} />
                   <Route path="/blog" element={<Blog />} />
+                  <Route path="/blog/:slug" element={<BlogDetail />} />
                   <Route path="/achievements" element={<Achievements />} />
                   <Route path="/alumni" element={<Alumni />} />
                   <Route path="/contact" element={<Contact />} />

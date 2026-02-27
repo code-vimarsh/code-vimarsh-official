@@ -36,6 +36,8 @@ export interface Event {
   status: EventStatus;
   /** Banner/thumbnail image URL */
   image?: string;
+  /** Gallery: multiple images (first used as banner fallback) */
+  images?: string[];
   tags?: string[];
   speakers?: Speaker[];
   schedule?: ScheduleItem[];

@@ -27,8 +27,9 @@ import {
   X, Save, Check,
   Type, AlignLeft, Mail, Phone, Hash, Link2,
   Calendar, Paperclip, CircleDot, CheckSquare,
-  ChevronsUpDown, FileText, Heading,
+  ChevronsUpDown, FileText, Heading, Images,
 } from 'lucide-react';
+import ImageGalleryPicker from '../shared/ImageGalleryPicker';
 
 import type { FieldType, FormField, FieldOption } from '../../types/formBuilder';
 import { FIELD_TYPE_META, generateFieldId, generateOptionId, createDefaultField } from '../../types/formBuilder';
@@ -51,6 +52,8 @@ interface AdminEvent {
   description: string;
   isPublished: boolean;
   formFields: FormField[];
+  /** Gallery images — ADMIN only. First image is used as the event banner. */
+  images: string[];
 }
 
 // ─── Status appearance map ────────────────────────────────────────────────────
@@ -102,6 +105,7 @@ const seedEvents = (): AdminEvent[] =>
     description: e.description,
     isPublished: e.status !== 'upcoming',
     formFields: [],
+    images: [],
   }));
 
 const blankEvent = (): AdminEvent => ({
@@ -112,6 +116,7 @@ const blankEvent = (): AdminEvent => ({
   description: '',
   isPublished: false,
   formFields: [],
+  images: [],
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -553,7 +558,8 @@ interface EventEditorProps {
 const EventEditor: React.FC<EventEditorProps> = ({
   draft, isNew, savedFlash, onDraftChange, onSave, onDiscard,
 }) => {
-  const [formBuilderOpen, setFormBuilderOpen] = useState(false);
+  const [formBuilderOpen,  setFormBuilderOpen]  = useState(false);
+  const [imagesOpen,       setImagesOpen]        = useState(false);
 
   const inp = INPUT;
 
@@ -630,6 +636,47 @@ const EventEditor: React.FC<EventEditorProps> = ({
             className={`${inp} resize-none`}
             placeholder="Short event description…"
           />
+        </div>
+
+        {/* ── Images section (ADMIN-only collapsible) ── */}
+        <div
+          className="rounded-xl overflow-hidden"
+          style={{ border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.015)' }}
+        >
+          <button
+            type="button"
+            onClick={() => setImagesOpen((v) => !v)}
+            className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold transition-colors hover:bg-white/[0.02]"
+            style={{ color: imagesOpen ? '#ff6a00' : 'rgba(255,255,255,0.55)' }}
+          >
+            <span className="flex items-center gap-2.5">
+              <Images size={14} style={{ opacity: 0.7 }} />
+              Event Images
+              <span
+                className="text-[10px] font-medium px-1.5 py-0.5 rounded-md"
+                style={{ background: 'rgba(255,255,255,0.07)', color: '#666' }}
+              >
+                {draft.images.length} {draft.images.length === 1 ? 'image' : 'images'} · Admin only
+              </span>
+            </span>
+            {imagesOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+
+          {imagesOpen && (
+            <div
+              className="px-4 pb-4"
+              style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}
+            >
+              <div className="pt-4">
+                <ImageGalleryPicker
+                  images={draft.images}
+                  onChange={(imgs) => onDraftChange({ ...draft, images: imgs })}
+                  label="Event Gallery"
+                  hint="First image is used as the event banner. JPG, PNG, WebP — max 5 MB each."
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Published toggle */}
@@ -865,6 +912,13 @@ const ManageEvents: React.FC = () => {
                       {ev.formFields.length > 0 && (
                         <span className="text-[10px] text-textMuted/60">
                           📋 {ev.formFields.length} fields
+                        </span>
+                      )}
+
+                      {/* Images count */}
+                      {ev.images.length > 0 && (
+                        <span className="text-[10px] text-textMuted/60">
+                          🖼 {ev.images.length} {ev.images.length === 1 ? 'photo' : 'photos'}
                         </span>
                       )}
 

@@ -10,7 +10,9 @@ export interface ProjectFormData {
   features: string[];           // dynamic list items
   githubUrl: string;
   imageFile: File | null;
-  imagePreview: string;         // data URI for preview
+  imagePreview: string;         // data URI for preview (primary image)
+  /** extra gallery images: data URIs + external URLs combined */
+  extraImages: string[];
   authorName: string;
   isPublished: boolean;
 }

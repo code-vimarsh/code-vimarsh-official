@@ -10,6 +10,8 @@ export interface EventType {
   type: 'Upcoming' | 'Live' | 'Past';
   description: string;
   image?: string;
+  /** Gallery: multiple images — first is used as banner when image is absent */
+  images?: string[];
 }
 
 export interface ProjectType {
@@ -22,7 +24,8 @@ export interface ProjectType {
   category: 'Web' | 'Mobile' | 'AI / ML' | 'Systems' | 'Open Source';
   tech: string[];
   author: string;
-  image?: string;               // URL or base64 data URI
+  image?: string;               // URL or base64 data URI (primary / legacy)
+  images?: string[];            // gallery — multiple images (upload + URL)
   isPublished?: boolean;        // only published projects appear publicly
   links: {
     github?: string;
@@ -36,6 +39,20 @@ export interface AchievementType {
   title: string;
   description: string;
   category: 'Hackathon' | 'Research' | 'Open Source' | 'Recognition';
+}
+
+// ── Managed achievements for the admin CRUD system ────────────────────────────
+export interface ManagedAchievement {
+  id: string;
+  title: string;
+  description: string;
+  date: string;           // display string e.g. "JAN 2022"
+  tag: string;            // short label shown on the card
+  icon: string;           // emoji string
+  category: string;       // broader grouping
+  order: number;          // 1-based position in the timeline
+  createdAt: string;      // ISO date string
+  updatedAt: string;      // ISO date string
 }
 
 export interface TeamMember {
@@ -54,6 +71,52 @@ export interface BlogPost {
   date: string;
   author: string;
   tags: string[];
+}
+
+// ── Rich blog for the managed CMS system ─────────────────────────────────────
+export type BlogTopic =
+  | 'Web Development'
+  | 'AI / ML'
+  | 'DSA'
+  | 'Hackathon'
+  | 'Workshop'
+  | 'Club Activity'
+  | 'Announcement'
+  | 'DevOps'
+  | 'Mobile'
+  | 'Open Source'
+  | 'Other';
+
+export type BlogStatus = 'Draft' | 'Published';
+
+export type AuthorRole =
+  | 'Core Member'
+  | 'Lead'
+  | 'Guest'
+  | 'Alumni'
+  | 'Faculty'
+  | 'Admin';
+
+export interface ManagedBlog {
+  id: string;
+  title: string;
+  /** Admin-controlled, unique, hyphen-separated slug  */
+  slug: string;
+  topic: BlogTopic;
+  /** 2-3 line preview shown on cards */
+  shortDescription: string;
+  /** Full markdown/plain content */
+  content: string;
+  /** Primary card image URL */
+  featuredImage: string;
+  /** Extra gallery images */
+  images: string[];
+  authorName: string;
+  authorRole: AuthorRole;
+  tags: string[];
+  status: BlogStatus;
+  createdAt: string;   // ISO date string
+  updatedAt: string;   // ISO date string
 }
 
 export interface VideoResource {

@@ -9,6 +9,8 @@ export interface BlogPost {
     title: string;
     excerpt: string;
     content: BlogSection[];
+    /** Optional: raw markdown string from managed blogs — rendered in place of `content` when present */
+    rawMarkdown?: string;
     author: string;
     date: string;
     readTime: string;

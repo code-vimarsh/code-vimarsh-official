@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { ProjectFormData, ProjectFormErrors } from './types';
 import { ProjectType } from '../../types';
+import ImageGalleryPicker from '../shared/ImageGalleryPicker';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -24,6 +25,7 @@ const EMPTY_FORM: ProjectFormData = {
   githubUrl: '',
   imageFile: null,
   imagePreview: '',
+  extraImages: [],
   authorName: '',
   isPublished: true,
 };
@@ -237,6 +239,8 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
         tech: techArray,
         author: form.authorName.trim(),
         image: form.imagePreview || undefined,
+        // gallery: primary image is first, extra images follow
+        images: [form.imagePreview, ...form.extraImages].filter(Boolean) as string[],
         isPublished: form.isPublished,
         links: {
           github: form.githubUrl.trim(),
@@ -458,6 +462,19 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
                     className="hidden"
                   />
                 </Field>
+
+                {/* Extra Gallery Images — USER + ADMIN */}
+                <div
+                  className="rounded-xl p-4"
+                  style={{ border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.015)' }}
+                >
+                  <ImageGalleryPicker
+                    images={form.extraImages}
+                    onChange={(imgs) => setField('extraImages', imgs)}
+                    label="Additional Images (gallery)"
+                    hint="Extra photos shown in the project image carousel. JPG, PNG, WebP — max 5 MB each."
+                  />
+                </div>
 
                 {/* Author Name */}
                 <Field label="Author Name" required error={errors.authorName}>

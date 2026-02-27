@@ -7,22 +7,11 @@ import { FiredSword } from './Sword';
 import { SPath } from './SPath';
 import { MobileTimeline } from './MobileTimeline';
 import { AchievementModal } from './AchievementModal';
+import { useGlobalState } from '../../context/GlobalContext';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DATA  (CRUD-ready — swap ACHIEVEMENTS with useState + API fetch)
+// LAYOUT CONSTANTS
 // ─────────────────────────────────────────────────────────────────────────────
-const ACHIEVEMENTS: Achievement[] = [
-    { id: '1', date: 'JAN 2022', title: 'Code Vimarsh Founded', description: 'The journey began with a vision to build a community of passionate coders and problem solvers.', icon: '🏛', category: 'Founding' },
-    { id: '2', date: 'APR 2022', title: 'First Hackathon Organized', description: 'Successfully hosted our inaugural 24-hour hackathon with 150+ participants from across the region.', icon: '⚔️', category: 'Hackathon' },
-    { id: '3', date: 'AUG 2022', title: '500 Members Milestone', description: 'Our community grew to 500 active members, establishing Code Vimarsh as a leading coding community.', icon: '👑', category: 'Milestone' },
-    { id: '4', date: 'DEC 2022', title: 'National Coding Championship', description: 'Represented at the national level with 3 teams qualifying for the finals and 1 team winning gold.', icon: '🏆', category: 'Hackathon' },
-    { id: '5', date: 'MAR 2023', title: 'Open Source Initiative', description: 'Launched our open-source contribution program, with members contributing to 70+ major projects.', icon: '🔥', category: 'Open Source' },
-    { id: '6', date: 'JUL 2023', title: 'Tech Summit 2023', description: 'Organized a flagship tech summit with industry leaders, attracting 1000+ attendees and 30 speakers.', icon: '🚀', category: 'Recognition' },
-    { id: '7', date: 'NOV 2023', title: '1000 Members Strong', description: 'Crossed the 1000-member mark, becoming one of the largest student-led coding communities.', icon: '👑', category: 'Milestone' },
-    { id: '8', date: 'FEB 2024', title: 'International Recognition', description: 'Featured by global tech platforms for our innovative approach to community-driven coding education.', icon: '🌐', category: 'Recognition' },
-    { id: '9', date: 'MAY 2024', title: 'Smart India Hackathon Winners', description: 'Secured 1st prize in the software edition, competing against 500+ teams nationwide.', icon: '🥇', category: 'Hackathon' },
-    { id: '10', date: 'SEP 2024', title: '100+ PRs in Hacktoberfest', description: 'Club milestone reached in a single month — 100+ merged pull requests to major open-source repos.', icon: '⭐', category: 'Open Source' },
-];
 
 const CURVE_X_FRAC = 0.54;   // S-curve horizontal center (fraction of svg width)
 const ROW_H = 280;    // vertical px between consecutive nodes
@@ -47,7 +36,22 @@ function buildPath(count: number, cx: number, topPad: number): string {
 }
 
 export const AchievementsSection: React.FC = () => {
-    const achievements = ACHIEVEMENTS;
+    const { managedAchievements } = useGlobalState();
+
+    // Sort by order field, then map to the local Achievement shape expected by cards/modal
+    const achievements: Achievement[] = useMemo(() =>
+        [...managedAchievements]
+            .sort((a, b) => a.order - b.order)
+            .map(a => ({
+                id: a.id,
+                date: a.date,
+                title: a.title,
+                description: a.description,
+                icon: a.icon,
+                category: a.category,
+            })),
+        [managedAchievements]
+    );
 
     const sectionRef = useRef<HTMLElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);

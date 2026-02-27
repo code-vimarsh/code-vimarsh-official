@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import type { FilterTab, Event } from './types';
@@ -8,47 +8,7 @@ import EventCard from './EventCard';
 import LiveHeroBanner from './LiveHeroBanner';
 import EmptyState from './EmptyState';
 import EventsSectionHeader from './EventsSectionHeader';
-import { EmbersBackground } from '../Achievements/GlowDots';
-
-// ── Background identical to Team page ────────────────────────────────────────
-const SectionBackground: React.FC = () => {
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-
-  useEffect(() => {
-    const fn = (e: MouseEvent) => setMousePos({ x: e.clientX, y: e.clientY });
-    window.addEventListener('mousemove', fn, { passive: true });
-    return () => window.removeEventListener('mousemove', fn);
-  }, []);
-
-  return (
-    <div style={{ position: 'absolute', inset: 0, minHeight: '100vh', zIndex: 0, pointerEvents: 'none', overflow: 'hidden', background: '#0a0a0a' }}>
-      {/* Solid black base — no image bleed, no navy tint */}
-      {/* Dark overlay */}
-      <div style={{
-        position: 'absolute', inset: 0,
-        background: 'linear-gradient(180deg,rgba(10,10,10,0.98) 0%,rgba(10,10,10,0.96) 50%,rgba(10,10,10,0.99) 100%)',
-      }} />
-      {/* Ember glow particles */}
-      <EmbersBackground />
-      {/* Mouse spotlight */}
-      <motion.div
-        animate={{ x: mousePos.x - 300, y: mousePos.y - 300 }}
-        transition={{ type: 'spring', damping: 45, stiffness: 40 }}
-        style={{
-          position: 'absolute', width: 600, height: 600, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(249,115,22,0.055) 0%, transparent 70%)',
-          zIndex: 1,
-        }}
-      />
-      {/* Dot grid */}
-      <div style={{
-        position: 'absolute', inset: 0,
-        backgroundImage: 'radial-gradient(rgba(249,115,22,0.06) 1px, transparent 1px)',
-        backgroundSize: '38px 38px', opacity: 0.55, zIndex: 2,
-      }} />
-    </div>
-  );
-};
+import SectionBackground from '../shared/SectionBackground';
 
 
 // Helpers
@@ -92,10 +52,8 @@ const EventsSection: React.FC = () => {
   const liveEvent = useMemo(() => sorted.find((e) => e.status === 'live'), [sorted]);
 
   return (
-    <div className="relative">
-      {/* Unified black background: embers + mouse glow + dot grid */}
-      <SectionBackground />
-    <section className="relative z-10 space-y-12" aria-label="Events">
+    <SectionBackground>
+      <section className="relative z-10 space-y-12" aria-label="Events">
       <EventsSectionHeader />
 
       {/* Live hero — only when "All" or "Live" tab is active */}
@@ -160,7 +118,7 @@ const EventsSection: React.FC = () => {
       </div>
 
     </section>
-    </div>
+    </SectionBackground>
   );
 };
 

@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronRight, ImageOff } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { ProjectType } from './types';
 import { TechBadge } from './TechBadge';
+import ImageCarousel from '../shared/ImageCarousel';
 
 // Category accent colours keep cards visually distinct
 const CATEGORY_COLORS: Record<string, string> = {
@@ -19,11 +20,18 @@ interface ProjectCardProps {
 }
 
 export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
-  const navigate  = useNavigate();
-  const [imgError, setImgError] = useState(false);
+  const navigate = useNavigate();
 
   const accent = CATEGORY_COLORS[project.category] ?? '#ff6a00';
   const preview = project.shortDescription ?? project.description;
+
+  // Build the images array: prefer project.images; fall back to single project.image
+  const galleryImages: string[] =
+    project.images && project.images.length > 0
+      ? project.images
+      : project.image
+      ? [project.image]
+      : [];
 
   return (
     <motion.article
@@ -47,45 +55,39 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
         style={{ background: `linear-gradient(90deg, ${accent}, transparent)` }}
       />
 
-      {/* ── Project Image ── */}
-      <div className="relative w-full h-48 bg-surfaceLight overflow-hidden shrink-0">
-        {project.image && !imgError ? (
-          <img
-            src={project.image}
-            alt={project.title}
-            onError={() => setImgError(true)}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-[#0f0f0f]">
-            {imgError ? (
-              <ImageOff size={36} className="text-surfaceLight" />
-            ) : (
+      {/* ── Project Image / Carousel ── */}
+      <ImageCarousel
+        images={galleryImages}
+        alt={project.title}
+        className="h-48 shrink-0"
+        autoPlayMs={galleryImages.length > 1 ? 4000 : 0}
+        overlay={
+          <>
+            {/* Category badge */}
+            <div
+              className="absolute top-3 left-3 z-10 px-2.5 py-1 rounded-md text-[10px] font-mono tracking-widest uppercase border"
+              style={{
+                background: `${accent}14`,
+                borderColor: `${accent}40`,
+                color: accent,
+              }}
+            >
+              {project.category}
+            </div>
+            {/* Gradient fade at bottom */}
+            <div className="absolute bottom-0 inset-x-0 h-10 bg-gradient-to-t from-surface to-transparent z-10" />
+            {/* Letter placeholder when no images */}
+            {galleryImages.length === 0 && (
               <span
-                className="text-7xl font-black font-display opacity-20 select-none"
+                className="absolute inset-0 flex items-center justify-center text-7xl font-black font-display opacity-20 select-none"
                 style={{ color: accent }}
               >
                 {project.title.charAt(0)}
               </span>
             )}
-          </div>
-        )}
-
-        {/* Category badge overlay */}
-        <div
-          className="absolute top-3 left-3 px-2.5 py-1 rounded-md text-[10px] font-mono tracking-widest uppercase border"
-          style={{
-            background: `${accent}14`,
-            borderColor: `${accent}40`,
-            color: accent,
-          }}
-        >
-          {project.category}
-        </div>
-
-        {/* Gradient fade at bottom */}
-        <div className="absolute bottom-0 inset-x-0 h-10 bg-gradient-to-t from-surface to-transparent" />
-      </div>
+          </>
+        }
+      />
 
       {/* ── Card Body ── */}
       <div className="p-6 flex flex-col flex-1">

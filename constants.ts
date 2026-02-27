@@ -1,4 +1,4 @@
-import { NavItem, EventType, ProjectType, AchievementType, TeamMember, BlogPost, VideoResource, LinkResource } from './types';
+import { NavItem, EventType, ProjectType, AchievementType, TeamMember, BlogPost, ManagedBlog, ManagedAchievement, VideoResource, LinkResource } from './types';
 
 export const NAV_ITEMS: NavItem[] = [
   { label: 'Home', path: '/' },
@@ -146,6 +146,19 @@ export const MOCK_ACHIEVEMENTS: AchievementType[] = [
   { id: '2', year: '2023', title: '100+ PRs in Hacktoberfest', description: 'Club milestone reached in a single month.', category: 'Open Source' },
 ];
 
+export const MOCK_MANAGED_ACHIEVEMENTS: ManagedAchievement[] = [
+  { id: 'ma1', title: 'Code Vimarsh Founded', description: 'The journey began with a vision to build a community of passionate coders and problem solvers.', date: 'JAN 2022', tag: 'Founding', icon: '🏛', category: 'Founding', order: 1, createdAt: '2022-01-01T00:00:00Z', updatedAt: '2022-01-01T00:00:00Z' },
+  { id: 'ma2', title: 'First Hackathon Organized', description: 'Successfully hosted our inaugural 24-hour hackathon with 150+ participants from across the region.', date: 'APR 2022', tag: 'Hackathon', icon: '⚔️', category: 'Hackathon', order: 2, createdAt: '2022-04-01T00:00:00Z', updatedAt: '2022-04-01T00:00:00Z' },
+  { id: 'ma3', title: '500 Members Milestone', description: 'Our community grew to 500 active members, establishing Code Vimarsh as a leading coding community.', date: 'AUG 2022', tag: 'Milestone', icon: '👑', category: 'Milestone', order: 3, createdAt: '2022-08-01T00:00:00Z', updatedAt: '2022-08-01T00:00:00Z' },
+  { id: 'ma4', title: 'National Coding Championship', description: 'Represented at the national level with 3 teams qualifying for the finals and 1 team winning gold.', date: 'DEC 2022', tag: 'Hackathon', icon: '🏆', category: 'Hackathon', order: 4, createdAt: '2022-12-01T00:00:00Z', updatedAt: '2022-12-01T00:00:00Z' },
+  { id: 'ma5', title: 'Open Source Initiative', description: 'Launched our open-source contribution program, with members contributing to 70+ major projects.', date: 'MAR 2023', tag: 'Open Source', icon: '🔥', category: 'Open Source', order: 5, createdAt: '2023-03-01T00:00:00Z', updatedAt: '2023-03-01T00:00:00Z' },
+  { id: 'ma6', title: 'Tech Summit 2023', description: 'Organized a flagship tech summit with industry leaders, attracting 1000+ attendees and 30 speakers.', date: 'JUL 2023', tag: 'Recognition', icon: '🚀', category: 'Recognition', order: 6, createdAt: '2023-07-01T00:00:00Z', updatedAt: '2023-07-01T00:00:00Z' },
+  { id: 'ma7', title: '1000 Members Strong', description: 'Crossed the 1000-member mark, becoming one of the largest student-led coding communities.', date: 'NOV 2023', tag: 'Milestone', icon: '👑', category: 'Milestone', order: 7, createdAt: '2023-11-01T00:00:00Z', updatedAt: '2023-11-01T00:00:00Z' },
+  { id: 'ma8', title: 'International Recognition', description: 'Featured by global tech platforms for our innovative approach to community-driven coding education.', date: 'FEB 2024', tag: 'Recognition', icon: '🌐', category: 'Recognition', order: 8, createdAt: '2024-02-01T00:00:00Z', updatedAt: '2024-02-01T00:00:00Z' },
+  { id: 'ma9', title: 'Smart India Hackathon Winners', description: 'Secured 1st prize in the software edition, competing against 500+ teams nationwide.', date: 'MAY 2024', tag: 'Hackathon', icon: '🥇', category: 'Hackathon', order: 9, createdAt: '2024-05-01T00:00:00Z', updatedAt: '2024-05-01T00:00:00Z' },
+  { id: 'ma10', title: '100+ PRs in Hacktoberfest', description: 'Club milestone reached in a single month — 100+ merged pull requests to major open-source repos.', date: 'SEP 2024', tag: 'Open Source', icon: '⭐', category: 'Open Source', order: 10, createdAt: '2024-09-01T00:00:00Z', updatedAt: '2024-09-01T00:00:00Z' },
+];
+
 export const MOCK_TEAM: TeamMember[] = [
   { id: '1', name: 'Aarav Patel', role: 'President & Tech Lead', image: 'https://picsum.photos/400/400?random=1' },
   { id: '2', name: 'Priya Sharma', role: 'Vice President', image: 'https://picsum.photos/400/400?random=2' },
@@ -156,6 +169,73 @@ export const MOCK_TEAM: TeamMember[] = [
 export const MOCK_BLOGS: BlogPost[] = [
   { id: '1', title: 'Building Scalable Systems with Go', excerpt: 'Learn how we migrated our backend services to handle 10x traffic.', date: 'Oct 12, 2024', author: 'Aarav Patel', tags: ['Backend', 'Go'] },
   { id: '2', title: 'Demystifying WebGL and Three.js', excerpt: 'A beginner-friendly guide to rendering 3D graphics on the web.', date: 'Sep 28, 2024', author: 'Neha Gupta', tags: ['Frontend', '3D'] },
+];
+
+export const MOCK_MANAGED_BLOGS: ManagedBlog[] = [
+  {
+    id: 'mb1',
+    title: 'Mastering Dynamic Programming',
+    slug: 'mastering-dynamic-programming',
+    topic: 'DSA',
+    shortDescription: 'Three mental models that crack every DP problem — Memoize, Tabulate, Optimize.',
+    content: `# Mastering Dynamic Programming\n\nDynamic programming boils down to one insight: cache overlapping sub-problem answers.\n\n## Top-Down Memoization\n\n\`\`\`python\ndef fib(n, memo={}):\n    if n in memo: return memo[n]\n    if n <= 2:   return 1\n    memo[n] = fib(n-1, memo) + fib(n-2, memo)\n    return memo[n]\n\`\`\`\n\n## When to use DP?\n\nIf the problem asks for an optimal value (min/max/count) AND sub-answers are reused — DP is your tool.`,
+    featuredImage: 'https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=800&q=80',
+    images: [],
+    authorName: 'Aryan Shah',
+    authorRole: 'Core Member',
+    tags: ['DSA', 'Algorithms', 'Python'],
+    status: 'Published',
+    createdAt: '2025-02-18T10:00:00Z',
+    updatedAt: '2025-02-18T10:00:00Z',
+  },
+  {
+    id: 'mb2',
+    title: 'Production REST API with Node.js',
+    slug: 'production-rest-api-nodejs',
+    topic: 'Web Development',
+    shortDescription: 'JWT auth, rate-limiting, and Postgres pooling — battle-tested at 10k+ req/sec.',
+    content: `# Production REST API with Node.js\n\nProduction APIs need auth, error handling, and observability from day one.\n\n## JWT Middleware\n\n\`\`\`javascript\nconst auth = (req, res, next) => {\n  const token = req.headers.authorization?.split(' ')[1];\n  if (!token) return res.status(401).json({ error: 'Unauthorized' });\n  try {\n    req.user = jwt.verify(token, process.env.JWT_SECRET);\n    next();\n  } catch {\n    res.status(403).json({ error: 'Invalid token' });\n  }\n};\n\`\`\``,
+    featuredImage: 'https://images.unsplash.com/photo-1627398242454-45a1465c2479?w=800&q=80',
+    images: [],
+    authorName: 'Neel Patel',
+    authorRole: 'Lead',
+    tags: ['Backend', 'Node.js', 'REST API'],
+    status: 'Published',
+    createdAt: '2025-01-30T08:00:00Z',
+    updatedAt: '2025-01-30T08:00:00Z',
+  },
+  {
+    id: 'mb3',
+    title: 'How LLMs Actually Work',
+    slug: 'how-llms-actually-work',
+    topic: 'AI / ML',
+    shortDescription: 'Transformers, self-attention, RLHF — from first principles, no PhD required.',
+    content: `# How LLMs Actually Work\n\nLLMs are probability machines that predict the next token given prior context.\n\n## Scaled Dot-Product Attention\n\n\`\`\`python\ndef attention(Q, K, V):\n    d_k = Q.shape[-1]\n    scores = Q @ K.T / d_k**0.5\n    weights = softmax(scores, dim=-1)\n    return weights @ V\n\`\`\`\n\n## RLHF in plain English\n\nReinforcement Learning from Human Feedback fine-tunes model outputs using ranked human preferences.`,
+    featuredImage: 'https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=800&q=80',
+    images: [],
+    authorName: 'Priya Mehta',
+    authorRole: 'Guest',
+    tags: ['AI', 'ML', 'LLM', 'Transformers'],
+    status: 'Published',
+    createdAt: '2025-02-05T09:00:00Z',
+    updatedAt: '2025-02-05T09:00:00Z',
+  },
+  {
+    id: 'mb4',
+    title: 'Nexus Hackathon 2025 — Behind the Scenes',
+    slug: 'nexus-hackathon-2025-behind-the-scenes',
+    topic: 'Hackathon',
+    shortDescription: 'What went into organising Code Vimarsh\'s flagship 24-hour hackathon. The logistics, the chaos, the wins.',
+    content: `# Nexus Hackathon 2025\n\nOrganising a 24-hour hackathon for 200+ students is no small feat. Here's how we did it.\n\n## Planning Timeline\n\nWe started 8 weeks out with venue booking, sponsor outreach, and problem statement design.\n\n## Key Takeaways\n\n- Start mentor recruiting early\n- Automate registration with proper forms\n- Keep the judging rubric transparent`,
+    featuredImage: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&q=80',
+    images: [],
+    authorName: 'Admin',
+    authorRole: 'Admin',
+    tags: ['Hackathon', 'Event', 'Community'],
+    status: 'Draft',
+    createdAt: '2025-03-01T12:00:00Z',
+    updatedAt: '2025-03-01T12:00:00Z',
+  },
 ];
 
 export const MOCK_VIDEOS: VideoResource[] = [
