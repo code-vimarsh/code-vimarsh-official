@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+﻿import React, { useState, useRef } from 'react';
 import { useGlobalState } from '../context/GlobalContext';
 import { LayoutDashboard, Calendar, FolderHeart, ShieldAlert, Users, Plus, Trash2, ArrowLeft, BookOpen, Pencil, Upload, X, Save, Mail, Send, CheckCircle, AlertCircle, Loader2, Megaphone, UserPlus, UserCheck, Award, Newspaper, Trophy } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -26,8 +26,12 @@ const Admin: React.FC = () => {
   // New Project State
   const [newProject, setNewProject] = useState({
     title: '', author: '', tech: '', github: '',
-    description: '', category: 'Web' as any
+    description: '', category: 'Web' as any, image: ''
   });
+  const [projectImgMode, setProjectImgMode] = useState<'url' | 'upload'>('url');
+  const projectImgRef = useRef<HTMLInputElement>(null);
+  const projectFileToDataUrl = (file: File): Promise<string> =>
+    new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result as string); r.onerror = rej; r.readAsDataURL(file); });
 
   // New Admin State
   const [newAdmin, setNewAdmin] = useState({ name: '', email: '', role: 'Moderator' });
@@ -353,7 +357,7 @@ The Code Vimarsh Core Team`,
 
   const handleAddProject = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newProject.title) return;
+    if (!newProject.title || !newProject.image) return;
     addProject({
       id: Date.now().toString(),
       title: newProject.title,
@@ -361,9 +365,11 @@ The Code Vimarsh Core Team`,
       description: newProject.description,
       category: newProject.category,
       tech: newProject.tech.split(',').map(t => t.trim()),
+      image: newProject.image,
       links: { github: newProject.github }
     });
-    setNewProject({ title: '', author: '', tech: '', github: '', description: '', category: 'Web' });
+    setNewProject({ title: '', author: '', tech: '', github: '', description: '', category: 'Web', image: '' });
+    setProjectImgMode('url');
   };
 
   const handleAddAdmin = (e: React.FormEvent) => {
@@ -573,7 +579,77 @@ The Code Vimarsh Core Team`,
                     <label className="text-xs text-textMuted mb-1 block">GitHub Link</label>
                     <input value={newProject.github} onChange={e => setNewProject({ ...newProject, github: e.target.value })} className="w-full bg-bgDark border border-surfaceLight rounded-md px-3 py-2 text-sm focus:border-primary focus:outline-none" placeholder="https://github.com/..." />
                   </div>
-                  <button type="submit" className="w-full bg-primary hover:bg-secondary text-black font-bold py-2 rounded-md transition-colors text-sm">Add Project</button>
+
+                  {/* ── Project Image (compulsory) ── */}
+                  <div>
+                    <label className="text-xs text-textMuted mb-1 block">
+                      Project Image <span className="text-primary font-bold">*</span>
+                    </label>
+                    {/* Mode toggle pill */}
+                    <div className="inline-flex rounded-full border border-surfaceLight overflow-hidden mb-2 text-xs font-semibold">
+                      <button
+                        type="button"
+                        onClick={() => setProjectImgMode('url')}
+                        className={`px-3 py-1 transition-colors ${projectImgMode === 'url' ? 'bg-primary text-black' : 'text-textMuted hover:text-white'}`}
+                      >URL</button>
+                      <button
+                        type="button"
+                        onClick={() => setProjectImgMode('upload')}
+                        className={`px-3 py-1 transition-colors flex items-center gap-1 ${projectImgMode === 'upload' ? 'bg-primary text-black' : 'text-textMuted hover:text-white'}`}
+                      ><Upload size={11} />Upload</button>
+                    </div>
+
+                    {projectImgMode === 'url' ? (
+                      <input
+                        value={newProject.image}
+                        onChange={e => setNewProject({ ...newProject, image: e.target.value })}
+                        className="w-full bg-bgDark border border-surfaceLight rounded-md px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                        placeholder="https://example.com/project-image.png"
+                      />
+                    ) : (
+                      <>
+                        <input
+                          ref={projectImgRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={async e => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            if (file.size > 5 * 1024 * 1024) { alert('Image must be under 5 MB'); return; }
+                            const dataUrl = await projectFileToDataUrl(file);
+                            setNewProject(p => ({ ...p, image: dataUrl }));
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => projectImgRef.current?.click()}
+                          className="w-full border-2 border-dashed border-surfaceLight hover:border-primary/60 rounded-md py-3 text-xs text-textMuted hover:text-white transition-colors flex items-center justify-center gap-2"
+                        >
+                          <Upload size={14} /> Click to choose image (max 5 MB)
+                        </button>
+                      </>
+                    )}
+
+                    {/* Preview */}
+                    {newProject.image && (
+                      <div className="relative mt-2 inline-block">
+                        <img
+                          src={newProject.image}
+                          alt="preview"
+                          className="h-16 w-24 object-cover rounded-md border border-surfaceLight"
+                          onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setNewProject(p => ({ ...p, image: '' }))}
+                          className="absolute -top-1.5 -right-1.5 bg-red-600 hover:bg-red-500 rounded-full p-0.5"
+                        ><X size={10} /></button>
+                      </div>
+                    )}
+                  </div>
+
+                  <button type="submit" disabled={!newProject.image} className="w-full bg-primary hover:bg-secondary disabled:opacity-40 disabled:cursor-not-allowed text-black font-bold py-2 rounded-md transition-colors text-sm">Add Project</button>
                 </form>
               </div>
 
