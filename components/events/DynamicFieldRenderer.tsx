@@ -38,7 +38,7 @@ const TextInput: React.FC<FieldProps & { type?: string }> = ({ field, value, onC
     placeholder={field.placeholder}
     disabled={disabled}
     className={BASE_INPUT}
-    style={baseInputStyle(!!error)}
+    style={{ ...baseInputStyle(!!error), ...(type === 'date' ? { colorScheme: 'light' } : {}) }}
     aria-invalid={!!error}
     aria-describedby={error ? `${field.id}-error` : field.helpText ? `${field.id}-help` : undefined}
   />

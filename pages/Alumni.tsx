@@ -424,19 +424,11 @@ const Alumni: React.FC = () => {
             >
               <GraduationCap size={11} /> Alumni Network · Code Vimarsh
             </div>
-            <h1 style={{
-              fontFamily: 'Cinzel Decorative,Cinzel,serif',
-              fontWeight: 900,
-              fontSize: 'clamp(2rem,4.5vw,3.2rem)',
-              color: '#f5f0e8',
-              margin: '0 0 12px',
-              letterSpacing: '0.04em',
-              lineHeight: 1.2,
-            }}>
+            <h1 className="heading-primary" style={{ fontSize: 'clamp(2rem,4.5vw,3.2rem)', margin: '0 0 12px', lineHeight: 1.2 }}>
               Where CVians Build{' '}
-              <span style={{ color: '#f97316', textShadow: '0 0 40px rgba(249,115,22,0.55)' }}>the Future</span>
+              <span className="heading-accent-glow">the Future</span>
             </h1>
-            <p style={{ color: '#6a5a4a', fontFamily: 'JetBrains Mono, monospace', fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase' }}>
+            <p className="section-subtitle" style={{ marginTop: 0 }}>
               Real alumni · Real companies · Real domain roadmaps
             </p>
 

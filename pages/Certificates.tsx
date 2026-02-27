@@ -295,6 +295,7 @@ const Certificates: React.FC = () => {
                                     value={form.date}
                                     onChange={e => setForm({ ...form, date: e.target.value })}
                                     className="w-full bg-bgDark border border-surfaceLight rounded-xl px-3 py-2.5 text-sm focus:border-primary focus:outline-none transition-all"
+                                    style={{ colorScheme: 'light' }}
                                 />
                             </div>
                             <div className="space-y-1.5">

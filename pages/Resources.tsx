@@ -270,31 +270,31 @@ const Resources: React.FC = () => {
       {/* Page content — sits in normal flow above the fixed background */}
       <div className="pb-20" style={{ position: 'relative', minHeight: '100vh' }}>
 
-        {/* Hero */}
-        <motion.header
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          style={{ position: 'relative', zIndex: 10 }}
-          className="pt-28 pb-24 px-6"
-        >
-          <div className="container mx-auto text-center space-y-4">
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest"
-            >
-              <Sparkles size={12} className="animate-pulse" /> Curated Learning Ecosystem
-            </motion.div>
-            <h1 style={{ fontFamily: 'Cinzel Decorative,Cinzel,serif', fontWeight: 900, fontSize: 'clamp(2rem,5vw,3.5rem)', color: '#f5f0e8', margin: 0, letterSpacing: '0.04em' }}>
-              Resources For{' '}
-              <span style={{ color: '#f97316', textShadow: '0 0 40px rgba(249,115,22,0.55)' }}>DSA</span>
-            </h1>
-            <p className="text-textMuted text-base md:text-lg max-w-2xl mx-auto">
-              Curated playlists and practice sheets to boost your interview preparation.
-            </p>
-          </div>
-        </motion.header>
+      {/* Hero */}
+      <motion.header
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        style={{ position: 'relative', zIndex: 10 }}
+        className="pt-28 pb-24 px-6"
+      >
+        <div className="container mx-auto text-center space-y-4">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest"
+          >
+            <Sparkles size={12} className="animate-pulse" /> Curated Learning Ecosystem
+          </motion.div>
+          <h1 style={{ fontFamily: 'Cinzel Decorative,Cinzel,serif', fontWeight: 900, fontSize: 'clamp(2rem,5vw,3.5rem)', color: '#f5f0e8', margin: 0, letterSpacing: '0.04em' }}>
+            Resources For{' '}
+            <span style={{ color: '#f97316', textShadow: '0 0 40px rgba(249,115,22,0.55)' }}>DSA</span>
+          </h1>
+          <p className="text-textMuted text-base md:text-lg max-w-2xl mx-auto">
+            Curated playlists and practice sheets to boost your interview preparation.
+          </p>
+        </div>
+      </motion.header>
 
         <div className="container mx-auto px-6 -mt-8 space-y-16 relative z-10">
           {/* YT Playlists */}

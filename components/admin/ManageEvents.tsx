@@ -610,6 +610,7 @@ const EventEditor: React.FC<EventEditorProps> = ({
               value={draft.date}
               onChange={(e) => onDraftChange({ ...draft, date: e.target.value })}
               className={inp}
+              style={{ colorScheme: 'light' }}
             />
           </div>
           <div>

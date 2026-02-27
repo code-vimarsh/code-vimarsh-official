@@ -126,11 +126,11 @@ export const AchievementsSection: React.FC = () => {
 
             {/* ── Section header ── */}
             <div style={{ position: 'relative', zIndex: 10, textAlign: 'center', paddingTop: 80, paddingBottom: 40 }}>
-                <h1 style={{ fontFamily: 'Cinzel Decorative,Cinzel,serif', fontWeight: 900, fontSize: 'clamp(2rem,5vw,3.5rem)', color: '#f5f0e8', margin: 0, letterSpacing: '0.04em' }}>
+                <h1 className="heading-primary" style={{ fontSize: 'clamp(2rem,5vw,3.5rem)', margin: 0 }}>
                     Hall of{' '}
-                    <span style={{ color: '#f97316', textShadow: '0 0 40px rgba(249,115,22,0.55)' }}>Achievements</span>
+                    <span className="heading-accent-glow">Achievements</span>
                 </h1>
-                <p style={{ fontFamily: 'JetBrains Mono,monospace', fontSize: 'clamp(0.65rem,1.5vw,0.85rem)', color: '#6a5a4a', letterSpacing: '0.22em', textTransform: 'uppercase', marginTop: 14 }}>
+                <p className="section-subtitle">
                     A chronicle of milestones forged in code and community
                 </p>
             </div>

@@ -251,7 +251,10 @@ const TeamSection: React.FC<{ section: typeof SECTIONS[number]; sectionIndex: nu
             </span>
           </div>
 
-          <h2 style={{ fontFamily: 'Inter,sans-serif', fontWeight: 800, fontSize: 'clamp(1.4rem,3vw,2rem)', color: '#f0ece6', margin: '0 0 12px', letterSpacing: '-0.03em', lineHeight: 1.15 }}>
+          <h2
+            className="heading-primary"
+            style={{ fontSize: 'clamp(1.4rem,3vw,2rem)', margin: '0 0 12px', lineHeight: 1.15 }}
+          >
             {section.title}
           </h2>
 
@@ -391,20 +394,16 @@ const Hero: React.FC = () => {
       </motion.div>
 
       <h1
+        className="heading-primary"
         style={{
-          fontFamily: 'Inter, sans-serif', fontWeight: 900,
           fontSize: 'clamp(3rem, 10vw, 6.5rem)',
-          color: '#f0ece6', margin: '0 auto 28px',
-          letterSpacing: '-0.06em', lineHeight: 0.95, maxWidth: 1000,
+          margin: '0 auto 28px',
+          lineHeight: 0.95,
+          maxWidth: 1000,
         }}
       >
         Engineering the{' '}
-        <span style={{
-          background: 'linear-gradient(135deg, #f97316 10%, #fb923c 90%)',
-          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-          backgroundClip: 'text',
-          filter: 'drop-shadow(0 0 30px rgba(249,115,22, 0.5))',
-        }}>
+        <span className="heading-accent">
           Future
         </span>
         {' '}Together

@@ -42,8 +42,7 @@ const EventsSectionHeader: React.FC = () => (
       variants={CONTAINER}
       initial="hidden"
       animate="visible"
-      className="flex flex-wrap items-baseline gap-x-4 leading-none"
-      style={{ fontFamily: 'Cinzel Decorative, Cinzel, serif' }}
+      className="font-heading flex flex-wrap items-baseline gap-x-4 leading-none"
     >
       {/* "Club" — white */}
       <motion.span
@@ -61,11 +60,10 @@ const EventsSectionHeader: React.FC = () => (
       {/* "Events" — orange glow */}
       <motion.span
         variants={WORD}
-        className="font-black"
+        className="font-black heading-accent-glow"
         style={{
           fontSize: 'clamp(2.2rem, 5.5vw, 4rem)',
           letterSpacing: '0.04em',
-          color: '#f97316',
           textShadow: '0 0 40px rgba(249,115,22,0.65), 0 0 80px rgba(249,115,22,0.25)',
         }}
       >
@@ -78,13 +76,7 @@ const EventsSectionHeader: React.FC = () => (
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.55, duration: 0.45, ease: 'easeOut' }}
-      className="text-textMuted max-w-xl leading-relaxed"
-      style={{
-        fontFamily: 'JetBrains Mono, monospace',
-        fontSize: 'clamp(0.68rem, 1.4vw, 0.82rem)',
-        letterSpacing: '0.18em',
-        textTransform: 'uppercase',
-      }}
+      className="section-subtitle max-w-xl leading-relaxed"
     >
       Workshops, hackathons, open-source sprints, and tech talks — built for developers who ship.
     </motion.p>
