@@ -110,9 +110,9 @@ const Contact: React.FC = () => {
             <span className="w-1.5 h-1.5 rounded-full bg-primary animate-ping" />
             Get in Touch
           </span>
-          <h1 className="text-3xl md:text-5xl font-display font-bold text-white leading-tight mb-3">
+          <h1 className="heading-primary text-3xl md:text-5xl leading-tight mb-3">
             Let's Build{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">
+            <span className="heading-accent">
               Something Great.
             </span>
           </h1>

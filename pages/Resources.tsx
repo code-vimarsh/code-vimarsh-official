@@ -264,9 +264,9 @@ const Resources: React.FC = () => {
           >
             <Sparkles size={12} className="animate-pulse" /> Curated Learning Ecosystem
           </motion.div>
-          <h1 style={{ fontFamily: 'Cinzel Decorative,Cinzel,serif', fontWeight: 900, fontSize: 'clamp(2rem,5vw,3.5rem)', color: '#f5f0e8', margin: 0, letterSpacing: '0.04em' }}>
+          <h1 className="heading-primary" style={{ fontSize: 'clamp(2rem,5vw,3.5rem)', margin: 0 }}>
             Resources For{' '}
-            <span style={{ color: '#f97316', textShadow: '0 0 40px rgba(249,115,22,0.55)' }}>DSA</span>
+            <span className="heading-accent-glow">DSA</span>
           </h1>
           <p className="text-textMuted text-base md:text-lg max-w-2xl mx-auto">
             Curated playlists and practice sheets to boost your interview preparation.

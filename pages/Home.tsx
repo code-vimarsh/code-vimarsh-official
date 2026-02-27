@@ -52,10 +52,10 @@ const Home: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="text-5xl md:text-7xl font-display font-bold leading-tight"
+            className="heading-primary text-5xl md:text-7xl leading-tight"
           >
             Think.<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">Code.</span><br />
+            <span className="heading-accent">Code.</span><br />
             Innovate.
           </motion.h1>
 
@@ -163,9 +163,9 @@ const Home: React.FC = () => {
           <span className="inline-block px-3 py-1 rounded-full border border-primary/30 bg-primary/5 text-primary text-xs font-mono mb-2">
             Why Us
           </span>
-          <h2 className="text-4xl font-display font-bold">
+          <h2 className="heading-primary text-4xl">
             Why Join The{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">Ecosystem?</span>
+            <span className="heading-accent">Ecosystem?</span>
           </h2>
           <p className="text-textMuted text-base leading-relaxed">
             We provide the infrastructure and community you need to scale your skills from basic syntax to production-ready architecture.
