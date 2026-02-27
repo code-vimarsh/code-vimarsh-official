@@ -1,7 +1,21 @@
-import React from 'react';
-import { Flame, Star, Award, Activity, Code } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { Flame, Star, Award, Activity, Code, FolderPlus } from 'lucide-react';
+import { useGlobalState } from '../context/GlobalContext';
+import { ProjectType } from '../types';
+import { ProjectForm, Toast, useToast } from '../components/Projects';
 
 const Dashboard: React.FC = () => {
+  const { addProject }                   = useGlobalState();
+  const [formOpen, setFormOpen]           = useState(false);
+  const { toast, showToast, hideToast }   = useToast();
+
+  const handleProjectSubmit = useCallback(
+    (newProject: ProjectType) => {
+      addProject(newProject);
+      showToast(`"${newProject.title}" submitted successfully!`, 'success');
+    },
+    [addProject, showToast]
+  );
   return (
     <div className="space-y-8">
       {/* Header Profile */}
@@ -20,7 +34,7 @@ const Dashboard: React.FC = () => {
           <p className="text-textMuted mb-4 font-mono text-sm">@alex_dev • Joined Fall 2023</p>
           
           {/* XP Bar */}
-          <div className="max-w-md w-full">
+          <div className="max-w-md w-full mb-5">
             <div className="flex justify-between text-xs mb-1">
               <span className="text-primary font-bold">2,450 XP</span>
               <span className="text-textMuted">3,000 XP to Lvl 13</span>
@@ -29,6 +43,28 @@ const Dashboard: React.FC = () => {
               <div className="h-full bg-gradient-to-r from-primary to-secondary w-[80%] rounded-full shadow-[0_0_10px_rgba(255,106,0,0.5)]"></div>
             </div>
           </div>
+
+          {/* Create Project CTA */}
+          <button
+            onClick={() => setFormOpen(true)}
+            className="
+              group inline-flex items-center gap-2
+              px-5 py-2.5 rounded-xl text-sm font-semibold
+              bg-surface border border-surfaceLight
+              text-textMuted hover:text-primary
+              hover:border-primary/50 hover:bg-primary/5
+              hover:shadow-[0_0_18px_rgba(255,106,0,0.15)]
+              active:scale-95
+              transition-all duration-200
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50
+            "
+          >
+            <FolderPlus
+              size={16}
+              className="text-primary transition-transform duration-200 group-hover:-translate-y-0.5"
+            />
+            Create Project
+          </button>
         </div>
 
         {/* Quick Stats */}
@@ -105,6 +141,22 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Create Project Modal */}
+      <ProjectForm
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        onSubmit={handleProjectSubmit}
+        defaultAuthor="Alex Developer"
+      />
+
+      {/* Toast Notification */}
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        visible={toast.visible}
+        onClose={hideToast}
+      />
     </div>
   );
 };

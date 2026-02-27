@@ -15,11 +15,15 @@ export interface EventType {
 export interface ProjectType {
   id: string;
   title: string;
-  description: string;
+  description: string;          // backward-compat short description
+  shortDescription?: string;    // 2-3 line card preview
+  fullDescription?: string;     // complete description shown when expanded
+  features?: string[];          // bullet list of key features
   category: 'Web' | 'Mobile' | 'AI / ML' | 'Systems' | 'Open Source';
   tech: string[];
   author: string;
-  image?: string;
+  image?: string;               // URL or base64 data URI
+  isPublished?: boolean;        // only published projects appear publicly
   links: {
     github?: string;
     live?: string;

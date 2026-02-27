@@ -6,6 +6,7 @@ import { AuthCard } from '../components/Auth';
 import { ForgotPasswordModal, SignInFormFields } from '../components/SignIn';
 import type { SignInFormData, SignInErrors } from '../components/Auth/types';
 import { validateSignIn } from '../utils/authValidation';
+import { useGlobalState } from '../context/GlobalContext';
 
 // ─── Animation variants ────────────────────────────────────────────────────────
 
@@ -21,6 +22,7 @@ const INITIAL_FORM: SignInFormData = { prn: '', password: '' };
 
 const SignIn: React.FC = () => {
   const navigate = useNavigate();
+  const { setIsLoggedIn } = useGlobalState();
 
   const [form, setForm]             = useState<SignInFormData>(INITIAL_FORM);
   const [errors, setErrors]         = useState<SignInErrors>({});
@@ -70,7 +72,8 @@ const SignIn: React.FC = () => {
     await new Promise((res) => setTimeout(res, 1800));
     setIsLoading(false);
 
-    // Demo: always succeeds → navigate to dashboard
+    // Demo: always succeeds → mark as logged in and navigate to dashboard
+    setIsLoggedIn(true);
     navigate('/dashboard');
   };
 

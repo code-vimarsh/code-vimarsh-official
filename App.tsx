@@ -11,6 +11,7 @@ const Events = React.lazy(() => import('./pages/Events'));
 const EventDetails = React.lazy(() => import('./pages/EventDetails'));
 const Resources = React.lazy(() => import('./pages/Resources'));
 const Projects = React.lazy(() => import('./pages/Projects'));
+const ProjectDetails = React.lazy(() => import('./pages/ProjectDetails'));
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 const Team = React.lazy(() => import('./pages/Team'));
 const Blog = React.lazy(() => import('./pages/Blog'));
@@ -26,8 +27,11 @@ const SignIn = React.lazy(() => import('./pages/SignIn'));
 
 // Fallback loader while lazy components load
 const PageLoader = () => (
-  <div className="flex h-[50vh] items-center justify-center">
-    <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+  <div className="flex min-h-[60vh] items-center justify-center">
+    <div className="flex flex-col items-center gap-3">
+      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+      <span className="text-xs font-mono text-textMuted tracking-widest uppercase">Loading</span>
+    </div>
   </div>
 );
 
@@ -97,6 +101,7 @@ const App: React.FC = () => {
                   <Route path="/events/:id" element={<EventDetails />} />
                   <Route path="/resources" element={<Resources />} />
                   <Route path="/projects" element={<Projects />} />
+                  <Route path="/projects/:id" element={<ProjectDetails />} />
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/team" element={<Team />} />
                   <Route path="/blog" element={<Blog />} />

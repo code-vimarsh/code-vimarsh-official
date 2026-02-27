@@ -2,7 +2,11 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { EventType, ProjectType, TeamMember, BlogPost, AchievementType, AdminUser, VideoResource, LinkResource, Participant, ClubMember } from '../types';
 import { MOCK_EVENTS, MOCK_PROJECTS, MOCK_TEAM, MOCK_BLOGS, MOCK_ACHIEVEMENTS, MOCK_VIDEOS, MOCK_LINKS } from '../constants';
 
+const AUTH_KEY = 'cv_loggedin';
+
 interface GlobalContextType {
+  isLoggedIn: boolean;
+  setIsLoggedIn: (v: boolean) => void;
   events: EventType[];
   addEvent: (event: EventType) => void;
   projects: ProjectType[];
@@ -45,6 +49,16 @@ const MOCK_MEMBERS: ClubMember[] = [
 ];
 
 export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [isLoggedIn, setIsLoggedInState] = useState<boolean>(
+    () => localStorage.getItem(AUTH_KEY) === 'true'
+  );
+
+  const setIsLoggedIn = (v: boolean) => {
+    setIsLoggedInState(v);
+    if (v) localStorage.setItem(AUTH_KEY, 'true');
+    else localStorage.removeItem(AUTH_KEY);
+  };
+
   const [events, setEvents] = useState<EventType[]>(MOCK_EVENTS);
   const [projects, setProjects] = useState<ProjectType[]>(MOCK_PROJECTS);
   const [team, setTeam] = useState<TeamMember[]>(MOCK_TEAM);
@@ -79,6 +93,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   return (
     <GlobalContext.Provider value={{
+      isLoggedIn, setIsLoggedIn,
       events, addEvent,
       projects, addProject,
       team, blogs, achievements,

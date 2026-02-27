@@ -1,85 +1,132 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { useGlobalState } from '../context/GlobalContext';
-import { Github, ExternalLink, Plus } from 'lucide-react';
+
+import { ProjectType } from '../types';
+import {
+  ProjectsHeader,
+  ProjectsGrid,
+  ProjectForm,
+  Toast,
+  useToast,
+} from '../components/Projects';
+import { EmbersBackground } from '../components/Achievements/GlowDots';
+
+// ── Background identical to Team page ────────────────────────────────────────
+const SectionBackground: React.FC = () => {
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const fn = (e: MouseEvent) => setMousePos({ x: e.clientX, y: e.clientY });
+    window.addEventListener('mousemove', fn, { passive: true });
+    return () => window.removeEventListener('mousemove', fn);
+  }, []); 
+
+  return (
+    <div style={{ position: 'absolute', inset: 0, minHeight: '100vh', zIndex: 0, pointerEvents: 'none', overflow: 'hidden', background: '#0a0a0a' }}>
+      {/* Solid black base — no image bleed, no navy tint */}
+      {/* Dark gradient overlay */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: 'linear-gradient(180deg,rgba(10,10,10,0.98) 0%,rgba(10,10,10,0.96) 50%,rgba(10,10,10,0.99) 100%)',
+      }} />
+      {/* Ember glow particles */}
+      <EmbersBackground />
+      {/* Mouse spotlight */}
+      <motion.div
+        animate={{ x: mousePos.x - 300, y: mousePos.y - 300 }}
+        transition={{ type: 'spring', damping: 45, stiffness: 40 }}
+        style={{
+          position: 'absolute', width: 600, height: 600, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(249,115,22,0.055) 0%, transparent 70%)',
+          zIndex: 1,
+        }}
+      />
+      {/* Dot grid */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        backgroundImage: 'radial-gradient(rgba(249,115,22,0.06) 1px, transparent 1px)',
+        backgroundSize: '38px 38px', opacity: 0.55, zIndex: 2,
+      }} />
+    </div>
+  );
+};
 
 const Projects: React.FC = () => {
-  const { projects } = useGlobalState();
-  const [searchTerm, setSearchTerm] = useState('');
+  const { projects, addProject, isLoggedIn } = useGlobalState();
 
-  const filteredProjects = projects.filter(p => 
-    p.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    p.tech.some(t => t.toLowerCase().includes(searchTerm.toLowerCase()))
+  const [searchTerm, setSearchTerm]   = useState('');
+  const [formOpen, setFormOpen]       = useState(false);
+  const { toast, showToast, hideToast } = useToast();
+
+  // Only published projects are visible to the public
+  const publishedProjects = useMemo(
+    () => projects.filter((p) => p.isPublished !== false),
+    [projects]
+  );
+
+  // Filter by search term across title and tech stack
+  const filteredProjects = useMemo(() => {
+    const term = searchTerm.toLowerCase().trim();
+    if (!term) return publishedProjects;
+    return publishedProjects.filter(
+      (p) =>
+        p.title.toLowerCase().includes(term) ||
+        p.tech.some((t) => t.toLowerCase().includes(term)) ||
+        (p.shortDescription ?? p.description).toLowerCase().includes(term) ||
+        p.category.toLowerCase().includes(term)
+    );
+  }, [publishedProjects, searchTerm]);
+
+  const handleProjectSubmit = useCallback(
+    (newProject: ProjectType) => {
+      addProject(newProject);
+      showToast(
+        `"${newProject.title}" has been submitted successfully!`,
+        'success'
+      );
+    },
+    [addProject, showToast]
   );
 
   return (
-    <div className="space-y-10">
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div className="space-y-4">
-          <h1 className="text-4xl font-display font-bold">Ship Software.</h1>
-          <p className="text-textMuted max-w-2xl">Explore projects built by the Vimarsh community. From low-level systems to modern web apps.</p>
-        </div>
-        <button className="bg-surface border border-surfaceLight hover:border-primary text-white font-medium px-4 py-2 rounded-lg transition-colors flex items-center whitespace-nowrap">
-          <Plus size={16} className="mr-2 text-primary" />
-          Submit Project
-        </button>
-      </header>
+    <div className="relative">
+      {/* Unified black background: embers + mouse glow + dot grid */}
+      <SectionBackground />
 
-      {/* Search & Filter */}
-      <div className="flex gap-4 mb-8">
-        <input 
-          type="text" 
-          placeholder="Search projects or tech stacks..." 
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="flex-1 bg-surface border border-surfaceLight rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-primary/50 text-white"
-        />
-      </div>
+      {/* Content sits above background */}
+      <div className="relative z-10 space-y-10">
 
-      {/* Grid */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-max">
-        {filteredProjects.map((project) => (
-          <div key={project.id} className="group relative bg-surface border border-surfaceLight rounded-xl overflow-hidden hover:border-primary/50 transition-all flex flex-col">
-            {/* Image Placeholder */}
-            <div className="w-full h-48 bg-surfaceLight flex items-center justify-center overflow-hidden shrink-0">
-              <div className="w-full h-full bg-[#1e1e1e] group-hover:scale-105 transition-transform duration-500 flex items-center justify-center text-surface text-6xl font-black opacity-50">
-                {project.title.charAt(0)}
-              </div>
-            </div>
-            
-            <div className="p-6 flex flex-col flex-1">
-              <h3 className="text-xl font-bold mb-2">{project.title}</h3>
-              <p className="text-sm text-textMuted mb-4">Built by {project.author}</p>
-              
-              <div className="flex flex-wrap gap-2 mb-6 mt-auto">
-                {project.tech.map(t => (
-                  <span key={t} className="text-xs font-mono bg-bgDark border border-surfaceLight px-2 py-1 rounded text-textMain">
-                    {t}
-                  </span>
-                ))}
-              </div>
+      {/* Header: title, stat, search, submit button */}
+      <ProjectsHeader
+        totalCount={projects.length}
+        publishedCount={publishedProjects.length}
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        onCreateClick={() => setFormOpen(true)}
+        isLoggedIn={isLoggedIn}
+      />
 
-              <div className="flex space-x-4 border-t border-surfaceLight pt-4">
-                {project.links.github && (
-                  <a href={project.links.github} className="text-textMuted hover:text-white flex items-center text-sm transition-colors">
-                    <Github size={16} className="mr-1" /> Source
-                  </a>
-                )}
-                {project.links.live && (
-                  <a href={project.links.live} className="text-textMuted hover:text-primary flex items-center text-sm transition-colors">
-                    <ExternalLink size={16} className="mr-1" /> Live Demo
-                  </a>
-                )}
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+      {/* Projects Grid */}
+      {/* Spacing between search bar and grid is handled by space-y-10 on the parent (via ProjectsHeader's space-y-6 + outer space-y-10) */}
+      <ProjectsGrid projects={filteredProjects} searchTerm={searchTerm} />
 
-      {filteredProjects.length === 0 && (
-        <div className="text-center text-textMuted py-10 border border-dashed border-surfaceLight rounded-xl">
-          No projects found matching your search.
-        </div>
-      )}
+      {/* Create / Submit Project Form Modal */}
+      <ProjectForm
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        onSubmit={handleProjectSubmit}
+        defaultAuthor="Alex Developer" // Replace with auth user name when available
+      />
+
+      {/* Toast Notification */}
+      <Toast
+        message={toast.message}
+        type={toast.type}
+        visible={toast.visible}
+        onClose={hideToast}
+      />
+      </div>{/* end z-10 content */}
     </div>
   );
 };
