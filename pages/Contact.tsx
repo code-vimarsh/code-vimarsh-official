@@ -1,7 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Mail, MapPin, Send, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import emailjs from '@emailjs/browser';
 import { motion } from 'framer-motion';
+import { EmbersBackground } from '../components/Achievements/GlowDots';
 
 /* ── ENV helper ─────────────────────────────────────────────── */
 const env = (import.meta as any).env ?? {};
@@ -63,6 +64,20 @@ const Contact: React.FC = () => {
   const formRef = useRef<HTMLFormElement>(null);
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
   const [errMsg, setErrMsg] = useState('');
+  const [bgLoaded, setBgLoaded] = useState(false);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => setMousePos({ x: e.clientX, y: e.clientY });
+    window.addEventListener('mousemove', onMove, { passive: true });
+
+    const img = new Image();
+    img.src = '/assets/team-bg.png';
+    if (img.complete) setBgLoaded(true);
+    else img.onload = () => setBgLoaded(true);
+
+    return () => window.removeEventListener('mousemove', onMove);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -88,13 +103,47 @@ const Contact: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-bgDark relative overflow-hidden">
+    <div className="min-h-screen relative overflow-hidden">
 
-      {/* ── Ambient glows ─────────────────────────────────────── */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 -left-40 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[140px]" />
-        <div className="absolute bottom-0 -right-40 w-[400px] h-[400px] bg-orange-700/4 rounded-full blur-[120px]" />
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,106,0,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,106,0,0.02)_1px,transparent_1px)] bg-[size:52px_52px]" />
+      {/* ── Full-viewport fixed background — Team style ─────── */}
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', backgroundColor: '#0b0f19' }}>
+
+        {/* Background image */}
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 0,
+          backgroundImage: `url('/assets/team-bg.png')`,
+          backgroundSize: 'cover', backgroundPosition: 'center',
+          opacity: bgLoaded ? 0.5 : 0,
+          transition: 'opacity 1.2s ease-in-out',
+        }} />
+
+        {/* Dark gradient overlay */}
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 0,
+          background: 'linear-gradient(180deg,rgba(11,15,25,0.92) 0%,rgba(11,15,25,0.78) 45%,rgba(11,15,25,0.95) 100%)',
+        }} />
+
+        {/* Floating embers */}
+        <EmbersBackground />
+
+        {/* Mouse-follow spotlight glow */}
+        <motion.div
+          animate={{ x: mousePos.x - 300, y: mousePos.y - 300 }}
+          transition={{ type: 'spring', damping: 45, stiffness: 40 }}
+          style={{
+            position: 'absolute', width: 600, height: 600, borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(249,115,22,0.055) 0%, transparent 70%)',
+            zIndex: 1,
+          }}
+        />
+
+        {/* Orange dot grid */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          backgroundImage: 'radial-gradient(rgba(249,115,22,0.06) 1px, transparent 1px)',
+          backgroundSize: '38px 38px',
+          opacity: 0.55, zIndex: 2,
+        }} />
       </div>
 
       <div className="relative z-10 container mx-auto px-4 sm:px-6 pt-24 pb-16 max-w-2xl">
