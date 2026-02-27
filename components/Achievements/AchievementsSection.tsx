@@ -98,14 +98,23 @@ export const AchievementsSection: React.FC = () => {
     }, [pathD]);
 
     return (
+        <>
+        {/* ── Full-viewport fixed background — bypasses Layout pt-24 / max-w-7xl ── */}
+        <div style={{ position: 'fixed', inset: 0, zIndex: -2, pointerEvents: 'none', overflow: 'hidden' }}>
+            {/* Castle background */}
+            <div style={{ position: 'absolute', inset: 0, backgroundImage: `url('/assets/castle-bg.jpeg')`, backgroundSize: 'cover', backgroundPosition: 'center top', backgroundRepeat: 'no-repeat' }} />
+            {/* Dark overlay */}
+            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(11,15,25,0.78) 0%,rgba(11,15,25,0.65) 45%,rgba(11,15,25,0.88) 100%)' }} />
+            {/* Embers fill the full viewport */}
+            <EmbersBackground />
+        </div>
+
         <section
             ref={sectionRef}
             style={{
                 position: 'relative',
                 width: '100vw',
                 minHeight: '100vh',
-                backgroundColor: '#0b0f19',
-                overflow: 'hidden',
                 /* Full-bleed breakout from Layout's max-w container */
                 left: '50%',
                 right: '50%',
@@ -113,12 +122,6 @@ export const AchievementsSection: React.FC = () => {
                 marginRight: '-50vw',
             }}
         >
-            {/* Castle background */}
-            <div style={{ position: 'absolute', inset: 0, zIndex: 0, backgroundImage: `url('/assets/castle-bg.jpeg')`, backgroundSize: 'cover', backgroundPosition: 'center top', backgroundRepeat: 'no-repeat' }} />
-            {/* Dark overlay */}
-            <div style={{ position: 'absolute', inset: 0, zIndex: 0, background: 'linear-gradient(180deg,rgba(11,15,25,0.78) 0%,rgba(11,15,25,0.65) 45%,rgba(11,15,25,0.88) 100%)' }} />
-
-            <EmbersBackground />
             <CardKeyframes />
 
             {/* ── Section header ── */}
@@ -202,5 +205,6 @@ export const AchievementsSection: React.FC = () => {
             {/* Bottom breathing room */}
             <div style={{ position: 'relative', zIndex: 10, height: 60 }} />
         </section>
+        </>  
     );
 };

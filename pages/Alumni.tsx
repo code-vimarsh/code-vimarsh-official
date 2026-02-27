@@ -385,6 +385,23 @@ const Alumni: React.FC = () => {
 
   return (
     <>
+      {/* ── Full-viewport fixed background — bypasses Layout pt-24 / max-w-7xl ── */}
+      <div style={{ position: 'fixed', inset: 0, zIndex: -2, pointerEvents: 'none', overflow: 'hidden' }}>
+        {/* Castle background */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          backgroundImage: `url('/assets/castle-bg.jpeg')`,
+          backgroundSize: 'cover', backgroundPosition: 'center top',
+        }} />
+        {/* Dark overlay */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'linear-gradient(180deg,rgba(11,15,25,0.82) 0%,rgba(11,15,25,0.70) 45%,rgba(11,15,25,0.92) 100%)',
+        }} />
+        {/* Embers fill the full viewport */}
+        <EmbersBackground />
+      </div>
+
       {/* Achievement-matched full-bleed section */}
       <div
         style={{
@@ -394,25 +411,9 @@ const Alumni: React.FC = () => {
           right: '50%',
           marginLeft: '-50vw',
           marginRight: '-50vw',
-          backgroundColor: '#0b0f19',
-          overflow: 'hidden',
           paddingBottom: '80px',
         }}
       >
-        {/* Castle background */}
-        <div style={{
-          position: 'absolute', inset: 0, zIndex: 0,
-          backgroundImage: `url('/assets/castle-bg.jpeg')`,
-          backgroundSize: 'cover', backgroundPosition: 'center top',
-        }} />
-        {/* Dark overlay */}
-        <div style={{
-          position: 'absolute', inset: 0, zIndex: 0,
-          background: 'linear-gradient(180deg,rgba(11,15,25,0.82) 0%,rgba(11,15,25,0.70) 45%,rgba(11,15,25,0.92) 100%)',
-        }} />
-
-        {/* Embers */}
-        <EmbersBackground />
 
         {/* ── Hero header ── */}
         <div style={{ position: 'relative', zIndex: 10, textAlign: 'center', paddingTop: '80px', paddingBottom: '52px' }}>
