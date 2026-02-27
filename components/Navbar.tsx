@@ -77,9 +77,12 @@ const Navbar: React.FC = () => {
             <User size={13} className="text-textMuted group-hover:text-primary transition-colors flex-shrink-0" />
             <span className="text-xs font-medium leading-none">Lvl 12</span>
           </Link>
-          <button className="bg-primary hover:bg-secondary text-black font-semibold px-3 py-1.5 rounded-lg text-xs transition-all shadow-[0_0_15px_rgba(255,106,0,0.3)] hover:shadow-[0_0_25px_rgba(255,106,0,0.5)] whitespace-nowrap flex-shrink-0">
+          <Link
+            to="/signup"
+            className="bg-primary hover:bg-secondary text-black font-semibold px-3 py-1.5 rounded-lg text-xs transition-all shadow-[0_0_15px_rgba(255,106,0,0.3)] hover:shadow-[0_0_25px_rgba(255,106,0,0.5)] whitespace-nowrap flex-shrink-0"
+          >
             Join Club
-          </button>
+          </Link>
         </div>
 
         {/* Mobile Menu Toggle */}
@@ -114,9 +117,20 @@ const Navbar: React.FC = () => {
               </Link>
             ))}
             <div className="pt-4 mt-2 border-t border-surfaceLight flex flex-col space-y-3">
-              <button className="bg-primary text-black font-semibold px-4 py-3 rounded-lg w-full text-center">
+              <Link
+                to="/signup"
+                onClick={() => setMobileMenuOpen(false)}
+                className="bg-primary text-black font-semibold px-4 py-3 rounded-lg w-full text-center block"
+              >
                 Join Club
-              </button>
+              </Link>
+              <Link
+                to="/signin"
+                onClick={() => setMobileMenuOpen(false)}
+                className="border border-primary/60 text-primary font-semibold px-4 py-3 rounded-lg w-full text-center block hover:bg-primary/10 transition-colors"
+              >
+                Sign In
+              </Link>
             </div>
           </div>
         </div>

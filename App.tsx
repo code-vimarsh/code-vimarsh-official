@@ -8,6 +8,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 // Lazy loading pages for performance
 const Home = React.lazy(() => import('./pages/Home'));
 const Events = React.lazy(() => import('./pages/Events'));
+const EventDetails = React.lazy(() => import('./pages/EventDetails'));
 const Resources = React.lazy(() => import('./pages/Resources'));
 const Projects = React.lazy(() => import('./pages/Projects'));
 const Dashboard = React.lazy(() => import('./pages/Dashboard'));
@@ -17,6 +18,11 @@ const Achievements = React.lazy(() => import('./pages/Achievements'));
 const Alumni = React.lazy(() => import('./pages/Alumni'));
 const Contact = React.lazy(() => import('./pages/Contact'));
 const Admin = React.lazy(() => import('./pages/Admin'));
+const AdminFormBuilder = React.lazy(() => import('./pages/AdminFormBuilder'));
+
+// Auth pages – rendered without the intro/loader state machine
+const SignUp = React.lazy(() => import('./pages/SignUp'));
+const SignIn = React.lazy(() => import('./pages/SignIn'));
 
 // Fallback loader while lazy components load
 const PageLoader = () => (
@@ -35,8 +41,23 @@ const App: React.FC = () => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
-  // Do not wrap the Admin panel in standard Layout to allow for a full-screen dashboard feel
+  // Routes that should bypass the immersive intro/loader entirely
   const isAdminRoute = location.pathname.startsWith('/admin');
+  const isAuthRoute  = location.pathname === '/signup' || location.pathname === '/signin';
+
+  // ── Auth pages rendered standalone (no Layout, no intro) ──────────────────
+  if (isAuthRoute) {
+    return (
+      <React.Suspense fallback={<PageLoader />}>
+        <AnimatePresence mode="wait">
+          <Routes location={location} key={location.pathname}>
+            <Route path="/signup" element={<SignUp />} />
+            <Route path="/signin" element={<SignIn />} />
+          </Routes>
+        </AnimatePresence>
+      </React.Suspense>
+    );
+  }
 
   return (
     <AnimatePresence mode="wait">
@@ -63,6 +84,8 @@ const App: React.FC = () => {
             <React.Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path="/admin" element={<Admin />} />
+                <Route path="/admin/forms" element={<AdminFormBuilder />} />
+                <Route path="/admin/forms/:eventId" element={<AdminFormBuilder />} />
               </Routes>
             </React.Suspense>
           ) : (
@@ -71,6 +94,7 @@ const App: React.FC = () => {
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/events" element={<Events />} />
+                  <Route path="/events/:id" element={<EventDetails />} />
                   <Route path="/resources" element={<Resources />} />
                   <Route path="/projects" element={<Projects />} />
                   <Route path="/dashboard" element={<Dashboard />} />
@@ -79,6 +103,9 @@ const App: React.FC = () => {
                   <Route path="/achievements" element={<Achievements />} />
                   <Route path="/alumni" element={<Alumni />} />
                   <Route path="/contact" element={<Contact />} />
+                  {/* Fallback redirects so typed URLs also work from main flow */}
+                  <Route path="/signup" element={<SignUp />} />
+                  <Route path="/signin" element={<SignIn />} />
                 </Routes>
               </React.Suspense>
             </Layout>

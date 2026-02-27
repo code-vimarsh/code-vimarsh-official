@@ -4,6 +4,7 @@ import { LayoutDashboard, Calendar, FolderHeart, ShieldAlert, Users, Plus, Trash
 import { Link } from 'react-router-dom';
 import { Copy, ExternalLink } from 'lucide-react';
 import Certificates from './Certificates';
+import ManageEvents from '../components/admin/ManageEvents';
 
 const Admin: React.FC = () => {
   const {
@@ -517,55 +518,11 @@ The Code Vimarsh Core Team`,
         {/* EVENTS TAB */}
         {activeTab === 'events' && (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex justify-between items-end">
-              <div>
-                <h2 className="text-3xl font-display font-bold text-white mb-2">Manage Events</h2>
-                <p className="text-textMuted">Create and manage community events.</p>
-              </div>
+            <div>
+              <h2 className="text-3xl font-display font-bold text-white mb-2">Manage Events</h2>
+              <p className="text-textMuted">Create, edit and build registration forms for community events.</p>
             </div>
-
-            <div className="grid lg:grid-cols-3 gap-8">
-              {/* Form */}
-              <div className="lg:col-span-1 bg-surface border border-surfaceLight p-6 rounded-xl h-fit">
-                <h3 className="font-bold text-lg mb-4 flex items-center"><Plus size={18} className="mr-2 text-primary" /> Add Event</h3>
-                <form onSubmit={handleAddEvent} className="space-y-4">
-                  <div>
-                    <label className="text-xs text-textMuted mb-1 block">Event Title</label>
-                    <input required value={newEvent.title} onChange={e => setNewEvent({ ...newEvent, title: e.target.value })} className="w-full bg-bgDark border border-surfaceLight rounded-md px-3 py-2 text-sm focus:border-primary focus:outline-none" placeholder="e.g. Next.js Workshop" />
-                  </div>
-                  <div>
-                    <label className="text-xs text-textMuted mb-1 block">Date</label>
-                    <input required value={newEvent.date} onChange={e => setNewEvent({ ...newEvent, date: e.target.value })} className="w-full bg-bgDark border border-surfaceLight rounded-md px-3 py-2 text-sm focus:border-primary focus:outline-none" placeholder="e.g. 2024-11-20" />
-                  </div>
-                  <div>
-                    <label className="text-xs text-textMuted mb-1 block">Status</label>
-                    <select value={newEvent.type} onChange={e => setNewEvent({ ...newEvent, type: e.target.value })} className="w-full bg-bgDark border border-surfaceLight rounded-md px-3 py-2 text-sm focus:border-primary focus:outline-none text-white">
-                      <option>Upcoming</option>
-                      <option>Live</option>
-                      <option>Past</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-xs text-textMuted mb-1 block">Description</label>
-                    <textarea required value={newEvent.description} onChange={e => setNewEvent({ ...newEvent, description: e.target.value })} rows={3} className="w-full bg-bgDark border border-surfaceLight rounded-md px-3 py-2 text-sm focus:border-primary focus:outline-none resize-none" placeholder="Event details..."></textarea>
-                  </div>
-                  <button type="submit" className="w-full bg-primary hover:bg-secondary text-black font-bold py-2 rounded-md transition-colors text-sm">Deploy Event</button>
-                </form>
-              </div>
-
-              {/* List */}
-              <div className="lg:col-span-2 space-y-4">
-                {events.map(ev => (
-                  <div key={ev.id} className="bg-surface border border-surfaceLight p-4 rounded-xl flex justify-between items-center">
-                    <div>
-                      <h4 className="font-bold text-white">{ev.title}</h4>
-                      <p className="text-xs text-textMuted font-mono">{ev.date} • {ev.type}</p>
-                    </div>
-                    <button className="text-textMuted hover:text-red-500 transition-colors p-2"><Trash2 size={18} /></button>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <ManageEvents />
           </div>
         )}
 
