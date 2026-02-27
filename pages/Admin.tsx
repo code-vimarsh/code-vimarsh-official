@@ -1,6 +1,7 @@
 ﻿import React, { useState, useRef } from 'react';
 import { useGlobalState } from '../context/GlobalContext';
-import { LayoutDashboard, Calendar, FolderHeart, ShieldAlert, Users, Plus, Trash2, ArrowLeft, BookOpen, Pencil, Upload, X, Save, Mail, Send, CheckCircle, AlertCircle, Loader2, Megaphone, UserPlus, UserCheck, Award, Newspaper, Trophy } from 'lucide-react';
+import type { TeamMember } from '../types';
+import { LayoutDashboard, Calendar, FolderHeart, ShieldAlert, Users, Plus, Trash2, ArrowLeft, BookOpen, Pencil, Upload, X, Save, Mail, Send, CheckCircle, AlertCircle, Loader2, Megaphone, UserPlus, UserCheck, Award, Newspaper, Trophy, Code2, Settings, Palette, ImageIcon } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Copy, ExternalLink } from 'lucide-react';
 import Certificates from './Certificates';
@@ -16,9 +17,9 @@ const Admin: React.FC = () => {
     videoResources, addVideoResource, updateVideoResource, deleteVideoResource,
     linkResources, addLinkResource, updateLinkResource, deleteLinkResource,
     participants, addParticipant, removeParticipant,
-    clubMembers, addClubMember, removeClubMember,
+    team, addTeamMember, updateTeamMember, deleteTeamMember,
   } = useGlobalState();
-  const [activeTab, setActiveTab] = useState<'overview' | 'events' | 'projects' | 'admins' | 'resources' | 'email' | 'certificates' | 'blogs' | 'achievements'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'events' | 'projects' | 'admins' | 'resources' | 'email' | 'certificates' | 'blogs' | 'achievements' | 'team'>('overview');
 
   // New Event State
   const [newEvent, setNewEvent] = useState({ title: '', date: '', type: 'Upcoming', description: '' });
@@ -40,14 +41,13 @@ const Admin: React.FC = () => {
   const [newVideo, setNewVideo] = useState({ title: '', url: '', thumbnail: '', tags: '' });
   const [newLink, setNewLink] = useState({ title: '', url: '', category: '', tags: '', bestFor: '', contentType: '' });
 
-  // ── Email Blast State ───────────────────────────────────────────────────
+  // -- Email Blast State ---------------------------------------------------
   const CLUB_EMAIL = 'codingclub-cse@msubaroda.ac.in';
   const BCC_CHUNK_SIZE = 40;
 
   // Send-mode: 'participants' | 'members' | 'specific'
   const [sendMode, setSendMode] = useState<'participants' | 'members' | 'specific'>('specific');
-  // Sub-tab inside email: 'compose' | 'participants' | 'members'
-  const [emailSubTab, setEmailSubTab] = useState<'compose' | 'participants' | 'members'>('compose');
+  const [emailSubTab, setEmailSubTab] = useState<'compose'>('compose');
   const [htmlCopied, setHtmlCopied] = useState(false);
   const [copiedChunk, setCopiedChunk] = useState<number | null>(null);
 
@@ -66,7 +66,7 @@ const Admin: React.FC = () => {
   const bulkRecipients = sendMode === 'participants'
     ? participants.filter(p => !selectedEventId || p.eventId === selectedEventId)
     : sendMode === 'members'
-      ? clubMembers
+      ? team.map(m => ({ id: m.id, name: m.name, email: '', eventId: '', eventTitle: m.role, registeredAt: '' }))
       : [];
 
   // Helper: chunk array into batches
@@ -92,7 +92,7 @@ const Admin: React.FC = () => {
     return `mailto:${CLUB_EMAIL}?bcc=${encodeURIComponent(bcc.join(','))}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(plain)}`;
   };
 
-  // ── HTML Email Template ───────────────────────────────────────────────────
+  // -- HTML Email Template ---------------------------------------------------
   const typeConfig: Record<string, { accent: string; badge: string; tagline: string }> = {
     'Announcement': { accent: '#FF6A00', badge: 'ANNOUNCEMENT', tagline: 'Important update from Code Vimarsh' },
     'Event Details': { accent: '#7C3AED', badge: 'EVENT DETAILS', tagline: 'You are invited - mark your calendar!' },
@@ -243,7 +243,7 @@ const Admin: React.FC = () => {
   const handleLoadSample = () => {
     setEmailForm({
       ...emailForm,
-      subject: 'Important Community Update & Upcoming Hackathon 📢',
+      subject: 'Important Community Update & Upcoming Hackathon 🚀',
       admin_message: `Hello everyone!
 
 We have some exciting news to share with the Code Vimarsh community. Our club is growing faster than ever, and we are preparing for our flagship event: The Nexus Hackathon 2024.
@@ -264,7 +264,7 @@ The Code Vimarsh Core Team`,
     });
   };
 
-  // ── Copy rich HTML to clipboard ─────────────────────────────────────────────────
+  // -- Copy rich HTML to clipboard -------------------------------------------------
   const handleCopyRichHtml = async (name: string) => {
     const { email_type, subject, admin_message } = emailForm;
     if (!subject || !admin_message) return;
@@ -325,22 +325,54 @@ The Code Vimarsh Core Team`,
     setNewParticipant({ name: '', email: '', eventId: '' });
   };
 
-  const handleAddMember = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMember.name || !newMember.email) return;
-    addClubMember({
-      id: Date.now().toString(),
-      name: newMember.name,
-      email: newMember.email,
-      role: newMember.role,
-      joinedAt: new Date().toISOString().split('T')[0],
-    });
-    setNewMember({ name: '', email: '', role: 'Member' });
-  };
 
   // Editing State
   const [editingVideo, setEditingVideo] = useState<string | null>(null);
   const [editingLink, setEditingLink] = useState<string | null>(null);
+  const [editingTeamMember, setEditingTeamMember] = useState<string | null>(null);
+
+  // New Team Member Form State
+  const [newTeamMember, setNewTeamMember] = useState({
+    name: '', section: '' as 'Team Leads' | 'Web Team' | 'Management' | 'Design Team' | '', role: '', image: '', email: '', linkedin: '', github: ''
+  });
+
+  const handleAddTeamMember = (e: React.FormEvent) => {
+    e.preventDefault();
+    const section = newTeamMember.section as TeamMember['section'];
+    if (!newTeamMember.name || !newTeamMember.role || !section) return;
+
+    const memberData: TeamMember = {
+      id: editingTeamMember || Date.now().toString(),
+      name: newTeamMember.name,
+      role: newTeamMember.role,
+      section,
+      image: newTeamMember.image,
+      email: newTeamMember.email,
+      linkedin: newTeamMember.linkedin,
+      github: newTeamMember.github,
+    };
+
+    if (editingTeamMember) {
+      updateTeamMember(memberData);
+      setEditingTeamMember(null);
+    } else {
+      addTeamMember(memberData);
+    }
+    setNewTeamMember({ name: '', section: '', role: '', image: '', email: '', linkedin: '', github: '' });
+  };
+
+  const startEditTeamMember = (member: any) => {
+    setEditingTeamMember(member.id);
+    setNewTeamMember({
+      name: member.name,
+      section: member.section || '' as any,
+      role: member.role,
+      image: member.image,
+      email: member.email || '',
+      linkedin: member.linkedin || '',
+      github: member.github || ''
+    });
+  };
 
   const handleAddEvent = (e: React.FormEvent) => {
     e.preventDefault();
@@ -468,10 +500,11 @@ The Code Vimarsh Core Team`,
             { id: 'projects', icon: <FolderHeart size={18} />, label: 'Manage Projects' },
             { id: 'resources', icon: <BookOpen size={18} />, label: 'Manage Resources' },
             { id: 'admins', icon: <ShieldAlert size={18} />, label: 'Access Control' },
-            { id: 'email', icon: <Megaphone size={18} />, label: 'Email Blast' },
-            { id: 'certificates', icon: <Award size={18} />, label: '🏆 Certificates' },
+            { id: 'team', icon: <Users size={18} />, label: 'Manage Team' },
             { id: 'blogs', icon: <Newspaper size={18} />, label: 'Manage Blogs' },
             { id: 'achievements', icon: <Trophy size={18} />, label: 'Achievements' },
+            { id: 'email', icon: <Megaphone size={18} />, label: 'Email Blast' },
+            { id: 'certificates', icon: <Award size={18} />, label: 'Certificates' },
           ].map(tab => (
             <button
               key={tab.id}
@@ -580,7 +613,7 @@ The Code Vimarsh Core Team`,
                     <input value={newProject.github} onChange={e => setNewProject({ ...newProject, github: e.target.value })} className="w-full bg-bgDark border border-surfaceLight rounded-md px-3 py-2 text-sm focus:border-primary focus:outline-none" placeholder="https://github.com/..." />
                   </div>
 
-                  {/* ── Project Image (compulsory) ── */}
+                  {/* -- Project Image (compulsory) -- */}
                   <div>
                     <label className="text-xs text-textMuted mb-1 block">
                       Project Image <span className="text-primary font-bold">*</span>
@@ -960,8 +993,6 @@ The Code Vimarsh Core Team`,
             <div className="flex gap-2 border-b border-surfaceLight pb-0">
               {[
                 { id: 'compose', icon: <Mail size={14} />, label: 'Compose & Send' },
-                { id: 'participants', icon: <UserCheck size={14} />, label: `Participants (${participants.length})` },
-                { id: 'members', icon: <Users size={14} />, label: `Club Members (${clubMembers.length})` },
               ].map(t => (
                 <button
                   key={t.id}
@@ -976,7 +1007,7 @@ The Code Vimarsh Core Team`,
               ))}
             </div>
 
-            {/* ── COMPOSE & SEND ── */}
+            {/* -- COMPOSE & SEND -- */}
             {emailSubTab === 'compose' && (
               <div className="grid lg:grid-cols-5 gap-6 items-start">
 
@@ -989,9 +1020,9 @@ The Code Vimarsh Core Team`,
                     <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest block mb-2">Send To</label>
                     <div className="grid grid-cols-3 gap-2">
                       {[
-                        { id: 'specific', label: '✉️ Specific Person' },
-                        { id: 'participants', label: `📋 Event Participants` },
-                        { id: 'members', label: `👥 Club Members` },
+                        { id: 'specific', label: '\u{1F464} Specific Person' },
+                        { id: 'participants', label: `\u{1F465} Event Participants` },
+                        { id: 'members', label: `\u{1F31F} Team Members` },
                       ].map(m => (
                         <button
                           key={m.id}
@@ -1023,7 +1054,7 @@ The Code Vimarsh Core Team`,
                         ))}
                       </select>
                       <p className="text-xs text-primary mt-2 font-medium">
-                        📋 {bulkRecipients.length} recipient{bulkRecipients.length !== 1 ? 's' : ''} will receive this email
+                        ?? {bulkRecipients.length} recipient{bulkRecipients.length !== 1 ? 's' : ''} will receive this email
                       </p>
                     </div>
                   )}
@@ -1031,7 +1062,7 @@ The Code Vimarsh Core Team`,
                   {/* Members mode info */}
                   {sendMode === 'members' && (
                     <div className="mb-4 p-3 bg-bgDark border border-surfaceLight rounded-xl">
-                      <p className="text-xs text-primary font-medium">👥 {clubMembers.length} club member{clubMembers.length !== 1 ? 's' : ''} will receive this email</p>
+                      <p className="text-xs text-primary font-medium">📧 {team.length} team member{team.length !== 1 ? 's' : ''} will receive this email</p>
                     </div>
                   )}
 
@@ -1044,9 +1075,9 @@ The Code Vimarsh Core Team`,
                         { t: 'Announcement', i: '📢' },
                         { t: 'Event Details', i: '📅' },
                         { t: 'Certificate', i: '🏆' },
-                        { t: 'Feedback', i: '📝' },
+                        { t: 'Feedback', i: '💬' },
                         { t: 'Newsletter', i: '📰' },
-                        { t: 'Custom', i: '✉️' },
+                        { t: 'Custom', i: '✏️' },
                       ].map(({ t, i }) => (
                         <button key={t} type="button"
                           onClick={() => setEmailForm({ ...emailForm, email_type: t })}
@@ -1188,147 +1219,198 @@ The Code Vimarsh Core Team`,
               </div>
             )}
 
-            {/* ── MANAGE PARTICIPANTS ── */}
-            {emailSubTab === 'participants' && (
-              <div className="grid lg:grid-cols-5 gap-6 items-start">
-                {/* Add form */}
-                <div className="lg:col-span-2 bg-surface border border-surfaceLight rounded-2xl p-6 relative overflow-hidden h-fit">
-                  <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-                  <h3 className="font-bold text-base flex items-center gap-2 mb-5">
-                    <UserPlus size={16} className="text-primary" /> Add Participant
-                  </h3>
-                  <form onSubmit={handleAddParticipant} className="space-y-3">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest">Name *</label>
-                      <input required value={newParticipant.name}
-                        onChange={e => setNewParticipant({ ...newParticipant, name: e.target.value })}
-                        className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:outline-none transition-all"
-                        placeholder="Participant name" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest">Email *</label>
-                      <input required type="email" value={newParticipant.email}
-                        onChange={e => setNewParticipant({ ...newParticipant, email: e.target.value })}
-                        className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:outline-none transition-all"
-                        placeholder="email@example.com" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest">Event *</label>
-                      <select required value={newParticipant.eventId}
-                        onChange={e => setNewParticipant({ ...newParticipant, eventId: e.target.value })}
-                        className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-2.5 text-sm text-white focus:border-primary focus:outline-none">
-                        <option value="">Select event...</option>
-                        {events.map(ev => <option key={ev.id} value={ev.id}>{ev.title}</option>)}
-                      </select>
-                    </div>
-                    <button type="submit" className="w-full bg-primary text-black font-bold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 hover:bg-secondary transition-all">
-                      <Plus size={14} /> Add Participant
-                    </button>
-                  </form>
-                </div>
-
-                {/* List */}
-                <div className="lg:col-span-3 space-y-3">
-                  <h4 className="text-xs font-bold text-textMuted uppercase tracking-widest flex items-center gap-2">
-                    <div className="w-8 h-px bg-surfaceLight" /> All Registrants ({participants.length})
-                  </h4>
-                  {participants.length === 0 ? (
-                    <p className="text-sm text-textMuted italic bg-surface border border-surfaceLight rounded-xl p-4">No participants yet. Add some above.</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {participants.map(p => (
-                        <div key={p.id} className="bg-surface border border-surfaceLight p-3 rounded-xl flex items-center justify-between group hover:bg-surfaceLight/30 transition-all">
-                          <div className="min-w-0">
-                            <p className="text-sm font-bold text-white truncate">{p.name}</p>
-                            <p className="text-[11px] text-textMuted truncate">{p.email}</p>
-                            <span className="text-[9px] px-1.5 py-0.5 mt-1 inline-block rounded bg-primary/10 text-primary border border-primary/20 font-bold uppercase">{p.eventTitle}</span>
-                          </div>
-                          <button onClick={() => removeParticipant(p.id)} className="text-textMuted hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-bgDark flex-shrink-0">
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* ── MANAGE MEMBERS ── */}
-            {emailSubTab === 'members' && (
-              <div className="grid lg:grid-cols-5 gap-6 items-start">
-                {/* Add form */}
-                <div className="lg:col-span-2 bg-surface border border-surfaceLight rounded-2xl p-6 relative overflow-hidden h-fit">
-                  <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-                  <h3 className="font-bold text-base flex items-center gap-2 mb-5">
-                    <UserPlus size={16} className="text-primary" /> Add Club Member
-                  </h3>
-                  <form onSubmit={handleAddMember} className="space-y-3">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest">Name *</label>
-                      <input required value={newMember.name}
-                        onChange={e => setNewMember({ ...newMember, name: e.target.value })}
-                        className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:outline-none transition-all"
-                        placeholder="Member name" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest">Email *</label>
-                      <input required type="email" value={newMember.email}
-                        onChange={e => setNewMember({ ...newMember, email: e.target.value })}
-                        className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:outline-none transition-all"
-                        placeholder="email@example.com" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest">Role</label>
-                      <select value={newMember.role}
-                        onChange={e => setNewMember({ ...newMember, role: e.target.value })}
-                        className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-2.5 text-sm text-white focus:border-primary focus:outline-none">
-                        <option>Member</option>
-                        <option>Core Team</option>
-                        <option>Alumni</option>
-                        <option>Mentor</option>
-                      </select>
-                    </div>
-                    <button type="submit" className="w-full bg-primary text-black font-bold py-2.5 rounded-xl text-sm flex items-center justify-center gap-2 hover:bg-secondary transition-all">
-                      <Plus size={14} /> Add Member
-                    </button>
-                  </form>
-                </div>
-
-                {/* List */}
-                <div className="lg:col-span-3 space-y-3">
-                  <h4 className="text-xs font-bold text-textMuted uppercase tracking-widest flex items-center gap-2">
-                    <div className="w-8 h-px bg-surfaceLight" /> All Club Members ({clubMembers.length})
-                  </h4>
-                  {clubMembers.length === 0 ? (
-                    <p className="text-sm text-textMuted italic bg-surface border border-surfaceLight rounded-xl p-4">No members yet.</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {clubMembers.map(m => (
-                        <div key={m.id} className="bg-surface border border-surfaceLight p-3 rounded-xl flex items-center justify-between group hover:bg-surfaceLight/30 transition-all">
-                          <div className="min-w-0">
-                            <p className="text-sm font-bold text-white truncate">{m.name}</p>
-                            <p className="text-[11px] text-textMuted truncate">{m.email}</p>
-                            <span className={`text-[9px] px-1.5 py-0.5 mt-1 inline-block rounded font-bold uppercase border ${m.role === 'Core Team' ? 'bg-primary/10 text-primary border-primary/20' :
-                              m.role === 'Alumni' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
-                                m.role === 'Mentor' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' :
-                                  'bg-surfaceLight text-textMuted border-surfaceLight'
-                              }`}>{m.role}</span>
-                          </div>
-                          <button onClick={() => removeClubMember(m.id)} className="text-textMuted hover:text-red-500 transition-colors p-2 rounded-lg hover:bg-bgDark flex-shrink-0">
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
           </div>
         )}
 
+        {/* TEAM TAB */}
+        {activeTab === 'team' && (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div>
+              <h2 className="text-3xl font-display font-bold text-white mb-2">Manage Team</h2>
+              <p className="text-textMuted">Add, update, or remove team members. Changes reflect on the public Team page automatically.</p>
+            </div>
+
+            <div className="grid lg:grid-cols-3 gap-8">
+              {/* Form */}
+              <div className="lg:col-span-1 bg-surface border border-surfaceLight p-6 rounded-xl h-fit space-y-4">
+                <h3 className="font-bold text-lg mb-2 flex items-center">
+                  {editingTeamMember ? <Pencil size={18} className="mr-2 text-primary" /> : <Plus size={18} className="mr-2 text-primary" />}
+                  {editingTeamMember ? 'Update Member' : 'Add Team Member'}
+                </h3>
+                <form onSubmit={handleAddTeamMember} className="space-y-4">
+                  {/* Section */}
+                  <div>
+                    <label className="text-xs text-textMuted mb-1 block">Section *</label>
+                    <select
+                      required
+                      value={newTeamMember.section}
+                      onChange={e => {
+                        const sec = e.target.value as any;
+                        // auto-set a sensible default role when section changes
+                        const defaultRoles: Record<string, string> = {
+                          'Team Leads': 'President',
+                          'Web Team': 'Web Team Member',
+                          'Management': 'Management Team Member',
+                          'Design Team': 'Design Team Member',
+                        };
+                        setNewTeamMember({ ...newTeamMember, section: sec, role: defaultRoles[sec] || '' });
+                      }}
+                      className="w-full bg-bgDark border border-surfaceLight rounded-md px-3 py-2 text-sm focus:border-primary focus:outline-none text-white"
+                    >
+                      <option value="">Select section...</option>
+                      <option value="Team Leads">🏆 Team Leads</option>
+                      <option value="Web Team">💻 Web Team</option>
+                      <option value="Management">⚙️ Management</option>
+                      <option value="Design Team">🎨 Design Team</option>
+                    </select>
+                  </div>
+
+                  {/* Role */}
+                  <div>
+                    <label className="text-xs text-textMuted mb-1 block">Role *</label>
+                    <input
+                      required
+                      value={newTeamMember.role}
+                      onChange={e => setNewTeamMember({ ...newTeamMember, role: e.target.value })}
+                      className="w-full bg-bgDark border border-surfaceLight rounded-md px-3 py-2 text-sm focus:border-primary focus:outline-none text-white"
+                      placeholder={newTeamMember.section ? "e.g. Lead Developer" : "Select a section first"}
+                      disabled={!newTeamMember.section}
+                    />
+                  </div>
+
+                  {/* Name */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs text-textMuted mb-1 block">Name *</label>
+                      <input required value={newTeamMember.name} onChange={e => setNewTeamMember({ ...newTeamMember, name: e.target.value })} className="w-full bg-bgDark border border-surfaceLight rounded-md px-3 py-2 text-sm focus:border-primary focus:outline-none" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-textMuted mb-1 block">Email *</label>
+                      <input type="email" required value={newTeamMember.email} onChange={e => setNewTeamMember({ ...newTeamMember, email: e.target.value })} className="w-full bg-bgDark border border-surfaceLight rounded-md px-3 py-2 text-sm focus:border-primary focus:outline-none" placeholder="email@example.com" />
+                    </div>
+                  </div>
+
+                  {/* Image — URL or file from device */}
+                  <div>
+                    <label className="text-xs text-textMuted mb-1 block">Photo</label>
+                    <div className="flex gap-2 items-start">
+                      <input
+                        value={newTeamMember.image.startsWith('data:') ? '' : newTeamMember.image}
+                        onChange={e => setNewTeamMember({ ...newTeamMember, image: e.target.value })}
+                        className="flex-1 bg-bgDark border border-surfaceLight rounded-md px-3 py-2 text-sm focus:border-primary focus:outline-none"
+                        placeholder="/Name Role.jpg or paste URL"
+                      />
+                      <label
+                        title="Upload from device"
+                        className="cursor-pointer flex items-center gap-1.5 bg-bgDark border border-surfaceLight hover:border-primary text-textMuted hover:text-primary transition-colors px-3 py-2 rounded-md text-xs font-semibold flex-shrink-0"
+                      >
+                        <ImageIcon size={14} />
+                        <span>Device</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={e => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onload = () => {
+                              setNewTeamMember(prev => ({ ...prev, image: reader.result as string }));
+                            };
+                            reader.readAsDataURL(file);
+                          }}
+                        />
+                      </label>
+                    </div>
+                    {newTeamMember.image && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <img
+                          src={newTeamMember.image}
+                          alt="preview"
+                          className="w-10 h-10 rounded-full object-cover border border-surfaceLight"
+                          onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                        />
+                        <p className="text-[10px] text-textMuted">
+                          {newTeamMember.image.startsWith('data:') ? 'Local file loaded' : `Path: ${newTeamMember.image}`}
+                        </p>
+                        <button type="button" onClick={() => setNewTeamMember(prev => ({ ...prev, image: '' }))} className="text-textMuted hover:text-red-400 transition-colors">
+                          <X size={12} />
+                        </button>
+                      </div>
+                    )}
+                    <p className="text-[10px] text-textMuted mt-1">Type a <code className="text-primary">/public</code> path (e.g. <code>/Name Role.jpg</code>) or click <strong>Device</strong> to upload</p>
+                  </div>
+
+                  {/* LinkedIn */}
+                  <div>
+                    <label className="text-xs text-textMuted mb-1 block">LinkedIn Profile</label>
+                    <input value={newTeamMember.linkedin} onChange={e => setNewTeamMember({ ...newTeamMember, linkedin: e.target.value })} className="w-full bg-bgDark border border-surfaceLight rounded-md px-3 py-2 text-sm focus:border-primary focus:outline-none" placeholder="https://linkedin.com/in/..." />
+                  </div>
+
+                  {/* GitHub */}
+                  <div>
+                    <label className="text-xs text-textMuted mb-1 block">GitHub Profile</label>
+                    <input value={newTeamMember.github} onChange={e => setNewTeamMember({ ...newTeamMember, github: e.target.value })} className="w-full bg-bgDark border border-surfaceLight rounded-md px-3 py-2 text-sm focus:border-primary focus:outline-none" placeholder="https://github.com/..." />
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button type="submit" className="flex-1 bg-primary hover:bg-secondary text-black font-bold py-2 rounded-md transition-colors text-sm">
+                      {editingTeamMember ? 'Update Member' : 'Add Member'}
+                    </button>
+                    {editingTeamMember && (
+                      <button type="button" onClick={() => { setEditingTeamMember(null); setNewTeamMember({ name: '', section: '', role: '', image: '', email: '', linkedin: '', github: '' }); }} className="bg-surfaceLight hover:bg-surface text-white px-4 py-2 rounded-md text-sm border border-surfaceLight transition-colors">
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </form>
+              </div>
+
+              {/* Member list grouped by section */}
+              <div className="lg:col-span-2 space-y-6">
+                {(['Team Leads', 'Web Team', 'Management', 'Design Team'] as const).map(sec => {
+                  const SectionIcons: Record<string, React.ReactNode> = {
+                    'Team Leads': <span>{'\u{1F3C6}'}</span>,
+                    'Web Team': <span>{'\u{1F4BB}'}</span>,
+                    'Management': <span>{'\u{2699}'}</span>,
+                    'Design Team': <span>{'\u{1F3A8}'}</span>,
+                  };
+                  const sectionMembers = team.filter(m => m.section === sec);
+                  if (sectionMembers.length === 0) return null;
+                  return (
+                    <div key={sec}>
+                      <h4 className="text-xs font-bold text-textMuted uppercase tracking-widest mb-3 flex items-center gap-2">
+                        {SectionIcons[sec]}
+                        {sec} ({sectionMembers.length})
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {sectionMembers.map(member => (
+                          <div key={member.id} className="bg-surface border border-surfaceLight p-4 rounded-xl flex items-center justify-between group hover:border-primary/50 transition-colors">
+                            <div className="flex items-center space-x-3">
+                              <img src={member.image || 'https://via.placeholder.com/40'} alt="" className="w-10 h-10 rounded-full object-cover border border-surfaceLight" onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/40'; }} />
+                              <div>
+                                <p className="font-bold text-white text-sm">{member.name}</p>
+                                <p className="text-xs text-primary">{member.role}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button onClick={() => startEditTeamMember(member)} className="text-textMuted hover:text-primary transition-colors p-2">
+                                <Pencil size={16} />
+                              </button>
+                              <button onClick={() => deleteTeamMember(member.id)} className="text-textMuted hover:text-red-500 transition-colors p-2">
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
         {/* CERTIFICATES TAB */}
         {activeTab === 'certificates' && (
           <Certificates />

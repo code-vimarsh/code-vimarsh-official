@@ -160,10 +160,34 @@ export const MOCK_MANAGED_ACHIEVEMENTS: ManagedAchievement[] = [
 ];
 
 export const MOCK_TEAM: TeamMember[] = [
-  { id: '1', name: 'Aarav Patel', role: 'President & Tech Lead', image: 'https://picsum.photos/400/400?random=1' },
-  { id: '2', name: 'Priya Sharma', role: 'Vice President', image: 'https://picsum.photos/400/400?random=2' },
-  { id: '3', name: 'Rahul Desai', role: 'Open Source Head', image: 'https://picsum.photos/400/400?random=3' },
-  { id: '4', name: 'Neha Gupta', role: 'Design Lead', image: 'https://picsum.photos/400/400?random=4' },
+  // Team Leads
+  { id: 't1', name: 'Mann Shah', section: 'Team Leads', role: 'President', image: '/Mann Shah President.jpg', linkedin: 'https://www.linkedin.com/in/mann-shah-b9b8592ab/', github: 'https://www.github.com/mannshah24', email: 'mann.shah@codevimarsh.org' },
+  { id: 't2', name: 'Dhriti Gandhi', section: 'Team Leads', role: 'Vice President', image: '/Dhriti Gandhi Vice President.jpg', linkedin: 'https://www.linkedin.com/in/dhriti-gandhi-0758372b5/', github: 'https://github.com/Dhriti-5', email: 'dhriti.gandhi@codevimarsh.org' },
+  { id: 't3', name: 'Kanav Modi', section: 'Team Leads', role: 'Secretary', image: '/Kanav Modi Secratory.jpg', linkedin: 'https://www.linkedin.com/in/kanav-modi', github: 'https://github.com/KanavCode', email: 'kanav.modi@codevimarsh.org' },
+  { id: 't4', name: 'Het Patel', section: 'Team Leads', role: 'Management Head', image: '/Het Patel Management Head.webp', linkedin: 'https://www.linkedin.com/in/hetppatel16', github: 'https://github.com/hetppatel16', email: 'het.patel@codevimarsh.org' },
+  { id: 't5', name: 'Daxa Dubey', section: 'Team Leads', role: 'Event Head', image: '/Daxa Dubey Event Head.jpg', linkedin: 'https://ln.run/S5zUj', github: 'https://github.com/Daxadubey', email: 'daxa.dubey@codevimarsh.org' },
+  { id: 't6', name: 'Kirtan Patel', section: 'Team Leads', role: 'Design Head', image: '/Kirtan Patel Design Head.jpg', linkedin: 'https://www.linkedin.com/in/kirtan-patel-988218301', github: 'https://github.com/KirtanKRP', email: 'kirtan.patel@codevimarsh.org' },
+  // Web Team
+  { id: 'w1', name: 'Neel Prajapati', section: 'Web Team', role: 'Frontend Team Lead', image: '/Neel Prajapati Web Team Member.png', linkedin: 'https://www.linkedin.com/in/neel-prajapati-447531330', github: 'https://github.com/Neel-2606', email: 'neel.prajapati@codevimarsh.org' },
+  { id: 'w2', name: 'Aryan Buha', section: 'Web Team', role: 'Web Team Member', image: '/Aryan Buha Frontend Team Member.jpg', linkedin: 'https://www.linkedin.com/in/aryan-buha-874a5434b', github: 'https://github.com/Aryanbuha89', email: 'aryan.buha@codevimarsh.org' },
+  { id: 'w3', name: 'Krushit Prajapati', section: 'Web Team', role: 'Web Team Member', image: '/Krushit Prajapati Web Team Member.jpg', linkedin: 'https://www.linkedin.com/in/krushit-prajapati-2b11a832b', github: 'https://github.com/krushit1307', email: 'krushit.prajapati@codevimarsh.org' },
+  { id: 'w4', name: 'Dhruv Pathak', section: 'Web Team', role: 'Web Team Member', image: '/Dhruv Pathak Web Team Member.jpg', linkedin: 'https://www.linkedin.com/in/dhruv-pathak-a3041a317', github: 'https://github.com/DhruvPathak767', email: 'dhruv.pathak@codevimarsh.org' },
+  { id: 'w5', name: 'Ashish Gokani', section: 'Web Team', role: 'Web Team Member', image: '/Ashish Gokani Web Team Member.png', linkedin: 'https://www.linkedin.com/in/ashishgokani', github: 'https://github.com/ashishgokani', email: 'ashish.gokani@codevimarsh.org' },
+  { id: 'w6', name: 'Deep Jaiswal', section: 'Web Team', role: 'Web Team Member', image: '/Deep Jaiswal Web Team Member.jpeg', linkedin: 'https://www.linkedin.com/in/deep-jaiswal-4145a23a1', github: 'https://github.com/Deep2812msu2006', email: 'deep.jaiswal@codevimarsh.org' },
+  { id: 'w7', name: 'Shivam Suthar', section: 'Web Team', role: 'Web Team Member', image: '/Shivam Suthar Web Team Member.jpg', linkedin: 'https://www.linkedin.com/in/shivam-suthar-3b3024392', github: 'https://github.com/shiv-05-07', email: 'shivam.suthar@codevimarsh.org' },
+  { id: 'w8', name: 'Dhruvil Dattani', section: 'Web Team', role: 'Web Team Member', image: '/Dhruvil Dattani Web Team Member.png', linkedin: 'https://www.linkedin.com/in/dhruvil-dattani-b43599317/', github: 'https://github.com/DhruvilTech/', email: 'dhruvil.dattani@codevimarsh.org' },
+  // Management
+  { id: 'm1', name: 'Kesha Babriya', section: 'Management', role: 'Management Team Member', image: '/Kesha Babriya Management Team Member.jpg', linkedin: 'https://www.linkedin.com/in/kesha-babriya-09151a350', github: 'https://github.com/Kesha-Babriya', email: 'kesha.babriya@codevimarsh.org' },
+  { id: 'm2', name: 'Ansh Mistry', section: 'Management', role: 'Management Team Member', image: '/Ansh Mistry Management Member.jpg', linkedin: 'https://www.linkedin.com/in/ansh-mistry-ab7805340/', github: 'https://github.com/Ansh-Mistry', email: 'ansh.mistry@codevimarsh.org' },
+  { id: 'm3', name: 'Krish Barvaliya', section: 'Management', role: 'Management Team Member', image: '/Krish Baravaliya Management Team Member.jpeg', linkedin: 'https://www.linkedin.com/in/krish-barvaliya-74a493278', github: 'https://github.com/barvaliyakrish013', email: 'krish.barvaliya@codevimarsh.org' },
+  { id: 'm4', name: 'Vaishnavi Patel', section: 'Management', role: 'Management Team Member', image: '/Vaishnavi Patel Management Meber.jpeg', linkedin: 'https://www.linkedin.com/in/vaishnavi-patel-03431730b', github: 'https://github.com/Vaishnavi3406', email: 'vaishnavi.patel@codevimarsh.org' },
+  { id: 'm5', name: 'Priyal Dalal', section: 'Management', role: 'Management Team Member', image: '/Priyal Dalal Management Team.jpg', linkedin: 'https://www.linkedin.com/in/priyal-dalal-911746363', github: 'https://github.com/Priyal028', email: 'priyal.dalal@codevimarsh.org' },
+  { id: 'm6', name: 'Harshita Goyal', section: 'Management', role: 'Management Team Member', image: '/Harshita Goyal Management Team Member .jpg', linkedin: 'https://www.linkedin.com/in/harshita-goyal-8b69903b2', github: 'https://github.com/harshitagoyal27', email: 'harshita.goyal@codevimarsh.org' },
+  // Design Team
+  { id: 'd1', name: 'Manthan Khedekar', section: 'Design Team', role: 'Design Team Member', image: '/Manthan Khedkar Design Team Member.webp', linkedin: 'https://www.linkedin.com/in/manthan-khedekar-9286b0238', github: 'https://github.com/Manthan2806', email: 'manthan.khedekar@codevimarsh.org' },
+  { id: 'd2', name: 'Sneh Bhikadiya', section: 'Design Team', role: 'Design Team Member', image: '/Sneh Bhikhadiya Design Team Member.png', linkedin: 'https://www.linkedin.com/in/sneh-bhikadiya-97b9a9377', github: 'https://github.com/snehbhikadiya87-pixel', email: 'sneh.bhikadiya@codevimarsh.org' },
+  { id: 'd3', name: 'Darshan Vasava', section: 'Design Team', role: 'Design Team Member', image: '/Darshan Vasava Design Team Member.jpg', linkedin: 'https://www.linkedin.com/in/vasava-darshankumar-53a27a379', github: 'https://github.com/swt-drx08', email: 'darshan.vasava@codevimarsh.org' },
+  { id: 'd4', name: 'Srushti Dadhania', section: 'Design Team', role: 'Design Team Member', image: '/Srushti Dadhania Design Team Member.jpg', linkedin: 'https://www.linkedin.com/in/srushti-dadhania-741262240', github: 'https://github.com/srushti28-web', email: 'srushti.dadhania@codevimarsh.org' },
 ];
 
 export const MOCK_BLOGS: BlogPost[] = [

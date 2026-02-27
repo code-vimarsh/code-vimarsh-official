@@ -59,7 +59,9 @@ export interface TeamMember {
   id: string;
   name: string;
   role: string;
+  section: 'Team Leads' | 'Web Team' | 'Management' | 'Design Team';
   image: string;
+  email: string;
   github?: string;
   linkedin?: string;
 }

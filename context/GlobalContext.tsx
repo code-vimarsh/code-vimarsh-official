@@ -12,6 +12,9 @@ interface GlobalContextType {
   projects: ProjectType[];
   addProject: (project: ProjectType) => void;
   team: TeamMember[];
+  addTeamMember: (member: TeamMember) => void;
+  updateTeamMember: (member: TeamMember) => void;
+  deleteTeamMember: (id: string) => void;
   blogs: BlogPost[];
   managedBlogs: ManagedBlog[];
   addManagedBlog: (blog: ManagedBlog) => void;
@@ -110,6 +113,10 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const addParticipant = (p: Participant) => setParticipants(prev => [p, ...prev]);
   const removeParticipant = (id: string) => setParticipants(prev => prev.filter(p => p.id !== id));
 
+  const addTeamMember = (member: TeamMember) => setTeam(prev => [...prev, member]);
+  const updateTeamMember = (member: TeamMember) => setTeam(prev => prev.map(m => m.id === member.id ? member : m));
+  const deleteTeamMember = (id: string) => setTeam(prev => prev.filter(m => m.id !== id));
+
   const addClubMember = (m: ClubMember) => setClubMembers(prev => [m, ...prev]);
   const removeClubMember = (id: string) => setClubMembers(prev => prev.filter(m => m.id !== id));
 
@@ -118,7 +125,8 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       isLoggedIn, setIsLoggedIn,
       events, addEvent,
       projects, addProject,
-      team, blogs, achievements,
+      team, addTeamMember, updateTeamMember, deleteTeamMember,
+      blogs, achievements,
       managedBlogs, addManagedBlog, updateManagedBlog, deleteManagedBlog, toggleBlogStatus,
       managedAchievements, addManagedAchievement, updateManagedAchievement, deleteManagedAchievement,
       admins, addAdmin,

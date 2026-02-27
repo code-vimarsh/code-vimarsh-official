@@ -1,251 +1,45 @@
-import React, { useRef, useState, useEffect } from 'react';
+﻿import React, { useRef, useState, useEffect } from 'react';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
 import { Github, Linkedin, Crown, Code2, Palette, Settings } from 'lucide-react';
 import { EmbersBackground } from '../components/Achievements/GlowDots';
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TYPES
-// ─────────────────────────────────────────────────────────────────────────────
-interface TeamMember {
-  name: string;
-  role: string;
-  image: string;
-  linkedin?: string;
-  github?: string;
-}
-
-const teamData: Record<string, TeamMember[]> = {
-
-  // ── LEADS: President · VP · Secretary · All Dept Heads ───────────────────
-  teamLeads: [
-    {
-      name: 'Mann Shah',
-      role: 'President',
-      image: '/Mann Shah President.jpg',
-      linkedin: 'https://www.linkedin.com/in/mann-shah-b9b8592ab/',
-      github: 'https://www.github.com/mannshah24',
-    },
-    {
-      name: 'Dhriti Gandhi',
-      role: 'Vice President',
-      image: '/Dhriti Gandhi Vice President.jpg',
-      linkedin: 'https://www.linkedin.com/in/dhriti-gandhi-0758372b5/',
-      github: 'https://github.com/Dhriti-5',
-    },
-    {
-      name: 'Kanav Modi',
-      role: 'Secretary',
-      image: '/Kanav Modi Secratory.jpg',
-      linkedin: 'https://www.linkedin.com/in/kanav-modi',
-      github: 'https://github.com/KanavCode',
-    },
-    {
-      name: 'Het Patel',
-      role: 'Management Head',
-      image: '/Het Patel Management Head.webp',
-      linkedin: 'https://www.linkedin.com/in/hetppatel16',
-      github: 'https://github.com/hetppatel16',
-    },
-    {
-      name: 'Daxa Dubey',
-      role: 'Event Head',
-      image: '/Daxa Dubey Event Head.jpg',
-      linkedin: 'https://ln.run/S5zUj',
-      github: 'https://github.com/Daxadubey',
-    },
-    {
-      name: 'Kirtan Patel',
-      role: 'Design Head',
-      image: '/Kirtan Patel Design Head.jpg',
-      linkedin: 'https://www.linkedin.com/in/kirtan-patel-988218301',
-      github: 'https://github.com/KirtanKRP',
-    },
-  ],
-
-  // ── WEB TEAM ─────────────────────────────────────────────────────────────
-  webTeam: [
-    {
-      name: 'Neel Prajapati',
-      role: 'Frontend Team Lead',
-      image: '/Neel Prajapati Web Team Member.png',
-      linkedin: 'https://www.linkedin.com/in/neel-prajapati-447531330',
-      github: 'https://github.com/Neel-2606',
-    },
-
-    {
-      name: 'Aryan Buha',
-      role: 'Web Team Member',
-      image: '/Aryan Buha Frontend Team Member.jpg',
-      linkedin: 'https://www.linkedin.com/in/aryan-buha-874a5434b',
-      github: 'https://github.com/Aryanbuha89',
-    },
+import { useGlobalState } from '../context/GlobalContext';
+import type { TeamMember } from '../types';
 
 
-    {
-      name: 'Krushit Prajapati',
-      role: 'Web Team Member',
-      image: '/Krushit Prajapati Web Team Member.jpg',
-      linkedin: 'https://www.linkedin.com/in/krushit-prajapati-2b11a832b',
-      github: 'https://github.com/krushit1307',
-    },
-
-    {
-      name: 'Dhruv Pathak',
-      role: 'Web Team Member',
-      image: '/Dhruv Pathak Web Team Member.jpg',
-      linkedin: 'https://www.linkedin.com/in/dhruv-pathak-a3041a317',
-      github: 'https://github.com/DhruvPathak767',
-    },
-    {
-      name: 'Ashish Gokani',
-      role: 'Web Team Member',
-      image: '/Ashish Gokani Web Team Member.png',
-      linkedin: 'https://www.linkedin.com/in/ashishgokani',
-      github: 'https://github.com/ashishgokani',
-    },
-
-    {
-      name: 'Deep Jaiswal',
-      role: 'Web Team Member',
-      image: '/Deep Jaiswal Web Team Member.jpeg',
-      linkedin: 'https://www.linkedin.com/in/deep-jaiswal-4145a23a1',
-      github: 'https://github.com/Deep2812msu2006',
-    },
-    {
-      name: 'Shivam Suthar',
-      role: 'Web Team Member',
-      image: '/Shivam Suthar Web Team Member.jpg',
-      linkedin: 'https://www.linkedin.com/in/shivam-suthar-3b3024392',
-      github: 'https://github.com/shiv-05-07',
-    },
-    {
-      name: 'Dhruvil Dattani',
-      role: 'Web Team Member',
-      image: '/Dhruvil Dattani Web Team Member.png',
-      linkedin: 'https://www.linkedin.com/in/dhruvil-dattani-b43599317/',
-      github: 'https://github.com/DhruvilTech/',
-    },
-  ],
-
-  // ── MANAGEMENT TEAM ───────────────────────────────────────────────────────
-  managementTeam: [
-
-    {
-      name: 'Kesha Babriya',
-      role: 'Management Team Member',
-      image: '/Kesha Babriya Management Team Member.jpg',
-      linkedin: 'https://www.linkedin.com/in/kesha-babriya-09151a350',
-      github: 'https://github.com/Kesha-Babriya',
-    },
-
-    {
-      name: 'Ansh Mistry',
-      role: 'Management Team',
-      image: '/Ansh Mistry Management Member.jpg',
-      linkedin: 'https://www.linkedin.com/in/ansh-mistry-ab7805340/',
-      github: 'https://github.com/Ansh-Mistry',
-    },
-    {
-      name: 'Krish Barvaliya',
-      role: 'Management Team Member',
-      image: '/Krish Baravaliya Management Team Member.jpeg',
-      linkedin: 'https://www.linkedin.com/in/krish-barvaliya-74a493278',
-      github: 'https://github.com/barvaliyakrish013',
-    },
-    {
-      name: 'Vaishnavi Patel',
-      role: 'Management Team Member',
-      image: '/Vaishnavi Patel Management Meber.jpeg',
-      linkedin: 'https://www.linkedin.com/in/vaishnavi-patel-03431730b',
-      github: 'https://github.com/Vaishnavi3406',
-    },
-
-    {
-      name: 'Priyal Dalal',
-      role: 'Management Team Member',
-      image: '/Priyal Dalal Management Team.jpg',
-      linkedin: 'https://www.linkedin.com/in/priyal-dalal-911746363',
-      github: 'https://github.com/Priyal028',
-    },
-    {
-      name: 'Harshita Goyal',
-      role: 'Management Team Member',
-      image: '/Harshita Goyal Management Team Member .jpg',
-      linkedin: 'https://www.linkedin.com/in/harshita-goyal-8b69903b2',
-      github: 'https://github.com/harshitagoyal27',
-    },
-  ],
-
-  // ── DESIGN TEAM ───────────────────────────────────────────────────────────
-  designTeam: [
-    {
-      name: 'Manthan Khedekar',
-      role: 'Design Team Member',
-      image: '/Manthan Khedkar Design Team Member.webp',
-      linkedin: 'https://www.linkedin.com/in/manthan-khedekar-9286b0238',
-      github: 'https://github.com/Manthan2806',
-    },
-    {
-      name: 'Sneh Bhikadiya',
-      role: 'Design Team Member',
-      image: '/Sneh Bhikhadiya Design Team Member.png',
-      linkedin: 'https://www.linkedin.com/in/sneh-bhikadiya-97b9a9377',
-      github: 'https://github.com/snehbhikadiya87-pixel',
-    },
-    {
-      name: 'Darshan Vasava',
-      role: 'Design Team Member',
-      image: '/Darshan Vasava Design Team Member.jpg',
-      linkedin: 'https://www.linkedin.com/in/vasava-darshankumar-53a27a379',
-      github: 'https://github.com/swt-drx08',
-    },
-    {
-      name: 'Srushti Dadhania',
-      role: 'Design Team Member',
-      image: '/Srushti Dadhania Design Team Member.jpg',
-      linkedin: 'https://www.linkedin.com/in/srushti-dadhania-741262240',
-      github: 'https://github.com/srushti28-web',
-    },
-  ],
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SECTIONS CONFIG
-// ─────────────────────────────────────────────────────────────────────────────
 const SECTIONS = [
   {
-    key: 'teamLeads' as const,
+    sectionKey: 'Team Leads' as const,
     number: '01',
     title: 'Team Leads',
     description: 'President, Vice President, Secretary, and department heads who define direction, culture, and momentum for Code Vimarsh.',
     icon: Crown,
   },
   {
-    key: 'webTeam' as const,
+    sectionKey: 'Web Team' as const,
     number: '02',
     title: 'Web Team',
-    description: 'Engineers who build and maintain the digital infrastructure — front-end, back-end, and everything in between.',
+    description: 'Engineers who build and maintain the digital infrastructure â€” front-end, back-end, and everything in between.',
     icon: Code2,
   },
   {
-    key: 'managementTeam' as const,
+    sectionKey: 'Management' as const,
     number: '03',
     title: 'Management',
     description: 'The operational backbone that keeps events, communications, and community engagement running seamlessly.',
     icon: Settings,
   },
   {
-    key: 'designTeam' as const,
+    sectionKey: 'Design Team' as const,
     number: '04',
     title: 'Design Team',
-    description: 'Visual storytellers who craft the aesthetic identity — from brand and graphics to motion and photography.',
+    description: 'Visual storytellers who craft the aesthetic identity â€” from brand and graphics to motion and photography.',
     icon: Palette,
   },
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // MEMBER CARD
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const MemberCard: React.FC<{ member: TeamMember; index: number }> = ({ member, index }) => {
   const [hovered, setHovered] = useState(false);
   const [imgError, setImgError] = useState(false);
@@ -401,14 +195,13 @@ const MemberCard: React.FC<{ member: TeamMember; index: number }> = ({ member, i
   );
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// TEAM SECTION — cinematic: left info | right wrapping grid
-// ─────────────────────────────────────────────────────────────────────────────
-const TeamSection: React.FC<{ section: typeof SECTIONS[number]; sectionIndex: number }> = ({ section, sectionIndex }) => {
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// TEAM SECTION â€” cinematic: left info | right wrapping grid
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+const TeamSection: React.FC<{ section: typeof SECTIONS[number]; sectionIndex: number; members: TeamMember[] }> = ({ section, sectionIndex, members }) => {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: '-80px' });
   const Icon = section.icon;
-  const members = teamData[section.key];
   const isEven = sectionIndex % 2 === 0;
 
   return (
@@ -474,7 +267,7 @@ const TeamSection: React.FC<{ section: typeof SECTIONS[number]; sectionIndex: nu
           </div>
         </motion.div>
 
-        {/* RIGHT — all members, wrapping grid */}
+        {/* RIGHT â€” all members, wrapping grid */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={inView ? { opacity: 1, x: 0 } : {}}
@@ -497,9 +290,9 @@ const TeamSection: React.FC<{ section: typeof SECTIONS[number]; sectionIndex: nu
   );
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// BACKGROUND — subtle, non-intrusive
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// BACKGROUND â€” subtle, non-intrusive
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const PageBackground: React.FC = () => {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
@@ -565,11 +358,12 @@ const PageBackground: React.FC = () => {
   );
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // HERO
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const Hero: React.FC = () => {
-  const total = Object.values(teamData).flat().length;
+  const { team } = useGlobalState();
+  const total = team.length;
 
   return (
     <motion.div
@@ -629,7 +423,7 @@ const Hero: React.FC = () => {
         {[
           { v: String(total), l: 'Total Members' },
           { v: String(SECTIONS.length), l: 'Specialized Teams' },
-          { v: '∞', l: 'Shared Ambition' },
+          { v: 'âˆž', l: 'Shared Ambition' },
         ].map((s, i) => (
           <motion.div
             key={s.l}
@@ -664,51 +458,59 @@ const Hero: React.FC = () => {
   );
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MAIN PAGE — full-bleed breakout from Layout max-w container
-// ─────────────────────────────────────────────────────────────────────────────
-const Team: React.FC = () => (
-  <div
-    style={{
-      position: 'relative',
-      width: '100vw',
-      left: '50%',
-      right: '50%',
-      marginLeft: '-50vw',
-      marginRight: '-50vw',
-      minHeight: '100vh',
-      overflowX: 'hidden',
-    }}
-  >
-    <PageBackground />
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// MAIN PAGE â€” full-bleed breakout from Layout max-w container
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+const Team: React.FC = () => {
+  const { team } = useGlobalState();
+  return (
+    <div
+      style={{
+        position: 'relative',
+        width: '100vw',
+        left: '50%',
+        right: '50%',
+        marginLeft: '-50vw',
+        marginRight: '-50vw',
+        minHeight: '100vh',
+        overflowX: 'hidden',
+      }}
+    >
+      <PageBackground />
 
-    <div style={{ position: 'relative', zIndex: 10, maxWidth: 1200, margin: '0 auto', padding: '0 28px' }}>
-      <Hero />
+      <div style={{ position: 'relative', zIndex: 10, maxWidth: 1200, margin: '0 auto', padding: '0 28px' }}>
+        <Hero />
 
-      {SECTIONS.map((s, i) => (
-        <TeamSection key={s.key} section={s} sectionIndex={i} />
-      ))}
+        {SECTIONS.map((s, i) => (
+          <TeamSection
+            key={s.sectionKey}
+            section={s}
+            sectionIndex={i}
+            members={team.filter(m => m.section === s.sectionKey)}
+          />
+        ))}
 
-      {/* Footer */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.5 }}
-        style={{ padding: '48px 0 64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap' }}
-      >
-        <div style={{ fontFamily: 'JetBrains Mono,monospace', fontSize: '0.65rem', color: 'rgba(255,255,255,0.18)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-          Code Vimarsh © {new Date().getFullYear()}
-        </div>
-        <a
-          href="/contact"
-          style={{ fontFamily: 'Inter,sans-serif', fontWeight: 600, fontSize: '0.8rem', color: '#f97316', textDecoration: 'none', borderBottom: '1px dashed rgba(249,115,22,0.4)', paddingBottom: 2 }}
+        {/* Footer */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          style={{ padding: '48px 0 64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap' }}
         >
-          Want to join? Get in touch →
-        </a>
-      </motion.div>
+          <div style={{ fontFamily: 'JetBrains Mono,monospace', fontSize: '0.65rem', color: 'rgba(255,255,255,0.18)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+            Code Vimarsh Â© {new Date().getFullYear()}
+          </div>
+          <a
+            href="/contact"
+            style={{ fontFamily: 'Inter,sans-serif', fontWeight: 600, fontSize: '0.8rem', color: '#f97316', textDecoration: 'none', borderBottom: '1px dashed rgba(249,115,22,0.4)', paddingBottom: 2 }}
+          >
+            Want to join? Get in touch â†’
+          </a>
+        </motion.div>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default Team;
