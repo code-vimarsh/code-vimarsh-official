@@ -11,6 +11,7 @@ interface GlobalContextType {
   addEvent: (event: EventType) => void;
   projects: ProjectType[];
   addProject: (project: ProjectType) => void;
+  deleteProject: (id: string) => void;
   team: TeamMember[];
   addTeamMember: (member: TeamMember) => void;
   updateTeamMember: (member: TeamMember) => void;
@@ -28,6 +29,7 @@ interface GlobalContextType {
   deleteManagedAchievement: (id: string) => void;
   admins: AdminUser[];
   addAdmin: (admin: AdminUser) => void;
+  deleteAdmin: (id: string) => void;
   videoResources: VideoResource[];
   addVideoResource: (video: VideoResource) => void;
   updateVideoResource: (video: VideoResource) => void;
@@ -89,7 +91,9 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   const addEvent = (event: EventType) => setEvents(prev => [event, ...prev]);
   const addProject = (project: ProjectType) => setProjects(prev => [project, ...prev]);
+  const deleteProject = (id: string) => setProjects(prev => prev.filter(p => p.id !== id));
   const addAdmin = (admin: AdminUser) => setAdmins(prev => [admin, ...prev]);
+  const deleteAdmin = (id: string) => setAdmins(prev => prev.filter(a => a.id !== id));
 
   const addManagedBlog = (blog: ManagedBlog) => setManagedBlogs(prev => [blog, ...prev]);
   const updateManagedBlog = (blog: ManagedBlog) => setManagedBlogs(prev => prev.map(b => b.id === blog.id ? blog : b));
@@ -124,12 +128,12 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     <GlobalContext.Provider value={{
       isLoggedIn, setIsLoggedIn,
       events, addEvent,
-      projects, addProject,
+      projects, addProject, deleteProject,
       team, addTeamMember, updateTeamMember, deleteTeamMember,
       blogs, achievements,
       managedBlogs, addManagedBlog, updateManagedBlog, deleteManagedBlog, toggleBlogStatus,
       managedAchievements, addManagedAchievement, updateManagedAchievement, deleteManagedAchievement,
-      admins, addAdmin,
+      admins, addAdmin, deleteAdmin,
       videoResources, addVideoResource, updateVideoResource, deleteVideoResource,
       linkResources, addLinkResource, updateLinkResource, deleteLinkResource,
       participants, addParticipant, removeParticipant,
