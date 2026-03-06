@@ -1,16 +1,60 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-// Soft ambient inner glow rendered on the back-face of the sphere shell
+// Outer pulsing ring
+const PulsingRing = ({ radius, speed, phase }: { radius: number; speed: number; phase: number }) => {
+  const meshRef = useRef<THREE.Mesh>(null);
+  useFrame((state) => {
+    if (meshRef.current) {
+      const t = state.clock.elapsedTime * speed + phase;
+      meshRef.current.scale.setScalar(1 + Math.sin(t) * 0.08);
+      (meshRef.current.material as THREE.MeshBasicMaterial).opacity =
+        0.15 + Math.abs(Math.sin(t)) * 0.25;
+      meshRef.current.rotation.x += 0.005;
+      meshRef.current.rotation.z += 0.003;
+    }
+  });
+  return (
+    <mesh ref={meshRef}>
+      <torusGeometry args={[radius, 0.012, 8, 64]} />
+      <meshBasicMaterial color="#ff6a00" transparent opacity={0.2} />
+    </mesh>
+  );
+};
+
+// Orbiting particle dot
+const OrbitParticle = ({ radius, speed, offset }: { radius: number; speed: number; offset: number }) => {
+  const meshRef = useRef<THREE.Mesh>(null);
+  useFrame((state) => {
+    if (meshRef.current) {
+      const t = state.clock.elapsedTime * speed + offset;
+      meshRef.current.position.set(
+        Math.cos(t) * radius,
+        Math.sin(t * 0.7) * radius * 0.5,
+        Math.sin(t) * radius
+      );
+      (meshRef.current.material as THREE.MeshBasicMaterial).opacity =
+        0.4 + Math.abs(Math.sin(t * 1.5)) * 0.6;
+    }
+  });
+  return (
+    <mesh ref={meshRef}>
+      <sphereGeometry args={[0.04, 8, 8]} />
+      <meshBasicMaterial color="#ff9a40" transparent opacity={0.8} />
+    </mesh>
+  );
+};
+
+// Inner solid glow core
 const GlowCore = () => {
   const meshRef = useRef<THREE.Mesh>(null);
   useFrame((state) => {
     if (meshRef.current) {
       const t = state.clock.elapsedTime;
-      meshRef.current.scale.setScalar(0.84 + Math.sin(t * 1.1) * 0.05);
+      meshRef.current.scale.setScalar(0.85 + Math.sin(t * 1.2) * 0.06);
       (meshRef.current.material as THREE.MeshBasicMaterial).opacity =
-        0.07 + Math.abs(Math.sin(t * 0.7)) * 0.07;
+        0.08 + Math.abs(Math.sin(t * 0.8)) * 0.07;
     }
   });
   return (
@@ -21,122 +65,68 @@ const GlowCore = () => {
   );
 };
 
-// Subtle light particles distributed inside the sphere volume
-const InnerParticles = () => {
-  const pointsRef = useRef<THREE.Points>(null);
-
-  const { positions, colors } = useMemo(() => {
-    const count = 90;
-    const positions = new Float32Array(count * 3);
-    const colors = new Float32Array(count * 3);
-    for (let i = 0; i < count; i++) {
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos(2 * Math.random() - 1);
-      const r = Math.cbrt(Math.random()) * 1.18;
-      positions[i * 3]     = r * Math.sin(phi) * Math.cos(theta);
-      positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
-      positions[i * 3 + 2] = r * Math.cos(phi);
-      const mix = Math.random();
-      colors[i * 3]     = 1.0;
-      colors[i * 3 + 1] = 0.38 + mix * 0.28;
-      colors[i * 3 + 2] = 0.0;
-    }
-    return { positions, colors };
-  }, []);
-
-  useFrame((state) => {
-    if (pointsRef.current) {
-      const t = state.clock.elapsedTime;
-      (pointsRef.current.material as THREE.PointsMaterial).opacity =
-        0.32 + Math.sin(t * 0.85) * 0.18;
-    }
-  });
-
-  return (
-    <points ref={pointsRef}>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          array={positions}
-          count={positions.length / 3}
-          itemSize={3}
-        />
-        <bufferAttribute
-          attach="attributes-color"
-          array={colors}
-          count={colors.length / 3}
-          itemSize={3}
-        />
-      </bufferGeometry>
-      <pointsMaterial
-        size={0.038}
-        vertexColors
-        transparent
-        opacity={0.42}
-        sizeAttenuation
-      />
-    </points>
-  );
-};
-
-// Geometric wireframe sphere - all elements rotate as a unified group
+// Main wireframe ball
 const WireframeIcosahedron = () => {
-  const groupRef = useRef<THREE.Group>(null);
-  const outerRef = useRef<THREE.Mesh>(null);
+  const meshRef = useRef<THREE.Mesh>(null);
   const innerRef = useRef<THREE.Mesh>(null);
 
   useFrame((state, delta) => {
-    if (groupRef.current) {
-      groupRef.current.rotation.x += delta * 0.14;
-      groupRef.current.rotation.y += delta * 0.22;
-      groupRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.6) * 0.09;
-    }
-    if (outerRef.current) {
+    if (meshRef.current) {
+      meshRef.current.rotation.x += delta * 0.18;
+      meshRef.current.rotation.y += delta * 0.28;
+      meshRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.8) * 0.15;
+
+      // Pulse opacity
       const t = state.clock.elapsedTime;
-      (outerRef.current.material as THREE.MeshBasicMaterial).opacity =
-        0.56 + Math.sin(t * 1.2) * 0.12;
+      (meshRef.current.material as THREE.MeshBasicMaterial).opacity =
+        0.55 + Math.sin(t * 1.5) * 0.15;
     }
     if (innerRef.current) {
-      const t = state.clock.elapsedTime;
-      (innerRef.current.material as THREE.MeshBasicMaterial).opacity =
-        0.17 + Math.abs(Math.sin(t * 0.85)) * 0.09;
+      innerRef.current.rotation.x -= delta * 0.12;
+      innerRef.current.rotation.y -= delta * 0.15;
+      innerRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.8) * 0.15;
     }
   });
 
   return (
-    <group ref={groupRef}>
-      {/* Outer wireframe - primary orange */}
-      <mesh ref={outerRef}>
+    <group>
+      {/* Main wireframe */}
+      <mesh ref={meshRef}>
         <icosahedronGeometry args={[1.5, 1]} />
-        <meshBasicMaterial color="#ff6a00" wireframe transparent opacity={0.62} />
+        <meshBasicMaterial color="#ff6a00" wireframe transparent opacity={0.65} />
       </mesh>
 
-      {/* Inner denser wireframe - amber, for depth */}
+      {/* Inner denser wireframe */}
       <mesh ref={innerRef}>
         <icosahedronGeometry args={[1.0, 2]} />
-        <meshBasicMaterial color="#ff9a40" wireframe transparent opacity={0.18} />
+        <meshBasicMaterial color="#ff9a40" wireframe transparent opacity={0.2} />
       </mesh>
 
-      {/* Back-face ambient glow */}
+      {/* Glow core */}
       <GlowCore />
 
-      {/* Subtle inner particle lights */}
-      <InnerParticles />
+      {/* Pulsing orbit rings */}
+      <PulsingRing radius={2.1} speed={0.6} phase={0} />
+      <PulsingRing radius={2.45} speed={0.4} phase={Math.PI / 2} />
+      <PulsingRing radius={1.8} speed={0.9} phase={Math.PI} />
+
+      {/* Orbiting particles */}
+      <OrbitParticle radius={2.0} speed={0.7} offset={0} />
+      <OrbitParticle radius={2.2} speed={0.5} offset={2.1} />
+      <OrbitParticle radius={1.9} speed={1.0} offset={4.2} />
+      <OrbitParticle radius={2.3} speed={0.6} offset={1.0} />
+      <OrbitParticle radius={2.0} speed={0.8} offset={3.5} />
     </group>
   );
 };
 
 const Scene3D: React.FC = () => {
   return (
-    <div
-      className="w-full h-full min-h-[400px] relative pointer-events-none"
-      style={{ willChange: 'transform', isolation: 'isolate' }}
-    >
-      {/* Camera closer since outer rings removed - sphere fits comfortably at z=5 fov=48 */}
-      <Canvas camera={{ position: [0, 0, 5.0], fov: 48 }}>
-        <ambientLight intensity={0.25} />
-        <pointLight position={[4, 4, 4]} color="#ff6a00" intensity={2.5} />
-        <pointLight position={[-4, -3, -4]} color="#ff9a40" intensity={1.2} />
+    <div className="w-full h-full min-h-[400px] relative pointer-events-none">
+      <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
+        <ambientLight intensity={0.3} />
+        <pointLight position={[5, 5, 5]} color="#ff6a00" intensity={2} />
+        <pointLight position={[-5, -5, -5]} color="#ff9a40" intensity={1} />
         <WireframeIcosahedron />
       </Canvas>
     </div>
