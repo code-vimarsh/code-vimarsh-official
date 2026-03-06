@@ -37,8 +37,10 @@ const Home: React.FC = () => {
     <div className="flex flex-col space-y-28 py-10">
 
       {/* Hero Section */}
-      <section className="min-h-[70vh] flex flex-col lg:flex-row items-center justify-between gap-12">
-        <div className="flex-1 space-y-8 z-10">
+      <section className="min-h-[70vh] flex flex-col lg:flex-row items-center justify-between gap-10 lg:gap-6">
+
+        {/* ── Left: Text Content ── */}
+        <div className="flex-1 min-w-0 space-y-8 relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -105,19 +107,28 @@ const Home: React.FC = () => {
           </motion.div>
         </div>
 
-        {/* 3D Visual */}
+        {/* ── Right: 3D Animation ── shifted to right with translate, glow local to container */}
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1 }}
-          className="flex-1 w-full h-full relative flex items-center justify-center"
+          transition={{ duration: 1.2, ease: 'easeOut' }}
+          className="relative flex-shrink-0 flex items-center justify-center pointer-events-none z-0 lg:translate-x-8 xl:translate-x-14"
+          style={{ willChange: 'transform, opacity' }}
         >
-          {/* Layered glow behind 3D object */}
-          <div className="absolute w-96 h-96 bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
-          <div className="absolute w-48 h-48 bg-primary/25 rounded-full blur-[60px] pointer-events-none" />
-          <div className="absolute w-24 h-24 bg-orange-400/30 rounded-full blur-[30px] pointer-events-none" />
-          <Scene3D />
+          {/* Layered orange glow spread — positioned at exact center of container */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[480px] h-[480px] bg-primary/10 rounded-full blur-[140px] pointer-events-none" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-primary/20 rounded-full blur-[80px] pointer-events-none" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-36 h-36 bg-orange-400/30 rounded-full blur-[40px] pointer-events-none" />
+
+          {/* Scene container — sized so the wireframe sphere fills ~65% of the canvas for a bold, premium look */}
+          <div
+            className="w-[300px] h-[300px] sm:w-[380px] sm:h-[380px] md:w-[460px] md:h-[460px] lg:w-[520px] lg:h-[520px]"
+            style={{ willChange: 'transform' }}
+          >
+            <Scene3D />
+          </div>
         </motion.div>
+
       </section>
 
       {/* Stats Section */}
