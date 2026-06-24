@@ -38,13 +38,25 @@ const PageLoader = () => (
 
 const App: React.FC = () => {
   // State machine controlling the immersive flow
-  const [appState, setAppState] = useState<'intro' | 'booting' | 'ready'>('intro');
+  const [appState, setAppState] = useState<'intro' | 'booting' | 'ready'>(() => {
+    if (sessionStorage.getItem('has_seen_intro')) {
+      return 'ready';
+    }
+    return 'intro';
+  });
   const location = useLocation();
 
   // Scroll to top on route change
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
+
+  // Save intro state to avoid replaying on refresh
+  useEffect(() => {
+    if (appState === 'ready') {
+      sessionStorage.setItem('has_seen_intro', 'true');
+    }
+  }, [appState]);
 
   // Routes that should bypass the immersive intro/loader entirely
   const isAdminRoute = location.pathname.startsWith('/admin');
