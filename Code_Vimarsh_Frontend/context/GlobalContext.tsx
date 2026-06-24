@@ -70,18 +70,8 @@ const MOCK_MEMBERS: ClubMember[] = [
 ];
 
 export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [isLoggedIn, setIsLoggedInState] = useState<boolean>(true);
-  const [currentUser, setCurrentUser] = useState<User | null>({
-    id: "mock_super_admin_id",
-    prn: "8024055612",
-    name: "Neel Prajapati",
-    email: "neelprajapati2601@gmail.com",
-    role: "SUPER_ADMIN",
-    xp: 2500,
-    level: 12,
-    global_rank: 1,
-    created_at: new Date().toISOString()
-  });
+  const [isLoggedIn, setIsLoggedInState] = useState<boolean>(!!localStorage.getItem(AUTH_KEY));
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   const setIsLoggedIn = (v: boolean) => {
     setIsLoggedInState(v);
@@ -107,8 +97,6 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [alumni, setAlumni] = useState<Alum[]>(MOCK_ALUMNI);
 
   useEffect(() => {
-    // TEMPORARY: Bypass backend auth check since it's down
-    /*
     if (isLoggedIn) {
       api.get('/auth/me')
         .then(res => {
@@ -125,7 +113,6 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     } else {
       setCurrentUser(null);
     }
-    */
 
     // Fetch events from backend
     api.get('/events')
