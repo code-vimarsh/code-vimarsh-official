@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useGlobalState } from '../context/GlobalContext';
 import {
   LayoutDashboard, Calendar, FolderHeart, ShieldAlert, Users,
-  ArrowLeft, BookOpen, Award, Newspaper, Trophy, Megaphone,
+  ArrowLeft, BookOpen, Award, Newspaper, Trophy, Megaphone, Mail,
   Settings, LogOut, ChevronRight, Activity, Bell, Search, User, GraduationCap
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -19,10 +19,11 @@ import ManageResources from '../components/admin/ManageResources';
 import EmailBlast from '../components/admin/EmailBlast';
 import ManageAlumni from '../components/admin/ManageAlumni';
 import ManageTeamMembers from '../components/admin/ManageTeamMembers';
+import ManageContact from '../components/admin/ManageContact';
 
 const Admin: React.FC = () => {
   // Component is now fully modular; state is managed within sub-components via useGlobalState()
-  const [activeTab, setActiveTab] = useState<'overview' | 'events' | 'projects' | 'admins' | 'resources' | 'email' | 'certificates' | 'blogs' | 'achievements' | 'alumni' | 'team'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'events' | 'projects' | 'admins' | 'resources' | 'email' | 'certificates' | 'blogs' | 'achievements' | 'alumni' | 'team' | 'contact'>('overview');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const { currentUser } = useGlobalState();
@@ -41,6 +42,7 @@ const Admin: React.FC = () => {
     { id: 'achievements', icon: <Trophy size={18} />, label: 'Achievements', desc: 'Club accolades' },
     { id: 'email', icon: <Megaphone size={18} />, label: 'Email Blast', desc: 'Mass comms' },
     { id: 'certificates', icon: <Award size={18} />, label: 'Certificates', desc: 'Issue docs' },
+    { id: 'contact', icon: <Mail size={18} />, label: 'Contact Messages', desc: 'User inquiries' },
   ];
 
   return (
@@ -171,6 +173,9 @@ const Admin: React.FC = () => {
 
             {/* CERTIFICATES */}
             {activeTab === 'certificates' && <Certificates />}
+
+            {/* CONTACT MESSAGES */}
+            {activeTab === 'contact' && <ManageContact />}
           </div>
         </div>
       </main>

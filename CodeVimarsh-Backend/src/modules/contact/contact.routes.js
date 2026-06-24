@@ -1,5 +1,7 @@
 import express from "express";
-import { createContact } from "./contact.controller.js";
+import { createContact, getAllContacts, updateContactStatus, deleteContact } from "./contact.controller.js";
+import { authenticate } from "../../middleware/auth.middleware.js";
+import { requireContentAdmin } from "../../middleware/role.middleware.js";
 
 const router = express.Router();
 
@@ -78,5 +80,13 @@ const router = express.Router();
  *         description: Internal server error
  */
 router.post("/", createContact);
+
+// Secure routes for reading and managing messages
+router.use(authenticate);
+router.use(requireContentAdmin);
+
+router.get("/", getAllContacts);
+router.patch("/:id/status", updateContactStatus);
+router.delete("/:id", deleteContact);
 
 export default router;
