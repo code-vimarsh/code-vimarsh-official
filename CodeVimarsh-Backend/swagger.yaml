@@ -1,0 +1,1032 @@
+openapi: 3.0.0
+info:
+  title: Code Vimarsh API
+  version: 1.0.0
+  description: Backend API documentation for Code Vimarsh – MSUB Coding Club
+servers:
+  - url: http://localhost:5000/api/v1
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security:
+  - BearerAuth: []
+paths:
+  /admin/users:
+    get:
+      summary: List all users with roles (CONTENT_ADMIN and above)
+      tags:
+        - Admin
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Paginated list of all users
+        "403":
+          description: Forbidden
+  /admin/users/{userId}:
+    get:
+      summary: View a user's full profile (CONTENT_ADMIN and above)
+      tags:
+        - Admin
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Full user profile with admin data
+        "404":
+          description: User not found
+  /admin/users/{userId}/role:
+    patch:
+      summary: Change a user's role (SUPER_ADMIN only)
+      tags:
+        - Admin
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - role
+              properties:
+                role:
+                  type: string
+                  enum:
+                    - USER
+                    - CONTENT_ADMIN
+                    - SUPER_ADMIN
+      responses:
+        "200":
+          description: Role updated successfully
+        "403":
+          description: Forbidden – SUPER_ADMIN only
+  /auth/register:
+    post:
+      summary: Register a new student account
+      tags:
+        - Auth
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - prn
+                - name
+                - email
+                - password
+              properties:
+                prn:
+                  type: string
+                  example: "8022004011"
+                name:
+                  type: string
+                  example: Magnus Carlsen
+                email:
+                  type: string
+                  example: magnus@gmail.com
+                password:
+                  type: string
+                  example: SecurePass@123
+      responses:
+        "201":
+          description: Registration successful – verification email sent
+        "409":
+          description: Email or PRN already registered
+  /auth/login:
+    post:
+      summary: Login with PRN and password
+      tags:
+        - Auth
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - prn
+                - password
+              properties:
+                prn:
+                  type: string
+                  example: "8022004011"
+                password:
+                  type: string
+                  example: SecurePass@123
+      responses:
+        "200":
+          description: Login successful – returns JWT token
+        "401":
+          description: Invalid credentials
+        "403":
+          description: Email not verified
+  /auth/verify-email:
+    get:
+      summary: Verify email via token link
+      tags:
+        - Auth
+      security: []
+      parameters:
+        - in: query
+          name: token
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Email verified successfully
+        "400":
+          description: Invalid or already-used token
+        "410":
+          description: Token expired
+  /auth/resend-verification:
+    post:
+      summary: Resend email verification link
+      tags:
+        - Auth
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  example: magnus@gmail.com
+      responses:
+        "200":
+          description: Verification email resent (if account exists)
+  /auth/me:
+    get:
+      summary: Get the currently authenticated user's profile
+      tags:
+        - Auth
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Current user data
+        "401":
+          description: Unauthorized
+  /auth/forgot-password:
+    post:
+      summary: Request a password reset link via email
+      tags:
+        - Auth
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+      responses:
+        "200":
+          description: Reset link sent (if account exists)
+  /auth/reset-password:
+    post:
+      summary: Reset password using the reset token
+      tags:
+        - Auth
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - newPassword
+              properties:
+                token:
+                  type: string
+                newPassword:
+                  type: string
+      responses:
+        "200":
+          description: Password reset successful
+        "400":
+          description: Invalid token
+        "410":
+          description: Token expired
+  /contact:
+    post:
+      summary: Submit contact form
+      description: Allows users to send a contact message to the system.
+      tags:
+        - Contact
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - message
+              properties:
+                name:
+                  type: string
+                  example: John Doe
+                email:
+                  type: string
+                  format: email
+                  example: johndoe@example.com
+                subject:
+                  type: string
+                  example: Inquiry about events
+                message:
+                  type: string
+                  example: I would like to know more about your upcoming events.
+      responses:
+        "201":
+          description: Contact form submitted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Contact form submitted successfully
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      name:
+                        type: string
+                        example: John Doe
+                      email:
+                        type: string
+                        example: johndoe@example.com
+                      message:
+                        type: string
+                        example: I would like to know more about your upcoming events.
+                      subject:
+                        type: string
+                        example: Inquiry about events
+        "400":
+          description: Missing required fields
+          content:
+            application/json:
+              example:
+                success: false
+                message: Name, email, and message are required
+        "500":
+          description: Internal server error
+  /events:
+    get:
+      summary: Get all events
+      tags:
+        - Events
+      responses:
+        "200":
+          description: List of all events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  events:
+                    type: array
+                    items:
+                      type: object
+    post:
+      summary: Create a new event
+      tags:
+        - Events
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+                - type
+                - start_date
+              properties:
+                title:
+                  type: string
+                  minLength: 3
+                  example: Introduction to Open Source
+                description:
+                  type: string
+                  example: A beginner-friendly session on contributing to open source.
+                long_description:
+                  type: string
+                  example: This workshop covers forking, branching, PRs, and more.
+                type:
+                  type: string
+                  enum:
+                    - Workshop
+                    - Hackathon
+                    - Meetup
+                  example: Workshop
+                location:
+                  type: string
+                  example: Lab 3, MSUB Campus
+                start_date:
+                  type: string
+                  format: date-time
+                  example: 2026-04-10T10:00:00.000Z
+                end_date:
+                  type: string
+                  format: date-time
+                  example: 2026-04-10T13:00:00.000Z
+                max_participants:
+                  type: integer
+                  minimum: 1
+                  example: 50
+                banner_image:
+                  type: string
+                  format: uri
+                  example: https://example.com/banner.png
+                topics:
+                  type: array
+                  items:
+                    type: string
+                  default: []
+                  example:
+                    - Git
+                    - GitHub
+                    - Open Source
+      responses:
+        "201":
+          description: Event created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  event:
+                    type: object
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden – SUPER_ADMIN only
+  /events/{id}:
+    get:
+      summary: Get an event by ID
+      tags:
+        - Events
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Event details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  event:
+                    type: object
+        "404":
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Event not found
+    put:
+      summary: Update an event by ID
+      tags:
+        - Events
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  minLength: 3
+                  example: Updated Event Title
+                description:
+                  type: string
+                  example: Updated description.
+                long_description:
+                  type: string
+                  example: Updated long description.
+                type:
+                  type: string
+                  enum:
+                    - Workshop
+                    - Hackathon
+                    - Meetup
+                  example: Hackathon
+                location:
+                  type: string
+                  example: Auditorium, MSUB Campus
+                start_date:
+                  type: string
+                  format: date-time
+                  example: 2026-04-15T09:00:00.000Z
+                end_date:
+                  type: string
+                  format: date-time
+                  example: 2026-04-15T17:00:00.000Z
+                max_participants:
+                  type: integer
+                  minimum: 1
+                  example: 100
+                banner_image:
+                  type: string
+                  format: uri
+                  example: https://example.com/new-banner.png
+                topics:
+                  type: array
+                  items:
+                    type: string
+                  example:
+                    - DSA
+                    - Web Dev
+      responses:
+        "200":
+          description: Event updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  event:
+                    type: object
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden – SUPER_ADMIN only
+        "404":
+          description: Event not found
+    delete:
+      summary: Delete an event by ID
+      tags:
+        - Events
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Event deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Event deleted successfully.
+                  event:
+                    type: object
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden – SUPER_ADMIN only
+        "404":
+          description: Event not found
+  /events/{id}/register:
+    post:
+      summary: Register for an event
+      tags:
+        - Events
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - whatsapp_number
+                - experience_level
+              properties:
+                whatsapp_number:
+                  type: string
+                  example: "9876543210"
+                github_username:
+                  type: string
+                  example: johndoe
+                experience_level:
+                  type: string
+                  enum:
+                    - Beginner
+                    - Intermediate
+                    - Advanced
+                  example: Beginner
+                areas_of_interest:
+                  type: array
+                  items:
+                    type: string
+                  default: []
+                  example:
+                    - Web Dev
+                    - AI/ML
+                reason_for_participation:
+                  type: string
+                  example: I want to improve my competitive programming skills.
+      responses:
+        "201":
+          description: Successfully registered for the event
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  registration:
+                    type: object
+                  message:
+                    type: string
+                    example: Successfully registered! A confirmation email has been sent.
+        "401":
+          description: Unauthorized
+        "404":
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Event not found
+        "409":
+          description: Already registered for this event
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: You are already registered for this event.
+  /events/{id}/speakers:
+    post:
+      summary: Add a speaker to an event
+      tags:
+        - Events
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  example: John Doe
+                designation:
+                  type: string
+                  example: Software Engineer
+                avatar:
+                  type: string
+                  format: uri
+                  example: https://example.com/avatar.png
+                bio:
+                  type: string
+                  example: Expert in Node.js
+      responses:
+        "201":
+          description: Successfully added speaker
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  speaker:
+                    type: object
+                  message:
+                    type: string
+                    example: Speaker added successfully.
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden – SUPER_ADMIN only
+        "404":
+          description: Event not found
+  /events/speakers/{speakerId}:
+    put:
+      summary: Update an event speaker
+      tags:
+        - Events
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: speakerId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                designation:
+                  type: string
+                avatar:
+                  type: string
+                bio:
+                  type: string
+      responses:
+        "200":
+          description: Successfully updated speaker
+        "404":
+          description: Speaker not found
+    delete:
+      summary: Delete an event speaker
+      tags:
+        - Events
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: speakerId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successfully deleted speaker
+        "404":
+          description: Speaker not found
+  /projects:
+    post:
+      summary: Create a new project
+      tags:
+        - Projects
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+                - tech_stack
+              properties:
+                title:
+                  type: string
+                  example: AI Resume Analyzer
+                short_description:
+                  type: string
+                  example: AI powered resume screening tool
+                category:
+                  type: string
+                  example: AI
+                about:
+                  type: string
+                  example: This project analyzes resumes using NLP techniques.
+                key_features:
+                  type: array
+                  items:
+                    type: string
+                  example:
+                    - Resume Parsing
+                    - Skill Extraction
+                tech_stack:
+                  type: array
+                  items:
+                    type: string
+                  example:
+                    - Node.js
+                    - React
+                    - OpenAI
+                github_link:
+                  type: string
+                  example: https://github.com/user/project
+                image:
+                  type: string
+                  example: https://image-url.com/project.png
+                author_name:
+                  type: string
+                  example: Dhruv Pathak
+                members:
+                  type: array
+                  items:
+                    type: string
+                  example:
+                    - user_id_1
+                    - user_id_2
+      responses:
+        "201":
+          description: Project created successfully
+    get:
+      summary: Get all approved projects
+      tags:
+        - Projects
+      responses:
+        "200":
+          description: List of projects retrieved successfully
+  /projects/{id}:
+    get:
+      summary: Get project details by ID
+      tags:
+        - Projects
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: Project ID
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Project details retrieved
+        "404":
+          description: Project not found
+    put:
+      summary: Update a project
+      tags:
+        - Projects
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: Project ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                short_description:
+                  type: string
+                category:
+                  type: string
+                about:
+                  type: string
+                key_features:
+                  type: array
+                  items:
+                    type: string
+                tech_stack:
+                  type: array
+                  items:
+                    type: string
+                github_link:
+                  type: string
+                image:
+                  type: string
+                author_name:
+                  type: string
+      responses:
+        "200":
+          description: Project updated successfully
+    delete:
+      summary: Delete a project
+      tags:
+        - Projects
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          description: Project ID
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Project deleted successfully
+  /users/leaderboard:
+    get:
+      summary: Get the global XP leaderboard (top 50)
+      tags:
+        - Users
+      security: []
+      responses:
+        "200":
+          description: Leaderboard fetched successfully
+  /users/{id}:
+    get:
+      summary: Get a user's public profile
+      tags:
+        - Users
+      security: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User profile
+        "404":
+          description: User not found
+    put:
+      summary: Update a user's profile (owner or SUPER_ADMIN only)
+      tags:
+        - Users
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                avatar:
+                  type: string
+      responses:
+        "200":
+          description: Profile updated
+        "403":
+          description: Forbidden
+  /users/me/avatar:
+    patch:
+      summary: Upload or replace the logged-in user's profile avatar
+      description: >
+        Accepts a multipart/form-data request with an image file in the "avatar"
+        field. No user ID is required — it is automatically extracted from the
+        JWT token. The image is validated (size ≤ MAX_AVATAR_SIZE_KB, image/*
+        MIME only), resized to 400×400 px with a face-centered fill crop,
+        uploaded to Cloudinary, and the resulting secure URL is saved to the
+        users table.
+      tags:
+        - Users
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - avatar
+              properties:
+                avatar:
+                  type: string
+                  format: binary
+                  description: Image file (JPEG, PNG, or WebP; max 200 KB)
+      responses:
+        "200":
+          description: Avatar updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  avatar:
+                    type: string
+                    description: Secure Cloudinary URL of the new avatar
+        "400":
+          description: No file provided, wrong file type, or file too large
+        "401":
+          description: Unauthorized — missing or invalid token
+tags:
+  - name: Admin
+    description: Admin user management
+  - name: Auth
+    description: Authentication & email verification
+  - name: Events
+    description: Event management & registration
+  - name: Projects
+    description: Project showcase management APIs
+  - name: Users
+    description: User profile management

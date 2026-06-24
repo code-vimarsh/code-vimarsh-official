@@ -1,0 +1,72 @@
+/* ══════════════════════════════════════════════════════════════════════
+   GLOBAL TYPOGRAPHY SYSTEM
+   Reference: AchievementsSection hero ("Hall of Achievements")
+   ══════════════════════════════════════════════════════════════════════
+
+   Usage:
+     .heading-primary        — Cinzel Decorative serif, 900 weight, cream #f5f0e8
+                               Wide letter-spacing 0.04em. No font-size set —
+                               pair with Tailwind text-* or a style prop for size.
+
+     .heading-accent         — Orange gradient highlight for <span> inside headings
+                               (gradient + drop-shadow glow; preferred for spans)
+
+     .heading-accent-glow    — Solid orange (#f97316) + text-shadow glow for <span>
+                               (simpler, matches Achievements "Achievements" word)
+
+     .section-subtitle       — JetBrains Mono, all-caps, wide tracking, muted brown
+                               Matches the tagline below every section hero title.
+
+   Example:
+     <h1 class="heading-primary" style="font-size:clamp(2rem,5vw,3.5rem)">
+       Hall of <span class="heading-accent-glow">Achievements</span>
+     </h1>
+     <p class="section-subtitle">A chronicle of milestones forged in code</p>
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* --- Primary heading (font only — size supplied by caller) --- */
+.heading-primary {
+  font-family: 'Cinzel Decorative', 'Cinzel', serif;
+  font-weight: 900;
+  color: #f5f0e8;
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+}
+
+/* --- Orange gradient + glow for highlighted <span> words --- */
+.heading-accent {
+  background: linear-gradient(135deg, #f97316 10%, #fb923c 90%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 28px rgba(249, 115, 22, 0.5));
+}
+
+/* --- Simpler solid orange + text-shadow glow (Achievements reference) --- */
+.heading-accent-glow {
+  color: #f97316;
+  text-shadow: 0 0 40px rgba(249, 115, 22, 0.55);
+  /* reset any inherited -webkit-text-fill-color from a parent .heading-accent */
+  -webkit-text-fill-color: #f97316;
+}
+
+/* --- Section eyebrow / subtitle — mono, uppercase, wide tracking --- */
+.section-subtitle {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: clamp(0.65rem, 1.5vw, 0.85rem);
+  color: #6a5a4a;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  line-height: 1.7;
+  margin-top: 14px;
+}
+
+/* ── Date input calendar icon — force white on dark backgrounds ── */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(2);
+  cursor: pointer;
+  opacity: 0.8;
+}
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
