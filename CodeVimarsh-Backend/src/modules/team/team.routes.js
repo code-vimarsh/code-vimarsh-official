@@ -1,9 +1,10 @@
 import { Router } from "express";
 import * as controller from "./team.controller.js";
-import { protect, authorize } from "../../middleware/auth.middleware.js";
+import { authenticate } from "../../middleware/auth.middleware.js";
+import { requireContentAdmin } from "../../middleware/role.middleware.js";
 const router = Router();
 router.get("/", controller.getAll);
-router.post("/", protect, authorize("SUPER_ADMIN", "CONTENT_ADMIN"), controller.create);
-router.put("/:id", protect, authorize("SUPER_ADMIN", "CONTENT_ADMIN"), controller.update);
-router.delete("/:id", protect, authorize("SUPER_ADMIN", "CONTENT_ADMIN"), controller.remove);
+router.post("/", authenticate, requireContentAdmin, controller.create);
+router.put("/:id", authenticate, requireContentAdmin, controller.update);
+router.delete("/:id", authenticate, requireContentAdmin, controller.remove);
 export default router;

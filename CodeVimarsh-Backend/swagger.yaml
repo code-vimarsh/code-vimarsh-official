@@ -421,6 +421,13 @@ paths:
           description: Unauthorized
         "403":
           description: Forbidden – SUPER_ADMIN only
+  /events/registrations:
+    get:
+      summary: Get all event registrations
+      tags:
+        - Events
+      security:
+        - BearerAuth: []
   /events/{id}:
     get:
       summary: Get an event by ID
