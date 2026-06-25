@@ -56,6 +56,22 @@ interface GlobalContextType {
 
 const GlobalContext = createContext<GlobalContextType | undefined>(undefined);
 
+const mergeById = <T extends { id: string }>(existing: T[], incoming: T[]) => {
+  const merged = [...existing];
+
+  incoming.forEach(item => {
+    const index = merged.findIndex(current => current.id === item.id);
+    if (index === -1) {
+      merged.push(item);
+      return;
+    }
+
+    merged[index] = item;
+  });
+
+  return merged;
+};
+
 // ── Seed data ────────────────────────────────────────────────────────────────
 const MOCK_PARTICIPANTS: Participant[] = [
   { id: 'p1', name: 'Aarya Shah', email: 'aarya@example.com', eventId: '1', eventTitle: 'Hackathon 2025', registeredAt: '2025-01-10' },
@@ -140,11 +156,15 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       .catch(err => console.error('Failed to fetch projects:', err));
 
     api.get('/team').then(res => {
-      if (res.data.success) setTeam(res.data.data);
+      if (res.data.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
+        setTeam(prev => mergeById(prev, res.data.data));
+      }
     }).catch(err => console.error('Failed to fetch team:', err));
 
     api.get('/alumni').then(res => {
-      if (res.data.success) setAlumni(res.data.data);
+      if (res.data.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
+        setAlumni(prev => mergeById(prev, res.data.data));
+      }
     }).catch(err => console.error('Failed to fetch alumni:', err));
 
     api.get('/blogs').then(res => {
@@ -152,7 +172,9 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }).catch(err => console.error('Failed to fetch blogs:', err));
 
     api.get('/achievements').then(res => {
-      if (res.data.success) setManagedAchievements(res.data.data);
+      if (res.data.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
+        setManagedAchievements(prev => mergeById(prev, res.data.data));
+      }
     }).catch(err => console.error('Failed to fetch achievements:', err));
 
     api.get('/resources').then(res => {
