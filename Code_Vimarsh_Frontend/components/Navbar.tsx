@@ -91,9 +91,6 @@ const Navbar: React.FC = () => {
 
         {/* Mobile Menu Toggle */}
         <div className="md:hidden flex items-center gap-1">
-          <Link to="/admin" className="text-textMuted p-2 hover:text-primary">
-            <Settings size={20} />
-          </Link>
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="text-textMuted hover:text-white p-2"
@@ -105,7 +102,7 @@ const Navbar: React.FC = () => {
 
       {/* Mobile Nav */}
       {mobileMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 w-full bg-surface border-b border-surfaceLight py-4 px-4 shadow-xl">
+        <div className="md:hidden absolute top-full left-0 w-full bg-surface border-b border-surfaceLight py-4 px-4 shadow-xl max-h-[calc(100vh-56px)] overflow-y-auto">
           <div className="flex flex-col space-y-2">
             {NAV_ITEMS.map((item) => (
               <Link
@@ -128,6 +125,15 @@ const Navbar: React.FC = () => {
                   className="border border-primary/60 text-primary font-semibold px-4 py-3 rounded-lg w-full text-center block flex items-center justify-center gap-2 hover:bg-primary/10 transition-colors"
                 >
                   <Settings size={18} /> Admin Panel
+                </Link>
+              )}
+              {!isLoggedIn && (
+                <Link
+                  to="/signin"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="border border-surfaceLight text-textMuted font-semibold px-4 py-3 rounded-lg w-full text-center block hover:text-white hover:bg-surfaceLight transition-colors"
+                >
+                  Sign In
                 </Link>
               )}
               {isLoggedIn ? (
