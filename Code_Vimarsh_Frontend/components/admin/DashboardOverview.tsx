@@ -16,7 +16,7 @@ const DashboardOverview: React.FC = () => {
         val: number;
         icon: React.ElementType;
         iconColor: string;
-        trend: string;
+        iconColor: string;
         color: string;
     }[] = [
             {
@@ -24,7 +24,6 @@ const DashboardOverview: React.FC = () => {
                 val: stats.events,
                 icon: Calendar,
                 iconColor: 'text-blue-400',
-                trend: '+2 this month',
                 color: 'from-blue-500/20 to-transparent'
             },
             {
@@ -32,7 +31,6 @@ const DashboardOverview: React.FC = () => {
                 val: stats.projects,
                 icon: FolderHeart,
                 iconColor: 'text-pink-400',
-                trend: '+5 this month',
                 color: 'from-pink-500/20 to-transparent'
             },
             {
@@ -40,7 +38,6 @@ const DashboardOverview: React.FC = () => {
                 val: stats.resources,
                 icon: BookOpen,
                 iconColor: 'text-purple-400',
-                trend: '12 new roadmaps',
                 color: 'from-purple-500/20 to-transparent'
             },
             {
@@ -48,7 +45,6 @@ const DashboardOverview: React.FC = () => {
                 val: stats.admins,
                 icon: ShieldCheck,
                 iconColor: 'text-green-400',
-                trend: 'System secure',
                 color: 'from-green-500/20 to-transparent'
             }
         ];
@@ -84,10 +80,6 @@ const DashboardOverview: React.FC = () => {
                         <div className="relative z-10 flex justify-between items-start mb-4">
                             <div className="p-3 bg-bgDark rounded-xl border border-surfaceLight group-hover:border-primary/30 transition-colors">
                                 <stat.icon className={stat.iconColor} size={20} />
-                            </div>
-                            <div className="flex items-center gap-1 text-[10px] font-bold text-green-400 bg-green-400/10 px-2 py-1 rounded-full border border-green-400/20">
-                                <TrendingUp size={10} />
-                                {stat.trend}
                             </div>
                         </div>
 

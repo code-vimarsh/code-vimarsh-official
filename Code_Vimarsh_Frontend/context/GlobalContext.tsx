@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import api from '../services/api';
 import { User, EventType, ProjectType, TeamMember, BlogPost, ManagedBlog, ManagedAchievement, AchievementType, AdminUser, VideoResource, LinkResource, Participant, ClubMember, Alum } from '../types';
 import { MOCK_EVENTS, MOCK_PROJECTS, MOCK_TEAM, MOCK_BLOGS, MOCK_MANAGED_BLOGS, MOCK_MANAGED_ACHIEVEMENTS, MOCK_ACHIEVEMENTS, MOCK_VIDEOS, MOCK_LINKS, MOCK_ALUMNI } from '../constants';
+import { EVENTS_DATA } from '../data/eventsData';
 
 const AUTH_KEY = 'cv_loggedin';
 
@@ -97,19 +98,19 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     else localStorage.removeItem(AUTH_KEY);
   };
 
-  const [events, setEvents] = useState<EventType[]>([]);
-  const [projects, setProjects] = useState<ProjectType[]>([]);
-  const [team, setTeam] = useState<TeamMember[]>([]);
-  const [blogs, setBlogs] = useState<BlogPost[]>([]);
-  const [managedBlogs, setManagedBlogs] = useState<ManagedBlog[]>([]);
-  const [achievements, setAchievements] = useState<AchievementType[]>([]);
-  const [managedAchievements, setManagedAchievements] = useState<ManagedAchievement[]>([]);
+  const [events, setEvents] = useState<EventType[]>(EVENTS_DATA as any);
+  const [projects, setProjects] = useState<ProjectType[]>(MOCK_PROJECTS as any);
+  const [team, setTeam] = useState<TeamMember[]>(MOCK_TEAM);
+  const [blogs, setBlogs] = useState<BlogPost[]>(MOCK_BLOGS);
+  const [managedBlogs, setManagedBlogs] = useState<ManagedBlog[]>(MOCK_MANAGED_BLOGS);
+  const [achievements, setAchievements] = useState<AchievementType[]>(MOCK_ACHIEVEMENTS);
+  const [managedAchievements, setManagedAchievements] = useState<ManagedAchievement[]>(MOCK_MANAGED_ACHIEVEMENTS);
   const [admins, setAdmins] = useState<AdminUser[]>([]);
-  const [videoResources, setVideoResources] = useState<VideoResource[]>([]);
-  const [linkResources, setLinkResources] = useState<LinkResource[]>([]);
+  const [videoResources, setVideoResources] = useState<VideoResource[]>(MOCK_VIDEOS);
+  const [linkResources, setLinkResources] = useState<LinkResource[]>(MOCK_LINKS);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [clubMembers, setClubMembers] = useState<ClubMember[]>([]);
-  const [alumni, setAlumni] = useState<Alum[]>([]);
+  const [alumni, setAlumni] = useState<Alum[]>(MOCK_ALUMNI);
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -149,7 +150,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             tags: e.topics || [],
             capacity: e.max_participants,
           }));
-          setEvents(mappedEvents);
+          if (mappedEvents.length > 0) setEvents(mappedEvents);
         }
       })
       .catch(err => console.error('Failed to fetch events:', err));
@@ -159,7 +160,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       .then(res => {
         if (res.data.success && Array.isArray(res.data.data)) {
           const mappedProjects = res.data.data.map((p: any) => mapProjectFromBackend(p));
-          setProjects(mappedProjects);
+          if (mappedProjects.length > 0) setProjects(mappedProjects);
         }
       })
       .catch(err => console.error('Failed to fetch projects:', err));
@@ -194,7 +195,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           createdAt: b.created_at || new Date().toISOString(),
           updatedAt: b.updated_at || new Date().toISOString(),
         }));
-        setManagedBlogs(mappedBlogs);
+        if (mappedBlogs.length > 0) setManagedBlogs(mappedBlogs);
       }
     }).catch(err => console.error('Failed to fetch blogs:', err));
 
@@ -211,8 +212,10 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           bestFor: r.best_for,
           type: r.content_type
         }));
-        setVideoResources(mappedData.filter((r: any) => r.category === 'youtube' || r.url.includes('youtube')));
-        setLinkResources(mappedData.filter((r: any) => r.category !== 'youtube' && !r.url.includes('youtube')));
+        if (mappedData.length > 0) {
+          setVideoResources(mappedData.filter((r: any) => r.category === 'youtube' || r.url.includes('youtube')));
+          setLinkResources(mappedData.filter((r: any) => r.category !== 'youtube' && !r.url.includes('youtube')));
+        }
       }
     }).catch(err => console.error('Failed to fetch resources:', err));
 
