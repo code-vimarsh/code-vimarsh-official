@@ -164,7 +164,7 @@ const Admin: React.FC = () => {
         </header>
 
         {/* Dynamic Viewport */}
-        <div className="flex-1 p-8 lg:p-14 overflow-y-auto custom-scrollbar scroll-smooth">
+        <div className="flex-1 p-4 sm:p-8 lg:p-14 overflow-y-auto custom-scrollbar scroll-smooth">
           <div className="max-w-[1400px] mx-auto">
             {/* OVERVIEW TAB */}
             {activeTab === 'overview' && <DashboardOverview />}

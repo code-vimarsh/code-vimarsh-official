@@ -11,6 +11,22 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   console.log("🌱 Starting mock data seed...");
 
+  // Clear existing data first (to avoid duplicates on re-runs)
+  console.log("🧹 Clearing existing seeded data...");
+  await prisma.resource.deleteMany({});
+  await prisma.achievement.deleteMany({});
+  await prisma.blog.deleteMany({});
+  await prisma.alum.deleteMany({});
+  // Don't delete team members that may have been manually added — use upsert
+  // Don't delete events with registrations — delete only events without registrations
+  const eventsWithRegs = await prisma.event.findMany({ where: { registrations: { some: {} } }, select: { id: true } });
+  const eventsWithRegsIds = eventsWithRegs.map(e => e.id);
+  await prisma.event.deleteMany({ where: { id: { notIn: eventsWithRegsIds } } });
+  // Don't delete projects with members — delete only orphan projects
+  const projectsWithMembers = await prisma.project.findMany({ where: { members: { some: {} } }, select: { id: true } });
+  const projectsWithMembersIds = projectsWithMembers.map(p => p.id);
+  await prisma.project.deleteMany({ where: { id: { notIn: projectsWithMembersIds } } });
+  console.log("✔ Cleared existing data.");
   // 1. Seed Team Members
   console.log("Seeding Team Members...");
   for (const member of MOCK_TEAM) {

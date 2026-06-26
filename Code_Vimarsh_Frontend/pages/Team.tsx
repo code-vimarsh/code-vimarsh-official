@@ -221,7 +221,7 @@ const TeamSection: React.FC<{ section: typeof SECTIONS[number]; sectionIndex: nu
 
       {/* Layout: left sidebar | right grid */}
       <div className="relative z-10 flex flex-col lg:flex-row gap-8 lg:gap-12 items-start w-full">
-        {/* LEFT */}
+        {/* SIDEBAR */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={inView ? { opacity: 1, x: 0 } : {}}

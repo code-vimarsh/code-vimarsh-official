@@ -3,11 +3,12 @@ import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, MapPin, ExternalLink, Calendar, Clock, X, ChevronDown } from 'lucide-react';
 
-import { EVENTS_DATA } from '../data/eventsData';
 import type { Event } from '../components/events/types';
 import EventBanner from '../components/events/EventBanner';
 import EventSpeakers from '../components/events/EventSpeakers';
 import EventRegistrationRenderer from '../components/events/EventRegistrationRenderer';
+import { useGlobalState } from '../context/GlobalContext';
+import api from '../services/api';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -106,7 +107,7 @@ const EventDetails: React.FC = () => {
     }
   }, [event, location.search]);
 
-  // ── Data resolution (swap with API call for backend integration) ──────────
+  // ── Data resolution (fetches from backend API) ──────────
   useEffect(() => {
     setLoading(true);
     setEvent(undefined);
@@ -118,19 +119,40 @@ const EventDetails: React.FC = () => {
       return;
     }
 
-    // Simulate minimal async tick so loading state is always visible
-    const timer = setTimeout(() => {
-      const found = EVENTS_DATA.find((e) => e.id === id) ?? null;
-      console.debug(
-        `[EventDetails] id="${id}" → found=${found ? `"${found.title}"` : 'null'}`,
-        '\nAvailable IDs:',
-        EVENTS_DATA.map((e) => e.id),
-      );
-      setEvent(found);
-      setLoading(false);
-    }, 60);
-
-    return () => clearTimeout(timer);
+    // Fetch event by ID from backend
+    api.get(`/events/${id}`)
+      .then(res => {
+        if (res.data.success && res.data.event) {
+          const e = res.data.event;
+          const mapped: Event = {
+            id: e.id,
+            title: e.title,
+            description: e.description || '',
+            fullDescription: e.long_description || e.description || '',
+            date: e.status === 'Live' ? 'live' : (e.start_date || e.date || ''),
+            displayDate: e.status === 'Live' ? 'Happening Now' : new Date(e.start_date || e.date || '').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+            time: '',
+            location: e.location || 'TBA',
+            venue: e.location || '',
+            status: (e.status?.toLowerCase() || 'upcoming') as any,
+            image: e.banner_image || e.image || '',
+            images: e.images || [],
+            tags: e.topics || [],
+            speakers: e.speakers || [],
+            capacity: e.max_participants,
+            registeredCount: e._count?.registrations || 0,
+          };
+          setEvent(mapped);
+        } else {
+          setEvent(null);
+        }
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('[EventDetails] Failed to fetch event:', err);
+        setEvent(null);
+        setLoading(false);
+      });
   }, [id]);
 
   const openRegistration = () => {

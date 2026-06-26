@@ -133,14 +133,21 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     api.get('/events')
       .then(res => {
         if (res.data.success && Array.isArray(res.data.events)) {
-          // Map backend schema to frontend schema if necessary
           const mappedEvents = res.data.events.map((e: any) => ({
-            ...e,
             id: e.id?.toString() || e._id || Math.random().toString(),
-            date: e.date || e.startDate || new Date().toISOString(),
+            title: e.title,
+            date: e.start_date || e.date || new Date().toISOString(),
+            type: e.type || 'Workshop',
+            status: e.status ? e.status.charAt(0).toUpperCase() + e.status.slice(1).toLowerCase() : 'Upcoming',
+            description: e.description || '',
+            long_description: e.long_description || '',
+            image: e.banner_image || e.image || '',
+            images: e.images || [],
             formFields: e.form_fields || [],
-            isPublished: e.is_published || false,
-            status: e.status ? e.status.charAt(0).toUpperCase() + e.status.slice(1).toLowerCase() : 'Upcoming'
+            isPublished: e.is_published ?? false,
+            location: e.location || '',
+            tags: e.topics || [],
+            capacity: e.max_participants,
           }));
           setEvents(mappedEvents);
         }
@@ -151,26 +158,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     api.get('/projects')
       .then(res => {
         if (res.data.success && Array.isArray(res.data.data)) {
-          const mappedProjects = res.data.data.map((p: any) => {
-            const frontendCategoryMap: Record<string, string> = {
-              'Web': 'Web',
-              'App': 'Mobile',
-              'AI': 'AI / ML',
-              'Other': 'Systems'
-            };
-            return {
-              id: p.id?.toString() || p._id || Math.random().toString(),
-              title: p.title,
-              description: p.short_description || p.description,
-              category: frontendCategoryMap[p.category] || 'Web',
-              tech: p.tech_stack || p.tech || [],
-              image: p.image,
-              author: p.author_name || p.author,
-              links: {
-                github: p.github_link || p.github
-              }
-            };
-          });
+          const mappedProjects = res.data.data.map((p: any) => mapProjectFromBackend(p));
           setProjects(mappedProjects);
         }
       })
@@ -190,23 +178,21 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
     api.get('/blogs').then(res => {
       if (res.data.success && Array.isArray(res.data.data)) {
-        const mappedBlogs = res.data.data.map((b: any) => ({
+        const mappedBlogs: ManagedBlog[] = res.data.data.map((b: any) => ({
           id: b.id,
           title: b.title,
           slug: b.slug,
           topic: b.topic,
-          excerpt: b.short_description,
-          content: b.content,
-          image: b.featured_image,
+          shortDescription: b.short_description || '',
+          content: b.content || '',
+          featuredImage: b.featured_image || '',
           images: b.images || [],
-          author: {
-            name: b.author_name,
-            role: b.author_role
-          },
-          tags: b.tags,
-          status: b.status,
-          createdAt: b.created_at,
-          updatedAt: b.updated_at
+          authorName: b.author_name || 'Unknown',
+          authorRole: b.author_role || 'Guest',
+          tags: b.tags || [],
+          status: b.status || 'Draft',
+          createdAt: b.created_at || new Date().toISOString(),
+          updatedAt: b.updated_at || new Date().toISOString(),
         }));
         setManagedBlogs(mappedBlogs);
       }
@@ -253,27 +239,73 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
   }, [isLoggedIn]);
 
+  const mapEventToPayload = (event: EventType) => ({
+    title: event.title,
+    description: event.description,
+    long_description: event.long_description,
+    type: event.type || 'Workshop',
+    status: event.status || 'Upcoming',
+    location: (event as any).location || '',
+    start_date: event.date ? new Date(event.date).toISOString() : new Date().toISOString(),
+    end_date: event.date ? new Date(event.date).toISOString() : new Date().toISOString(),
+    banner_image: event.image || '',
+    images: event.images || [],
+    topics: (event as any).tags || [],
+    max_participants: (event as any).capacity,
+    form_fields: event.formFields || [],
+    is_published: event.isPublished ?? false,
+  });
+
+  const mapEventFromBackend = (e: any): EventType => ({
+    id: e.id?.toString(),
+    title: e.title,
+    date: e.start_date || e.date || new Date().toISOString(),
+    type: e.type || 'Workshop',
+    status: e.status ? e.status.charAt(0).toUpperCase() + e.status.slice(1).toLowerCase() : 'Upcoming',
+    description: e.description || '',
+    long_description: e.long_description || '',
+    image: e.banner_image || e.image || '',
+    images: e.images || [],
+    formFields: e.form_fields || [],
+    isPublished: e.is_published ?? false,
+  });
+
   const addEvent = (event: EventType) => {
-    const payload = {
-      ...event,
-      form_fields: event.formFields,
-      is_published: event.isPublished,
-      status: event.status?.toUpperCase() || 'UPCOMING'
-    };
-    api.post('/events', payload).then(res => setEvents(prev => [res.data.event || res.data.data, ...prev])).catch(console.error);
+    const payload = mapEventToPayload(event);
+    api.post('/events', payload).then(res => {
+      const created = mapEventFromBackend(res.data.event || res.data.data || res.data);
+      setEvents(prev => [created, ...prev]);
+    }).catch(console.error);
   };
   const updateEvent = (event: EventType) => {
-    const payload = {
-      ...event,
-      form_fields: event.formFields,
-      is_published: event.isPublished,
-      status: event.status?.toUpperCase() || 'UPCOMING'
-    };
-    api.put(`/events/${event.id}`, payload).then(res => setEvents(prev => prev.map(e => e.id === event.id ? (res.data.event || res.data.data) : e))).catch(console.error);
+    const payload = mapEventToPayload(event);
+    api.put(`/events/${event.id}`, payload).then(res => {
+      const updated = mapEventFromBackend(res.data.event || res.data.data || res.data);
+      setEvents(prev => prev.map(e => e.id === event.id ? updated : e));
+    }).catch(console.error);
   };
   const deleteEvent = (id: string) => {
     api.delete(`/events/${id}`).then(() => setEvents(prev => prev.filter(e => e.id !== id))).catch(console.error);
   };
+  const mapProjectFromBackend = (p: any): ProjectType => {
+    const frontendCategoryMap: Record<string, string> = {
+      'Web': 'Web',
+      'App': 'Mobile',
+      'AI': 'AI / ML',
+      'Other': 'Systems'
+    };
+    return {
+      id: p.id?.toString() || p._id || Math.random().toString(),
+      title: p.title,
+      description: p.short_description || p.description || '',
+      category: (frontendCategoryMap[p.category] || 'Web') as any,
+      tech: p.tech_stack || p.tech || [],
+      image: p.image || '',
+      author: p.author_name || p.author || 'Unknown',
+      links: { github: p.github_link || p.github }
+    };
+  };
+
   const addProject = (project: ProjectType) => {
     const backendCategoryMap: Record<string, string> = {
       'Web': 'Web',
@@ -291,7 +323,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       image: project.image,
       author_name: project.author
     };
-    api.post('/projects', payload).then(res => setProjects(prev => [res.data.data, ...prev])).catch(console.error);
+    api.post('/projects', payload).then(res => setProjects(prev => [mapProjectFromBackend(res.data.data), ...prev])).catch(console.error);
   };
   const deleteProject = (id: string) => {
     api.delete(`/projects/${id}`).then(() => setProjects(prev => prev.filter(p => p.id !== id))).catch(console.error);
@@ -306,43 +338,52 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       }).catch(console.error);
   };
 
+  const mapBlogToPayload = (blog: ManagedBlog) => ({
+    title: blog.title,
+    slug: blog.slug || blog.title.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '') + '-' + Date.now(),
+    topic: blog.topic,
+    short_description: blog.shortDescription,
+    content: blog.content,
+    featured_image: blog.featuredImage,
+    images: blog.images || [],
+    author_name: blog.authorName,
+    author_role: blog.authorRole,
+    tags: blog.tags,
+    status: blog.status,
+  });
+
   const addManagedBlog = (blog: ManagedBlog) => {
-    const payload = {
-      title: blog.title,
-      slug: blog.title.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '') + '-' + Date.now(),
-      topic: blog.topic,
-      short_description: blog.excerpt,
-      content: blog.content,
-      featured_image: blog.image,
-      images: blog.images || [],
-      author_name: blog.author.name,
-      author_role: blog.author.role,
-      tags: blog.tags,
-      status: blog.status
-    };
-    api.post('/blogs', payload).then(res => setManagedBlogs(prev => [{...blog, id: res.data.data.id}, ...prev])).catch(console.error);
+    const payload = mapBlogToPayload(blog);
+    api.post('/blogs', payload).then(res => {
+      const created = res.data.data;
+      setManagedBlogs(prev => [{
+        ...blog,
+        id: created.id,
+        slug: created.slug || blog.slug,
+        createdAt: created.created_at || new Date().toISOString(),
+        updatedAt: created.updated_at || new Date().toISOString(),
+      }, ...prev]);
+    }).catch(console.error);
   };
   const updateManagedBlog = (blog: ManagedBlog) => {
-    const payload = {
-      title: blog.title,
-      topic: blog.topic,
-      short_description: blog.excerpt,
-      content: blog.content,
-      featured_image: blog.image,
-      images: blog.images || [],
-      author_name: blog.author.name,
-      author_role: blog.author.role,
-      tags: blog.tags,
-      status: blog.status
-    };
-    api.put(`/blogs/${blog.id}`, payload).then(res => setManagedBlogs(prev => prev.map(b => b.id === blog.id ? blog : b))).catch(console.error);
+    const payload = mapBlogToPayload(blog);
+    api.put(`/blogs/${blog.id}`, payload).then(() => {
+      setManagedBlogs(prev => prev.map(b => b.id === blog.id ? { ...blog, updatedAt: new Date().toISOString() } : b));
+    }).catch(console.error);
   };
   const deleteManagedBlog = (id: string) => {
     api.delete(`/blogs/${id}`).then(() => setManagedBlogs(prev => prev.filter(b => b.id !== id))).catch(console.error);
   };
-  const toggleBlogStatus = (id: string) => setManagedBlogs(prev => prev.map(b =>
-    b.id === id ? { ...b, status: b.status === 'Published' ? 'Draft' : 'Published', updatedAt: new Date().toISOString() } : b
-  ));
+  const toggleBlogStatus = (id: string) => {
+    const blog = managedBlogs.find(b => b.id === id);
+    if (!blog) return;
+    const newStatus = blog.status === 'Published' ? 'Draft' : 'Published';
+    api.put(`/blogs/${id}`, { status: newStatus }).then(() => {
+      setManagedBlogs(prev => prev.map(b =>
+        b.id === id ? { ...b, status: newStatus as any, updatedAt: new Date().toISOString() } : b
+      ));
+    }).catch(console.error);
+  };
 
   const addManagedAchievement = (a: ManagedAchievement) => {
     api.post('/achievements', a).then(res => setManagedAchievements(prev => [...prev, res.data.data].sort((x, y) => x.order - y.order))).catch(console.error);

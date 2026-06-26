@@ -2,20 +2,19 @@ import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import type { FilterTab, Event } from './types';
-import { EVENTS_DATA } from '../../data/eventsData';
 import EventsTabs from './EventsTabs';
 import EventCard from './EventCard';
 import LiveHeroBanner from './LiveHeroBanner';
 import EmptyState from './EmptyState';
 import EventsSectionHeader from './EventsSectionHeader';
 import SectionBackground from '../shared/SectionBackground';
+import { useGlobalState } from '../../context/GlobalContext';
 
 
 // Helpers
 
 /**
  * Sort events: live first, then upcoming nearest first, then past most-recent first.
- * Backend integration: replace EVENTS_DATA with a useQuery / fetch call.
  */
 const sortEvents = (evts: Event[]): Event[] =>
   [...evts].sort((a, b) => {
@@ -35,19 +34,48 @@ const filterEvents = (evts: Event[], tab: FilterTab): Event[] => {
   return evts.filter((e) => e.status === tab.toLowerCase());
 };
 
+const fmtDisplayDate = (isoDate: string, status: string): string => {
+  if (status === 'live') return 'Happening Now';
+  try {
+    return new Date(isoDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  } catch {
+    return isoDate;
+  }
+};
+
 
 // Main section
 
 /**
  * EventsSection
- * Self-contained; reads from EVENTS_DATA (swappable with API hook).
+ * Self-contained; reads from GlobalContext (database).
  * Manages filter tab state and selected event for modal.
  */
 const EventsSection: React.FC = () => {
+  const { events } = useGlobalState();
   const [activeTab, setActiveTab] = useState<FilterTab>('All');
 
+  // Map EventType from GlobalContext → local Event shape for display components
+  const eventsData: Event[] = useMemo(() => events.map(e => ({
+    id: e.id,
+    title: e.title,
+    description: e.description || '',
+    fullDescription: e.long_description || e.description || '',
+    date: e.status?.toLowerCase() === 'live' ? 'live' : (e.date || ''),
+    displayDate: fmtDisplayDate(e.date, e.status?.toLowerCase() || ''),
+    time: '',
+    location: (e as any).location || 'TBA',
+    venue: (e as any).location || '',
+    status: (e.status?.toLowerCase() || 'upcoming') as any,
+    image: e.image || e.images?.[0] || '',
+    images: e.images || [],
+    tags: (e as any).tags || [],
+    capacity: (e as any).capacity,
+    registeredCount: 0,
+  })), [events]);
+
   // Derived data
-  const sorted   = useMemo(() => sortEvents(EVENTS_DATA), []);
+  const sorted   = useMemo(() => sortEvents(eventsData), [eventsData]);
   const filtered = useMemo(() => filterEvents(sorted, activeTab), [sorted, activeTab]);
   const liveEvent = useMemo(() => sorted.find((e) => e.status === 'live'), [sorted]);
 
