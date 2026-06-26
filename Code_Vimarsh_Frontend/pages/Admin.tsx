@@ -48,7 +48,7 @@ const Admin: React.FC = () => {
   return (
     <div className="min-h-screen bg-bgDark flex font-sans selection:bg-primary/30 selection:text-white">
       {/* Sidebar - Desktop */}
-      <aside className={`fixed inset-y-0 left-0 z-50 transform ${isSidebarOpen ? 'translate-x-0 w-80' : '-translate-x-full w-0'} lg:relative lg:translate-x-0 bg-surface border-r border-surfaceLight flex flex-col transition-all duration-500 ease-in-out shadow-2xl shadow-black/40`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} w-80 lg:relative lg:translate-x-0 bg-surface border-r border-surfaceLight flex flex-col transition-transform duration-300 ease-in-out shadow-2xl shadow-black/40`}>
         {/* Sidebar Header */}
         <div className="p-8 border-b border-surfaceLight/50 flex flex-col gap-6">
           <Link to="/" className="group flex items-center space-x-3 text-textMuted hover:text-white transition-all w-fit">

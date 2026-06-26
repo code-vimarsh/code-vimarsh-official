@@ -220,13 +220,13 @@ const TeamSection: React.FC<{ section: typeof SECTIONS[number]; sectionIndex: nu
     >
 
       {/* Layout: left sidebar | right grid */}
-      <div className="relative z-10 flex flex-col md:grid md:grid-cols-[minmax(200px,260px)_1fr] gap-8 md:gap-12 items-start">
+      <div className="relative z-10 flex flex-col lg:flex-row gap-8 lg:gap-12 items-start w-full">
         {/* LEFT */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={inView ? { opacity: 1, x: 0 } : {}}
           transition={{ duration: 0.5, delay: 0.1 }}
-          style={{ paddingTop: 6 }}
+          className="w-full lg:max-w-[260px] lg:min-w-[200px] shrink-0 pt-2"
         >
           <div
             style={{
@@ -266,6 +266,7 @@ const TeamSection: React.FC<{ section: typeof SECTIONS[number]; sectionIndex: nu
           initial={{ opacity: 0, x: 20 }}
           animate={inView ? { opacity: 1, x: 0 } : {}}
           transition={{ duration: 0.5, delay: 0.18 }}
+          className="w-full grow"
         >
           <div
             style={{
