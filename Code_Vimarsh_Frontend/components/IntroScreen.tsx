@@ -131,7 +131,7 @@ const IntroScreen: React.FC<{ onExplore: () => void }> = ({ onExplore }) => {
         .glow-orb {
           position: absolute;
           border-radius: 50%;
-          filter: blur(40px);
+          filter: blur(80px);
           animation: orbFloat var(--duration, 6s) ease-in-out infinite;
           will-change: transform, opacity;
         }
@@ -170,8 +170,8 @@ const IntroScreen: React.FC<{ onExplore: () => void }> = ({ onExplore }) => {
             key={orb.id}
             className="glow-orb"
             style={{
-              left: `calc(50% + ${orb.x}px)`,
-              top: `calc(50% + ${orb.y}px)`,
+              left: `calc(50% + ${orb.x}px - 150px)`,
+              top: `calc(50% + ${orb.y}px - 150px)`,
               width: '300px',
               height: '300px',
               background: idx % 2 === 0 ? 'rgba(255, 106, 0, 0.3)' : 'rgba(255, 165, 100, 0.2)',

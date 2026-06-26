@@ -81,8 +81,13 @@ const RoadmapModal: React.FC<{ alum: Alum; onClose: () => void }> = ({ alum, onC
             <p className="text-[10px] font-bold uppercase tracking-widest mb-5" style={{ color: dm.color }}>Step-by-Step Roadmap</p>
             <div className="hidden md:grid grid-cols-4 gap-4 relative">
               {/* Connector */}
-              <div className="absolute top-[25px] left-[12.5%] right-[12.5%] h-[2px] pointer-events-none"
-                style={{ background: `linear-gradient(90deg, ${dm.color}40, ${dm.color}80, ${dm.color}40)` }} />
+              {roadmap.length > 1 && (
+                <div className="absolute top-[25px] left-[12.5%] h-[2px] pointer-events-none"
+                  style={{ 
+                    right: `${100 - (Math.min(roadmap.length, 4) - 0.5) * 25}%`,
+                    background: `linear-gradient(90deg, ${dm.color}40, ${dm.color}80, ${dm.color}40)` 
+                  }} />
+              )}
               {roadmap.map((step, i) => (
                 <div key={i} className="flex flex-col items-center">
                   <div

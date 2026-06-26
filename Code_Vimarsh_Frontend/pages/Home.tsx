@@ -5,10 +5,10 @@ import Scene3D from '../components/Scene3D';
 import { Link } from 'react-router-dom';
 
 const statsData = [
-  { label: 'Active Members', value: '500+', icon: Users, color: 'from-orange-500 to-amber-400' },
-  { label: 'Projects Built', value: '50+', icon: Layers, color: 'from-orange-400 to-yellow-500' },
-  { label: 'Tech Workshops', value: '120+', icon: Activity, color: 'from-amber-500 to-orange-600' },
-  { label: 'Prize Achievements', value: '10L+', icon: Trophy, color: 'from-yellow-400 to-orange-500' },
+  { label: 'Active Students', value: '150+', icon: Users, color: 'from-orange-500 to-amber-400' },
+  { label: 'Projects Built', value: '5+', icon: Layers, color: 'from-orange-400 to-yellow-500' },
+  { label: 'Tech Workshops', value: '10+', icon: Activity, color: 'from-amber-500 to-orange-600' },
+  { label: 'Prize Achievements', value: '10k+', icon: Trophy, color: 'from-yellow-400 to-orange-500' },
 ];
 
 const featuresData = [
