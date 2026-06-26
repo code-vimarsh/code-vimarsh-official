@@ -18,7 +18,7 @@ const SECTIONS = [
     sectionKey: 'Web Team' as const,
     number: '02',
     title: 'Web Team',
-    description: 'Engineers who build and maintain the digital infrastructure â€” front-end, back-end, and everything in between.',
+    description: 'Engineers who build and maintain the digital infrastructure — front-end, back-end, and everything in between.',
     icon: Code2,
   },
   {
@@ -32,7 +32,7 @@ const SECTIONS = [
     sectionKey: 'Design Team' as const,
     number: '04',
     title: 'Design Team',
-    description: 'Visual storytellers who craft the aesthetic identity â€” from brand and graphics to motion and photography.',
+    description: 'Visual storytellers who craft the aesthetic identity — from brand and graphics to motion and photography.',
     icon: Palette,
   },
 ];
@@ -490,13 +490,13 @@ const Team: React.FC = () => {
           style={{ padding: '48px 0 64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap' }}
         >
           <div style={{ fontFamily: 'JetBrains Mono,monospace', fontSize: '0.65rem', color: 'rgba(255,255,255,0.18)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-            Code Vimarsh Â© {new Date().getFullYear()}
+            Code Vimarsh {"\u00A9"} {new Date().getFullYear()}
           </div>
           <a
             href="/contact"
             style={{ fontFamily: 'Inter,sans-serif', fontWeight: 600, fontSize: '0.8rem', color: '#f97316', textDecoration: 'none', borderBottom: '1px dashed rgba(249,115,22,0.4)', paddingBottom: 2 }}
           >
-            Want to join? Get in touch â†’
+            Want to join? Get in touch {"\u2192"}
           </a>
         </motion.div>
       </div>

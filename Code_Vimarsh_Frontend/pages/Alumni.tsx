@@ -31,6 +31,15 @@ const RoadmapModal: React.FC<{ alum: Alum; onClose: () => void }> = ({ alum, onC
   const dm = getDomainMeta(alum.domain);
   const roadmap = Array.isArray(alum.roadmap) ? alum.roadmap : [];
   const achievements = Array.isArray(alum.achievements) ? alum.achievements : [];
+
+  // Prevent body scroll while modal is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
