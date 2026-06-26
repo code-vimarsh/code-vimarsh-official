@@ -127,15 +127,7 @@ const Navbar: React.FC = () => {
                   <Settings size={18} /> Admin Panel
                 </Link>
               )}
-              {!isLoggedIn && (
-                <Link
-                  to="/signin"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="border border-surfaceLight text-textMuted font-semibold px-4 py-3 rounded-lg w-full text-center block hover:text-white hover:bg-surfaceLight transition-colors"
-                >
-                  Sign In
-                </Link>
-              )}
+
               {isLoggedIn ? (
                 <Link
                   to="/dashboard"
