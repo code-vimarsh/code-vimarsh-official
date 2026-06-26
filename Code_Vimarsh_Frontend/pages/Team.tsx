@@ -477,7 +477,7 @@ const Team: React.FC = () => {
             key={s.sectionKey}
             section={s}
             sectionIndex={i}
-            members={team.filter(m => m.section === s.sectionKey)}
+            members={team.filter(m => m.section === s.sectionKey).reverse()}
           />
         ))}
 

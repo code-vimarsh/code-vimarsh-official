@@ -42,6 +42,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@types/node": "^26.0.1",
     "prisma": "^7.4.2",
     "tsx": "^4.21.0"
   }

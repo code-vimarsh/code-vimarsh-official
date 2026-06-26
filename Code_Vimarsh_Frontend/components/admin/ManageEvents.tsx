@@ -21,7 +21,7 @@
  * No separate routes. No modals. No new pages.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Plus, Trash2, Pencil, ChevronDown, ChevronUp,
   X, Save, Check,
@@ -30,10 +30,11 @@ import {
   ChevronsUpDown, FileText, Heading, Images,
 } from 'lucide-react';
 import ImageGalleryPicker from '../shared/ImageGalleryPicker';
+import { useGlobalState } from '../../context/GlobalContext';
 
 import type { FieldType, FormField, FieldOption } from '../../types/formBuilder';
 import { FIELD_TYPE_META, generateFieldId, generateOptionId, createDefaultField } from '../../types/formBuilder';
-import { EVENTS_DATA } from '../../data/eventsData';
+import type { EventType } from '../../types';
 
 // ─── Shared style constants ───────────────────────────────────────────────────
 
@@ -44,26 +45,22 @@ const CHOICE_TYPES: FieldType[] = ['radio', 'checkbox', 'dropdown'];
 
 // ─── Local types ──────────────────────────────────────────────────────────────
 
-interface AdminEvent {
-  id: string;
-  title: string;
-  date: string;
-  status: 'upcoming' | 'live' | 'past';
-  description: string;
-  isPublished: boolean;
-  formFields: FormField[];
-  /** Gallery images — ADMIN only. First image is used as the event banner. */
-  images: string[];
-}
+type AdminEvent = EventType;
 
 // ─── Status appearance map ────────────────────────────────────────────────────
 
-const STATUS_BG: Record<AdminEvent['status'], string> = {
+const STATUS_BG: Record<string, string> = {
+  Upcoming: 'rgba(59,130,246,0.12)',
+  Live:     'rgba(34,197,94,0.12)',
+  Past:     'rgba(255,255,255,0.05)',
   upcoming: 'rgba(59,130,246,0.12)',
   live:     'rgba(34,197,94,0.12)',
   past:     'rgba(255,255,255,0.05)',
 };
-const STATUS_FG: Record<AdminEvent['status'], string> = {
+const STATUS_FG: Record<string, string> = {
+  Upcoming: '#93c5fd',
+  Live:     '#4ade80',
+  Past:     '#666',
   upcoming: '#93c5fd',
   live:     '#4ade80',
   past:     '#666',
@@ -96,23 +93,12 @@ const SHORT_LABEL: Partial<Record<FieldType, string>> = {
 
 // ─── Seed helpers ─────────────────────────────────────────────────────────────
 
-const seedEvents = (): AdminEvent[] =>
-  EVENTS_DATA.map((e) => ({
-    id: e.id,
-    title: e.title,
-    date: e.date === 'live' ? '' : e.date,
-    status: e.status,
-    description: e.description,
-    isPublished: e.status !== 'upcoming',
-    formFields: [],
-    images: [],
-  }));
-
 const blankEvent = (): AdminEvent => ({
   id: `evt_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 5)}`,
   title: '',
   date: '',
-  status: 'upcoming',
+  status: 'Upcoming',
+  type: 'Workshop',
   description: '',
   isPublished: false,
   formFields: [],
@@ -198,123 +184,91 @@ const FieldEditorInline: React.FC<FieldEditorInlineProps> = ({ field, onChange }
   const isChoice = CHOICE_TYPES.includes(field.type);
   const isLayout = field.type === 'section_title' || field.type === 'description_block';
 
-  const updateOpt = (optId: string, label: string) => {
-    onChange({
-      ...field,
-      options: field.options?.map((o) =>
-        o.id === optId ? { ...o, label, value: label.toLowerCase().replace(/\s+/g, '_') } : o
-      ),
-    });
+  const addOption = () => {
+    if (!field.options) return;
+    const newOpt: FieldOption = { id: generateOptionId(), label: `Option ${field.options.length + 1}` };
+    onChange({ ...field, options: [...field.options, newOpt] });
   };
 
-  const addOpt = () => {
-    const n = (field.options?.length ?? 0) + 1;
-    const newOpt: FieldOption = { id: generateOptionId(), label: `Option ${n}`, value: `option_${n}` };
-    onChange({ ...field, options: [...(field.options ?? []), newOpt] });
+  const updateOption = (id: string, newLabel: string) => {
+    if (!field.options) return;
+    onChange({ ...field, options: field.options.map(o => o.id === id ? { ...o, label: newLabel } : o) });
   };
 
-  const removeOpt = (optId: string) => {
-    if ((field.options?.length ?? 0) <= 1) return;
-    onChange({ ...field, options: field.options?.filter((o) => o.id !== optId) });
+  const removeOption = (id: string) => {
+    if (!field.options) return;
+    onChange({ ...field, options: field.options.filter(o => o.id !== id) });
   };
 
   return (
-    <div
-      className="px-4 pb-4 pt-3 space-y-4"
-      style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: 'rgba(0,0,0,0.25)' }}
-    >
-      {/* Label */}
-      <div>
-        <label className="text-[10px] text-textMuted uppercase tracking-wider block mb-1.5">
-          Label
-        </label>
-        <input
-          value={field.label}
-          onChange={(e) => onChange({ ...field, label: e.target.value })}
-          className={INPUT}
-          placeholder="Field label…"
-        />
+    <div className="px-5 py-4 border-t" style={{ borderColor: 'rgba(255,255,255,0.05)' }}>
+      <div className="grid grid-cols-2 gap-4">
+        {/* Label edit */}
+        <div className="col-span-2">
+          <label className="text-[10px] uppercase tracking-wider text-textMuted/60 mb-1.5 block">
+            {isLayout ? 'Content' : 'Field Label'}
+          </label>
+          <input
+            value={field.label}
+            onChange={(e) => onChange({ ...field, label: e.target.value })}
+            className="w-full bg-black/40 border border-surfaceLight rounded-md px-3 py-1.5 text-sm text-white focus:border-primary focus:outline-none transition-colors"
+          />
+        </div>
+
+        {/* Placeholder & Required */}
+        {!isLayout && (
+          <>
+            <div>
+              <label className="text-[10px] uppercase tracking-wider text-textMuted/60 mb-1.5 block">
+                Placeholder
+              </label>
+              <input
+                value={field.placeholder || ''}
+                onChange={(e) => onChange({ ...field, placeholder: e.target.value })}
+                className="w-full bg-black/40 border border-surfaceLight rounded-md px-3 py-1.5 text-sm text-white focus:border-primary focus:outline-none transition-colors"
+              />
+            </div>
+            <div className="flex items-center pt-6">
+              <label className="flex items-center gap-2 cursor-pointer text-sm text-white/80 hover:text-white">
+                <input
+                  type="checkbox"
+                  checked={field.required}
+                  onChange={(e) => onChange({ ...field, required: e.target.checked })}
+                  className="rounded border-surfaceLight bg-black/40 text-primary focus:ring-primary focus:ring-offset-0"
+                />
+                Required field
+              </label>
+            </div>
+          </>
+        )}
       </div>
 
-      {/* Placeholder + Help Text (not for layout blocks) */}
-      {!isLayout && (
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="text-[10px] text-textMuted uppercase tracking-wider block mb-1.5">
-              Placeholder
-            </label>
-            <input
-              value={field.placeholder ?? ''}
-              onChange={(e) => onChange({ ...field, placeholder: e.target.value })}
-              className={INPUT}
-              placeholder="e.g. Enter your name"
-            />
-          </div>
-          <div>
-            <label className="text-[10px] text-textMuted uppercase tracking-wider block mb-1.5">
-              Help Text
-            </label>
-            <input
-              value={field.helpText ?? ''}
-              onChange={(e) => onChange({ ...field, helpText: e.target.value })}
-              className={INPUT}
-              placeholder="Optional hint"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Required toggle */}
-      {!isLayout && (
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => onChange({ ...field, required: !field.required })}
-            className="relative w-9 h-5 rounded-full shrink-0 focus:outline-none"
-            style={{
-              background: field.required ? '#ff6a00' : 'rgba(255,255,255,0.12)',
-              transition: 'background 0.2s ease',
-            }}
-            aria-checked={field.required}
-            role="switch"
-          >
-            <span
-              className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm"
-              style={{ transition: 'transform 0.2s ease', transform: field.required ? 'translateX(16px)' : 'translateX(0px)' }}
-            />
-          </button>
-          <span className="text-xs text-textMuted">Required field</span>
-        </div>
-      )}
-
-      {/* Options for choice fields */}
-      {isChoice && (
-        <div>
-          <label className="text-[10px] text-textMuted uppercase tracking-wider block mb-2">
-            Options
+      {/* Options Editor (Radio, Checkbox, Select) */}
+      {isChoice && field.options && (
+        <div className="mt-5">
+          <label className="text-[10px] uppercase tracking-wider text-textMuted/60 mb-2 block">
+            Choices
           </label>
           <div className="space-y-2">
-            {(field.options ?? []).map((opt, i) => (
-              <div key={opt.id} className="flex items-center gap-2">
-                <span className="text-xs text-textMuted/40 w-4 shrink-0 text-right">{i + 1}.</span>
+            {field.options.map((opt, i) => (
+              <div key={opt.id} className="flex gap-2 items-center">
+                <span className="text-textMuted/40 text-xs w-4 text-right shrink-0">{i + 1}.</span>
                 <input
                   value={opt.label}
-                  onChange={(e) => updateOpt(opt.id, e.target.value)}
-                  className={INPUT}
-                  placeholder={`Option ${i + 1}`}
+                  onChange={(e) => updateOption(opt.id, e.target.value)}
+                  className="flex-1 bg-black/40 border border-surfaceLight rounded-md px-2 py-1 text-sm text-white focus:border-primary focus:outline-none"
                 />
                 <button
-                  onClick={() => removeOpt(opt.id)}
-                  disabled={(field.options?.length ?? 0) <= 1}
-                  className="text-textMuted hover:text-red-400 disabled:opacity-30 transition-colors p-1 shrink-0"
+                  onClick={() => removeOption(opt.id)}
+                  className="p-1.5 text-textMuted hover:text-red-400 rounded transition-colors"
                 >
                   <X size={13} />
                 </button>
               </div>
             ))}
             <button
-              onClick={addOpt}
-              className="text-xs text-primary/70 hover:text-primary transition-colors flex items-center gap-1.5 mt-1 font-medium"
+              onClick={addOption}
+              className="text-xs text-primary hover:text-primary/80 transition-colors flex items-center gap-1 mt-1 ml-6"
             >
               <Plus size={12} /> Add option
             </button>
@@ -342,60 +296,36 @@ interface FormFieldCardProps {
 }
 
 const FormFieldCard: React.FC<FormFieldCardProps> = ({
-  field, isExpanded, onToggleExpand, onChange, onDelete,
-  onMoveUp, onMoveDown, isFirst, isLast,
+  field, isExpanded, onToggleExpand, onChange, onDelete, onMoveUp, onMoveDown, isFirst, isLast,
 }) => (
   <div
-    className="rounded-xl overflow-hidden transition-all"
+    className="rounded-xl overflow-hidden transition-colors"
     style={{
-      background: '#0f0f0f',
-      border: isExpanded ? '1px solid rgba(255,106,0,0.25)' : '1px solid rgba(255,255,255,0.07)',
+      background: isExpanded ? 'rgba(255,255,255,0.03)' : '#0d0d0d',
+      border: isExpanded ? '1px solid rgba(255,106,0,0.3)' : '1px solid rgba(255,255,255,0.09)',
     }}
   >
-    {/* Header row */}
-    <div className="flex items-center gap-2.5 px-3.5 py-3">
-      {/* Move up/down */}
-      <div className="flex flex-col gap-0 shrink-0">
-        <button
-          onClick={onMoveUp}
-          disabled={isFirst}
-          className="text-white/20 hover:text-white/60 disabled:opacity-20 transition-colors leading-none"
-        >
-          <ChevronUp size={12} />
-        </button>
-        <button
-          onClick={onMoveDown}
-          disabled={isLast}
-          className="text-white/20 hover:text-white/60 disabled:opacity-20 transition-colors leading-none"
-        >
-          <ChevronDown size={12} />
-        </button>
+    {/* Summary row */}
+    <div className="flex items-center gap-3 px-4 py-3">
+      {/* Reorder controls */}
+      <div className="flex flex-col gap-0.5 shrink-0 opacity-50 hover:opacity-100 transition-opacity">
+        <button onClick={onMoveUp} disabled={isFirst} className="disabled:opacity-20 hover:text-white p-0.5"><ChevronUp size={12} /></button>
+        <button onClick={onMoveDown} disabled={isLast} className="disabled:opacity-20 hover:text-white p-0.5"><ChevronDown size={12} /></button>
       </div>
 
-      {/* Type badge */}
-      <span
-        className="inline-flex items-center gap-1.5 text-[10px] font-mono px-2 py-0.5 rounded-md shrink-0"
-        style={{ background: 'rgba(255,255,255,0.06)', color: '#888', border: '1px solid rgba(255,255,255,0.09)' }}
-      >
-        <span className="text-white/30">{FIELD_ICON[field.type]}</span>
-        {SHORT_LABEL[field.type] ?? field.type}
-      </span>
+      {/* Field info */}
+      <div className="flex-1 min-w-0 cursor-pointer" onClick={onToggleExpand}>
+        <div className="flex items-center gap-2 mb-0.5">
+          <span className="text-white/40">{FIELD_ICON[field.type]}</span>
+          <span className="font-medium text-white/90 text-sm truncate">{field.label || 'Untitled Field'}</span>
+          {field.required && <span className="text-red-400 text-xs">*</span>}
+        </div>
+        <div className="text-[10px] text-textMuted/60 uppercase tracking-wider">
+          {SHORT_LABEL[field.type]} {CHOICE_TYPES.includes(field.type) && `(${field.options?.length} opts)`}
+        </div>
+      </div>
 
-      {/* Label */}
-      <span className="flex-1 text-sm text-white/75 truncate min-w-0">
-        {field.label || <span className="italic text-textMuted/50">Untitled field</span>}
-      </span>
-
-      {/* Required dot */}
-      {field.required && (
-        <span
-          className="w-1.5 h-1.5 rounded-full shrink-0"
-          style={{ background: '#ff6a00' }}
-          title="Required"
-        />
-      )}
-
-      {/* Edit toggle */}
+      {/* Expand/Edit Toggle */}
       <button
         onClick={onToggleExpand}
         className="p-1.5 rounded-lg transition-all shrink-0"
@@ -431,7 +361,7 @@ const FormFieldCard: React.FC<FormFieldCardProps> = ({
 
 interface FormBuilderInlineProps {
   fields: FormField[];
-  eventStatus: AdminEvent['status'];
+  eventStatus?: AdminEvent['status'];
   onChange: (fields: FormField[]) => void;
 }
 
@@ -472,7 +402,7 @@ const FormBuilderInline: React.FC<FormBuilderInlineProps> = ({ fields, eventStat
   return (
     <div className="space-y-3">
       {/* Note about live status */}
-      {eventStatus !== 'live' && (
+      {eventStatus !== 'Live' && eventStatus !== 'live' && (
         <p
           className="text-xs px-3 py-2.5 rounded-lg"
           style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', color: '#666' }}
@@ -600,9 +530,7 @@ const EventEditor: React.FC<EventEditorProps> = ({
             placeholder="e.g. Next.js Workshop"
           />
         </div>
-
-        {/* Date + Status row */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="text-xs text-textMuted mb-1.5 block">Date</label>
             <input
@@ -757,192 +685,169 @@ const EventEditor: React.FC<EventEditorProps> = ({
   );
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 6. ManageEvents (root, exported)
-// ─────────────────────────────────────────────────────────────────────────────
 
 const ManageEvents: React.FC = () => {
-  const [adminEvents, setAdminEvents] = useState<AdminEvent[]>(() => seedEvents());
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [draft, setDraft] = useState<AdminEvent>(() => blankEvent());
-  const [isNew, setIsNew] = useState(true);
+  const { events, addEvent, updateEvent, deleteEvent } = useGlobalState();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<AdminEvent | null>(null);
   const [savedFlash, setSavedFlash] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
+  const adminEvents = events as AdminEvent[];
 
-  const selectEvent = (ev: AdminEvent) => {
-    setSelectedId(ev.id);
-    setDraft({ ...ev });
-    setIsNew(false);
-    setSavedFlash(false);
-  };
-
-  const startNew = () => {
-    setSelectedId(null);
+  const startCreate = () => {
+    setEditingId('new');
     setDraft(blankEvent());
-    setIsNew(true);
-    setSavedFlash(false);
+    setDeleteConfirm(null);
   };
 
-  const handleSave = () => {
-    if (!draft.title.trim()) return;
-    if (isNew) {
-      setAdminEvents((prev) => [...prev, draft]);
-      setSelectedId(draft.id);
-      setIsNew(false);
+  const startEdit = (e: AdminEvent) => {
+    setEditingId(e.id);
+    setDraft({ ...e, formFields: e.formFields || [], images: e.images || [] });
+    setDeleteConfirm(null);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setDraft(null);
+  };
+
+  const saveDraft = () => {
+    if (!draft) return;
+    if (!draft.title.trim()) {
+      alert('Event title is required');
+      return;
+    }
+
+    if (editingId === 'new') {
+      addEvent(draft);
     } else {
-      setAdminEvents((prev) => prev.map((ev) => (ev.id === draft.id ? draft : ev)));
+      updateEvent(draft);
     }
+
     setSavedFlash(true);
-    setTimeout(() => setSavedFlash(false), 2000);
+    setTimeout(() => {
+      setSavedFlash(false);
+      setEditingId(null);
+      setDraft(null);
+    }, 1000);
   };
 
-  const handleDelete = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setAdminEvents((prev) => prev.filter((ev) => ev.id !== id));
-    if (selectedId === id) startNew();
+  const removeEvent = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    deleteEvent(id);
+    setDeleteConfirm(null);
+    if (editingId === id) cancelEdit();
   };
 
-  const handleDiscard = () => {
-    if (selectedId) {
-      const original = adminEvents.find((ev) => ev.id === selectedId);
-      if (original) { setDraft({ ...original }); setSavedFlash(false); }
-    }
+  const togglePublish = (id: string, current: boolean, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const evt = adminEvents.find(x => x.id === id);
+    if (evt) updateEvent({ ...evt, isPublished: !current });
   };
-
-  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="grid lg:grid-cols-[1fr_380px] gap-8 items-start">
-
-      {/* ── LEFT: Editor panel ── */}
-      <div>
-        <EventEditor
-          draft={draft}
-          isNew={isNew}
-          savedFlash={savedFlash}
-          onDraftChange={setDraft}
-          onSave={handleSave}
-          onDiscard={handleDiscard}
-        />
+    <div className="space-y-6 max-w-6xl mx-auto">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-bold text-white tracking-tight">Manage Events</h2>
+          <p className="text-sm text-textMuted mt-1">Create events and build custom registration forms.</p>
+        </div>
+        <button
+          onClick={startCreate}
+          disabled={editingId === 'new'}
+          className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 disabled:opacity-50"
+        >
+          <Plus size={16} /> New Event
+        </button>
       </div>
 
-      {/* ── RIGHT: Event list ── */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="font-bold text-lg text-white">
-            All Events
-            <span className="ml-2 text-sm font-normal text-textMuted">({adminEvents.length})</span>
-          </h3>
-          <button
-            onClick={startNew}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-            style={{
-              background: isNew ? 'rgba(255,106,0,0.12)' : 'rgba(255,255,255,0.05)',
-              border: isNew ? '1px solid rgba(255,106,0,0.25)' : '1px solid rgba(255,255,255,0.09)',
-              color: isNew ? '#ff6a00' : '#aaa',
-            }}
-          >
-            <Plus size={13} /> New Event
-          </button>
-        </div>
-
-        {adminEvents.length === 0 && (
-          <div
-            className="text-center py-10 rounded-xl text-textMuted text-sm"
-            style={{ border: '1px dashed rgba(255,255,255,0.07)' }}
-          >
-            No events yet. Create your first one.
-          </div>
-        )}
-
-        <div className="space-y-2">
-          {adminEvents.map((ev) => {
-            const isSelected = selectedId === ev.id;
-            return (
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left Column: Event List */}
+        <div className={`space-y-3 ${editingId ? 'lg:col-span-5' : 'lg:col-span-12'}`}>
+          {adminEvents.length === 0 ? (
+            <div className="text-center py-16 border border-dashed border-white/10 rounded-2xl">
+              <p className="text-textMuted text-sm">No events found. Create one to get started.</p>
+            </div>
+          ) : (
+            adminEvents.map((evt) => (
               <div
-                key={ev.id}
-                onClick={() => selectEvent(ev)}
-                className="group rounded-xl p-4 cursor-pointer transition-all"
-                style={{
-                  background: isSelected ? 'rgba(255,106,0,0.05)' : '#111',
-                  border: isSelected
-                    ? '1px solid rgba(255,106,0,0.30)'
-                    : '1px solid rgba(255,255,255,0.07)',
-                }}
+                key={evt.id}
+                className={`rounded-xl p-4 transition-all ${editingId === evt.id ? 'ring-1 ring-primary bg-white/5' : 'bg-[#111] hover:bg-[#151515]'} border border-white/5`}
               >
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
-                    {/* Title */}
-                    <p className="font-semibold text-white text-sm truncate leading-snug">
-                      {ev.title}
-                    </p>
-
-                    {/* Meta row */}
-                    <div className="flex items-center flex-wrap gap-2 mt-2">
-                      {/* Status pill */}
-                      <span
-                        className="text-[10px] font-medium px-2 py-0.5 rounded-full capitalize"
-                        style={{
-                          background: STATUS_BG[ev.status],
-                          color: STATUS_FG[ev.status],
-                          border: `1px solid ${STATUS_FG[ev.status]}30`,
-                        }}
-                      >
-                        {ev.status}
-                      </span>
-
-                      {/* Published badge */}
-                      {ev.isPublished ? (
-                        <span
-                          className="text-[10px] px-2 py-0.5 rounded-full"
-                          style={{ background: 'rgba(34,197,94,0.08)', color: '#4ade80', border: '1px solid rgba(34,197,94,0.15)' }}
-                        >
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4 className="font-semibold text-white truncate text-base">{evt.title}</h4>
+                      {evt.isPublished && (
+                        <span className="bg-primary/20 text-primary text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded">
                           Published
                         </span>
-                      ) : (
-                        <span
-                          className="text-[10px] px-2 py-0.5 rounded-full"
-                          style={{ background: 'rgba(255,255,255,0.04)', color: '#555', border: '1px solid rgba(255,255,255,0.07)' }}
-                        >
-                          Draft
-                        </span>
                       )}
-
-                      {/* Form fields count */}
-                      {ev.formFields.length > 0 && (
-                        <span className="text-[10px] text-textMuted/60">
-                          📋 {ev.formFields.length} fields
-                        </span>
-                      )}
-
-                      {/* Images count */}
-                      {ev.images.length > 0 && (
-                        <span className="text-[10px] text-textMuted/60">
-                          🖼 {ev.images.length} {ev.images.length === 1 ? 'photo' : 'photos'}
-                        </span>
-                      )}
-
-                      {/* Date */}
-                      {ev.date && (
-                        <span className="text-[10px] font-mono text-textMuted/50">{ev.date}</span>
-                      )}
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-textMuted font-medium">
+                      <span
+                        className="px-2 py-0.5 rounded-full"
+                        style={{
+                          background: STATUS_BG[evt.status ?? 'Upcoming'],
+                          color: STATUS_FG[evt.status ?? 'Upcoming']
+                        }}
+                      >
+                        {evt.status}
+                      </span>
+                      <span>{evt.date ? new Date(evt.date).toLocaleDateString() : 'TBA'}</span>
                     </div>
                   </div>
 
-                  {/* Delete button */}
-                  <button
-                    onClick={(e) => handleDelete(ev.id, e)}
-                    className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 text-textMuted/50 hover:text-red-400 hover:bg-red-500/10 transition-all shrink-0"
-                    title="Delete event"
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={(e) => togglePublish(evt.id, !!evt.isPublished, e)}
+                      className="text-xs px-3 py-1.5 rounded-lg border border-white/10 text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                    >
+                      {evt.isPublished ? 'Unpublish' : 'Publish'}
+                    </button>
+                    <button
+                      onClick={() => startEdit(evt)}
+                      className="p-1.5 text-textMuted hover:text-primary transition-colors"
+                      title="Edit event"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    {deleteConfirm === evt.id ? (
+                      <div className="flex items-center gap-1">
+                        <button onClick={(e) => removeEvent(evt.id, e)} className="text-xs text-red-400 font-bold hover:underline">Confirm</button>
+                        <button onClick={() => setDeleteConfirm(null)} className="text-xs text-textMuted hover:text-white"><X size={12}/></button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setDeleteConfirm(evt.id)}
+                        className="p-1.5 text-textMuted hover:text-red-400 transition-colors"
+                        title="Delete event"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-            );
-          })}
+            ))
+          )}
         </div>
+
+        {/* Right Column: Editor Panel */}
+        {editingId && draft && (
+          <div className="lg:col-span-7 sticky top-6">
+            <EventEditor
+              draft={draft}
+              isNew={editingId === 'new'}
+              savedFlash={savedFlash}
+              onDraftChange={setDraft}
+              onSave={saveDraft}
+              onDiscard={cancelEdit}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

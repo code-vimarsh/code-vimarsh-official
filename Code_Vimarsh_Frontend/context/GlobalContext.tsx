@@ -10,6 +10,8 @@ interface GlobalContextType {
   setIsLoggedIn: (v: boolean) => void;
   events: EventType[];
   addEvent: (event: EventType) => void;
+  updateEvent: (event: EventType) => void;
+  deleteEvent: (id: string) => void;
   projects: ProjectType[];
   addProject: (project: ProjectType) => void;
   deleteProject: (id: string) => void;
@@ -95,19 +97,19 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     else localStorage.removeItem(AUTH_KEY);
   };
 
-  const [events, setEvents] = useState<EventType[]>(MOCK_EVENTS);
-  const [projects, setProjects] = useState<ProjectType[]>(MOCK_PROJECTS);
-  const [team, setTeam] = useState<TeamMember[]>(MOCK_TEAM);
-  const [blogs, setBlogs] = useState<BlogPost[]>(MOCK_BLOGS);
-  const [managedBlogs, setManagedBlogs] = useState<ManagedBlog[]>(MOCK_MANAGED_BLOGS);
-  const [achievements, setAchievements] = useState<AchievementType[]>(MOCK_ACHIEVEMENTS);
-  const [managedAchievements, setManagedAchievements] = useState<ManagedAchievement[]>(MOCK_MANAGED_ACHIEVEMENTS);
+  const [events, setEvents] = useState<EventType[]>([]);
+  const [projects, setProjects] = useState<ProjectType[]>([]);
+  const [team, setTeam] = useState<TeamMember[]>([]);
+  const [blogs, setBlogs] = useState<BlogPost[]>([]);
+  const [managedBlogs, setManagedBlogs] = useState<ManagedBlog[]>([]);
+  const [achievements, setAchievements] = useState<AchievementType[]>([]);
+  const [managedAchievements, setManagedAchievements] = useState<ManagedAchievement[]>([]);
   const [admins, setAdmins] = useState<AdminUser[]>([]);
-  const [videoResources, setVideoResources] = useState<VideoResource[]>(MOCK_VIDEOS);
-  const [linkResources, setLinkResources] = useState<LinkResource[]>(MOCK_LINKS);
+  const [videoResources, setVideoResources] = useState<VideoResource[]>([]);
+  const [linkResources, setLinkResources] = useState<LinkResource[]>([]);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [clubMembers, setClubMembers] = useState<ClubMember[]>([]);
-  const [alumni, setAlumni] = useState<Alum[]>(MOCK_ALUMNI);
+  const [alumni, setAlumni] = useState<Alum[]>([]);
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -136,6 +138,9 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             ...e,
             id: e.id?.toString() || e._id || Math.random().toString(),
             date: e.date || e.startDate || new Date().toISOString(),
+            formFields: e.form_fields || [],
+            isPublished: e.is_published || false,
+            status: e.status ? e.status.charAt(0).toUpperCase() + e.status.slice(1).toLowerCase() : 'Upcoming'
           }));
           setEvents(mappedEvents);
         }
@@ -146,10 +151,26 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     api.get('/projects')
       .then(res => {
         if (res.data.success && Array.isArray(res.data.data)) {
-          const mappedProjects = res.data.data.map((p: any) => ({
-            ...p,
-            id: p.id?.toString() || p._id || Math.random().toString(),
-          }));
+          const mappedProjects = res.data.data.map((p: any) => {
+            const frontendCategoryMap: Record<string, string> = {
+              'Web': 'Web',
+              'App': 'Mobile',
+              'AI': 'AI / ML',
+              'Other': 'Systems'
+            };
+            return {
+              id: p.id?.toString() || p._id || Math.random().toString(),
+              title: p.title,
+              description: p.short_description || p.description,
+              category: frontendCategoryMap[p.category] || 'Web',
+              tech: p.tech_stack || p.tech || [],
+              image: p.image,
+              author: p.author_name || p.author,
+              links: {
+                github: p.github_link || p.github
+              }
+            };
+          });
           setProjects(mappedProjects);
         }
       })
@@ -157,31 +178,55 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
     api.get('/team').then(res => {
       if (res.data.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
-        setTeam(prev => mergeById(prev, res.data.data));
+        setTeam(res.data.data);
       }
     }).catch(err => console.error('Failed to fetch team:', err));
 
     api.get('/alumni').then(res => {
       if (res.data.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
-        setAlumni(prev => mergeById(prev, res.data.data));
+        setAlumni(res.data.data);
       }
     }).catch(err => console.error('Failed to fetch alumni:', err));
 
     api.get('/blogs').then(res => {
-      if (res.data.success) setManagedBlogs(res.data.data);
+      if (res.data.success && Array.isArray(res.data.data)) {
+        const mappedBlogs = res.data.data.map((b: any) => ({
+          id: b.id,
+          title: b.title,
+          slug: b.slug,
+          topic: b.topic,
+          excerpt: b.short_description,
+          content: b.content,
+          image: b.featured_image,
+          images: b.images || [],
+          author: {
+            name: b.author_name,
+            role: b.author_role
+          },
+          tags: b.tags,
+          status: b.status,
+          createdAt: b.created_at,
+          updatedAt: b.updated_at
+        }));
+        setManagedBlogs(mappedBlogs);
+      }
     }).catch(err => console.error('Failed to fetch blogs:', err));
 
     api.get('/achievements').then(res => {
       if (res.data.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
-        setManagedAchievements(prev => mergeById(prev, res.data.data));
+        setManagedAchievements(res.data.data);
       }
     }).catch(err => console.error('Failed to fetch achievements:', err));
 
     api.get('/resources').then(res => {
       if (res.data.success) {
-        const data = res.data.data;
-        setVideoResources(data.filter((r: any) => r.category === 'youtube' || r.url.includes('youtube')));
-        setLinkResources(data.filter((r: any) => r.category !== 'youtube' && !r.url.includes('youtube')));
+        const mappedData = res.data.data.map((r: any) => ({
+          ...r,
+          bestFor: r.best_for,
+          type: r.content_type
+        }));
+        setVideoResources(mappedData.filter((r: any) => r.category === 'youtube' || r.url.includes('youtube')));
+        setLinkResources(mappedData.filter((r: any) => r.category !== 'youtube' && !r.url.includes('youtube')));
       }
     }).catch(err => console.error('Failed to fetch resources:', err));
 
@@ -208,9 +253,49 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
   }, [isLoggedIn]);
 
-  const addEvent = (event: EventType) => setEvents(prev => [event, ...prev]);
-  const addProject = (project: ProjectType) => setProjects(prev => [project, ...prev]);
-  const deleteProject = (id: string) => setProjects(prev => prev.filter(p => p.id !== id));
+  const addEvent = (event: EventType) => {
+    const payload = {
+      ...event,
+      form_fields: event.formFields,
+      is_published: event.isPublished,
+      status: event.status?.toUpperCase() || 'UPCOMING'
+    };
+    api.post('/events', payload).then(res => setEvents(prev => [res.data.event || res.data.data, ...prev])).catch(console.error);
+  };
+  const updateEvent = (event: EventType) => {
+    const payload = {
+      ...event,
+      form_fields: event.formFields,
+      is_published: event.isPublished,
+      status: event.status?.toUpperCase() || 'UPCOMING'
+    };
+    api.put(`/events/${event.id}`, payload).then(res => setEvents(prev => prev.map(e => e.id === event.id ? (res.data.event || res.data.data) : e))).catch(console.error);
+  };
+  const deleteEvent = (id: string) => {
+    api.delete(`/events/${id}`).then(() => setEvents(prev => prev.filter(e => e.id !== id))).catch(console.error);
+  };
+  const addProject = (project: ProjectType) => {
+    const backendCategoryMap: Record<string, string> = {
+      'Web': 'Web',
+      'Mobile': 'App',
+      'AI / ML': 'AI',
+      'Systems': 'Other',
+      'Open Source': 'Other'
+    };
+    const payload = {
+      title: project.title,
+      short_description: project.description,
+      category: backendCategoryMap[project.category] || 'Other',
+      tech_stack: project.tech,
+      github_link: project.links?.github,
+      image: project.image,
+      author_name: project.author
+    };
+    api.post('/projects', payload).then(res => setProjects(prev => [res.data.data, ...prev])).catch(console.error);
+  };
+  const deleteProject = (id: string) => {
+    api.delete(`/projects/${id}`).then(() => setProjects(prev => prev.filter(p => p.id !== id))).catch(console.error);
+  };
   const addAdmin = (admin: AdminUser) => setAdmins(prev => [admin, ...prev]);
   const deleteAdmin = (id: string) => {
     api.patch(`/admin/users/${id}/role`, { role: 'USER' })
@@ -222,10 +307,35 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   };
 
   const addManagedBlog = (blog: ManagedBlog) => {
-    api.post('/blogs', blog).then(res => setManagedBlogs(prev => [res.data.data, ...prev])).catch(console.error);
+    const payload = {
+      title: blog.title,
+      slug: blog.title.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '') + '-' + Date.now(),
+      topic: blog.topic,
+      short_description: blog.excerpt,
+      content: blog.content,
+      featured_image: blog.image,
+      images: blog.images || [],
+      author_name: blog.author.name,
+      author_role: blog.author.role,
+      tags: blog.tags,
+      status: blog.status
+    };
+    api.post('/blogs', payload).then(res => setManagedBlogs(prev => [{...blog, id: res.data.data.id}, ...prev])).catch(console.error);
   };
   const updateManagedBlog = (blog: ManagedBlog) => {
-    api.put(`/blogs/${blog.id}`, blog).then(res => setManagedBlogs(prev => prev.map(b => b.id === blog.id ? res.data.data : b))).catch(console.error);
+    const payload = {
+      title: blog.title,
+      topic: blog.topic,
+      short_description: blog.excerpt,
+      content: blog.content,
+      featured_image: blog.image,
+      images: blog.images || [],
+      author_name: blog.author.name,
+      author_role: blog.author.role,
+      tags: blog.tags,
+      status: blog.status
+    };
+    api.put(`/blogs/${blog.id}`, payload).then(res => setManagedBlogs(prev => prev.map(b => b.id === blog.id ? blog : b))).catch(console.error);
   };
   const deleteManagedBlog = (id: string) => {
     api.delete(`/blogs/${id}`).then(() => setManagedBlogs(prev => prev.filter(b => b.id !== id))).catch(console.error);
@@ -245,20 +355,32 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   };
 
   const addVideoResource = (video: VideoResource) => {
-    api.post('/resources', { ...video, category: 'youtube' }).then(res => setVideoResources(prev => [res.data.data, ...prev])).catch(console.error);
+    api.post('/resources', { ...video, best_for: video.bestFor, category: 'youtube' }).then(res => {
+      const added = { ...res.data.data, bestFor: res.data.data.best_for, type: res.data.data.content_type };
+      setVideoResources(prev => [added, ...prev]);
+    }).catch(console.error);
   };
   const updateVideoResource = (video: VideoResource) => {
-    api.put(`/resources/${video.id}`, { ...video, category: 'youtube' }).then(res => setVideoResources(prev => prev.map(v => v.id === video.id ? res.data.data : v))).catch(console.error);
+    api.put(`/resources/${video.id}`, { ...video, best_for: video.bestFor, category: 'youtube' }).then(res => {
+      const updated = { ...res.data.data, bestFor: res.data.data.best_for, type: res.data.data.content_type };
+      setVideoResources(prev => prev.map(v => v.id === video.id ? updated : v));
+    }).catch(console.error);
   };
   const deleteVideoResource = (id: string) => {
     api.delete(`/resources/${id}`).then(() => setVideoResources(prev => prev.filter(v => v.id !== id))).catch(console.error);
   };
 
   const addLinkResource = (link: LinkResource) => {
-    api.post('/resources', { ...link, category: 'website' }).then(res => setLinkResources(prev => [res.data.data, ...prev])).catch(console.error);
+    api.post('/resources', { ...link, content_type: link.type, category: 'website' }).then(res => {
+      const added = { ...res.data.data, bestFor: res.data.data.best_for, type: res.data.data.content_type };
+      setLinkResources(prev => [added, ...prev]);
+    }).catch(console.error);
   };
   const updateLinkResource = (link: LinkResource) => {
-    api.put(`/resources/${link.id}`, { ...link, category: 'website' }).then(res => setLinkResources(prev => prev.map(l => l.id === link.id ? res.data.data : l))).catch(console.error);
+    api.put(`/resources/${link.id}`, { ...link, content_type: link.type, category: 'website' }).then(res => {
+      const updated = { ...res.data.data, bestFor: res.data.data.best_for, type: res.data.data.content_type };
+      setLinkResources(prev => prev.map(l => l.id === link.id ? updated : l));
+    }).catch(console.error);
   };
   const deleteLinkResource = (id: string) => {
     api.delete(`/resources/${id}`).then(() => setLinkResources(prev => prev.filter(l => l.id !== id))).catch(console.error);
@@ -293,7 +415,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   return (
     <GlobalContext.Provider value={{
       isLoggedIn, setIsLoggedIn,
-      events, addEvent,
+      events, addEvent, updateEvent, deleteEvent,
       projects, addProject, deleteProject,
       team, addTeamMember, updateTeamMember, deleteTeamMember,
       blogs, achievements,

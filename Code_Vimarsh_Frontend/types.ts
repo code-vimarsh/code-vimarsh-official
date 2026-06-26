@@ -23,11 +23,15 @@ export interface EventType {
   id: string;
   title: string;
   date: string;
-  type: 'Upcoming' | 'Live' | 'Past';
+  type: 'Workshop' | 'Hackathon' | 'Webinar' | string;
+  status?: 'Upcoming' | 'Live' | 'Past';
   description: string;
+  long_description?: string;
   image?: string;
   /** Gallery: multiple images — first is used as banner when image is absent */
   images?: string[];
+  formFields?: any[]; // Replaces AdminEvent.formFields
+  isPublished?: boolean;
 }
 
 export interface ProjectType {

@@ -10,6 +10,9 @@ export const createEventSchema = z.object({
   end_date: z.string().datetime("Invalid datetime format.").optional(),
   max_participants: z.number().int().positive().optional(),
   banner_image: z.string().url("Must be a valid URL.").optional(),
+  images: z.array(z.string()).default([]),
+  form_fields: z.any().optional(),
+  is_published: z.boolean().default(false),
   topics: z.array(z.string()).default([]),
 });
 

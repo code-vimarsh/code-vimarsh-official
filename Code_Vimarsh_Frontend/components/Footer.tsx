@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Github, Linkedin, Mail } from 'lucide-react';
 
 /* WhatsApp SVG */
@@ -66,10 +67,12 @@ const Footer: React.FC = () => {
           <div>
             <h3 className="font-display font-semibold text-white mb-4">Platform</h3>
             <ul className="space-y-2 text-sm text-textMuted">
-              <li><a href="#/projects" className="hover:text-primary transition-colors">Projects</a></li>
-              <li><a href="#/events" className="hover:text-primary transition-colors">Events</a></li>
-              <li><a href="#/resources" className="hover:text-primary transition-colors">Resources</a></li>
-              <li><a href="#/achievements" className="hover:text-primary transition-colors">Achievements</a></li>
+              <li><Link to="/projects" className="hover:text-primary transition-colors">Projects</Link></li>
+              <li><Link to="/events" className="hover:text-primary transition-colors">Events</Link></li>
+              <li><Link to="/resources" className="hover:text-primary transition-colors">Resources</Link></li>
+              <li><Link to="/achievements" className="hover:text-primary transition-colors">Achievements</Link></li>
+              <li><Link to="/team" className="hover:text-primary transition-colors">Core Team</Link></li>
+              <li><Link to="/alumni" className="hover:text-primary transition-colors">Alumni</Link></li>
             </ul>
           </div>
 
