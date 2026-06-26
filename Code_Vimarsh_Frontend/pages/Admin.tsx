@@ -134,34 +134,7 @@ const Admin: React.FC = () => {
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col min-w-0 bg-bgDark relative">
-        {/* Top Navigation Bar */}
-        <header className="h-20 lg:h-24 bg-surface/50 backdrop-blur-xl border-b border-surfaceLight/30 flex items-center justify-between px-4 lg:px-12 sticky top-0 z-30 outline-none">
-          <div className="flex items-center gap-4 lg:gap-6">
-            <button 
-              className="lg:hidden p-2.5 bg-surfaceLight/40 hover:bg-surfaceLight/60 rounded-xl text-textMuted hover:text-white transition-all"
-              onClick={() => setIsSidebarOpen(true)}
-            >
-              <Menu size={22} />
-            </button>
-            <div className="flex items-center gap-4 text-sm font-bold text-textMuted">
-              <Activity size={16} className="text-green-500 hidden sm:block" />
-              <span className="hidden sm:inline border-r border-surfaceLight pr-4">Network Latency: <span className="text-primary">14ms</span></span>
-              <span className="hidden sm:inline">Secure Node: <span className="text-blue-400">Node-04</span></span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <button className="p-3 bg-surfaceLight/40 rounded-2xl text-textMuted hover:text-white transition-all relative border border-transparent hover:border-surfaceLight">
-              <Bell size={20} />
-              <span className="absolute top-3 right-3 w-2 h-2 bg-primary rounded-full ring-4 ring-bgDark" />
-            </button>
-            <div className="h-8 w-px bg-surfaceLight/50 mx-2 hidden sm:block" />
-            <div className="flex items-center gap-3 bg-bgDark/60 border border-surfaceLight px-4 py-2.5 rounded-2xl shadow-inner">
-              <div className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_10px_rgba(255,106,0,0.8)]" />
-              <span className="text-[10px] font-black text-white uppercase tracking-widest whitespace-nowrap">Core Sync Active</span>
-            </div>
-          </div>
-        </header>
+        {/* Top Navigation Bar removed per request (Admin only) */}
 
         {/* Dynamic Viewport */}
         <div className="flex-1 p-4 sm:p-8 lg:p-14 overflow-y-auto custom-scrollbar scroll-smooth">
