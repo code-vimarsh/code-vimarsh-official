@@ -17,7 +17,8 @@ const transporter = nodemailer.createTransport({
  * @param {string} token
  */
 export const sendVerificationEmail = async (toEmail, userName, token) => {
-  const verifyUrl = `${process.env.API_BASE_URL}/api/v1/auth/verify-email?token=${token}`;
+  const baseUrl = process.env.API_BASE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:5000");
+  const verifyUrl = `${baseUrl}/api/v1/auth/verify-email?token=${token}`;
 
   await transporter.sendMail({
     from: `"Code Vimarsh" <${process.env.SMTP_USER}>`,
@@ -48,7 +49,8 @@ export const sendVerificationEmail = async (toEmail, userName, token) => {
  * @param {string} token
  */
 export const sendPasswordResetEmail = async (toEmail, userName, token) => {
-  const resetUrl = `${process.env.CLIENT_URL}/reset-password?token=${token}`;
+  const clientUrl = process.env.CLIENT_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+  const resetUrl = `${clientUrl}/reset-password?token=${token}`;
 
   await transporter.sendMail({
     from: `"Code Vimarsh" <${process.env.SMTP_USER}>`,
