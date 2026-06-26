@@ -414,7 +414,7 @@ const Hero: React.FC = () => {
         {[
           { v: String(total), l: 'Total Members' },
           { v: String(SECTIONS.length), l: 'Specialized Teams' },
-          { v: 'âˆž', l: 'Shared Ambition' },
+          { v: '∞', l: 'Shared Ambition' },
         ].map((s, i) => (
           <motion.div
             key={s.l}
