@@ -29,6 +29,13 @@ const options = {
 };
 
 const swaggerSpec = swaggerJsdoc(options);
-fs.writeFileSync(path.resolve("./swagger.yaml"), yaml.stringify(swaggerSpec));
+
+if (process.env.NODE_ENV !== "production") {
+  try {
+    fs.writeFileSync(path.resolve("./swagger.yaml"), yaml.stringify(swaggerSpec));
+  } catch (error) {
+    console.warn("Could not write swagger.yaml", error);
+  }
+}
 
 export default swaggerSpec;
