@@ -17,8 +17,10 @@ export const verifyEmail = async (req, res, next) => {
         .status(400)
         .json({ success: false, message: "Token query parameter is required." });
     }
-    const result = await authService.verifyEmail(token);
-    res.status(200).json({ success: true, ...result });
+    await authService.verifyEmail(token);
+    
+    const clientUrl = process.env.CLIENT_URL || "https://code-vimarsh-official.vercel.app";
+    res.redirect(`${clientUrl}/signin?verified=true`);
   } catch (err) {
     next(err);
   }
