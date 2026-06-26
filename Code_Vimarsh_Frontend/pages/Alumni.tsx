@@ -290,7 +290,7 @@ const AlumniCard: React.FC<{ alum: Alum; side: 'left' | 'right'; onOpen: () => v
 const Alumni: React.FC = () => {
   const { alumni } = useGlobalState();
   const [modalAlum, setModalAlum] = useState<Alum | null>(null);
-  const alumniList = Array.isArray(alumni) ? alumni : [];
+  const alumniList = Array.isArray(alumni) ? [...alumni].reverse() : [];
 
   return (
     <>

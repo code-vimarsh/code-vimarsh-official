@@ -167,7 +167,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
     api.get('/team').then(res => {
       if (res.data.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
-        setTeam(res.data.data);
+        setTeam(prev => mergeById(prev, res.data.data));
       }
     }).catch(err => console.error('Failed to fetch team:', err));
 
