@@ -75,6 +75,20 @@ const mergeById = <T extends { id: string }>(existing: T[], incoming: T[]) => {
   return merged;
 };
 
+// Deduplicate team members by email (unique constraint)
+const deduplicateTeamMembers = (members: TeamMember[]): TeamMember[] => {
+  const seen = new Map<string, TeamMember>();
+  
+  members.forEach(member => {
+    // Keep the first occurrence of each email
+    if (!seen.has(member.email)) {
+      seen.set(member.email, member);
+    }
+  });
+  
+  return Array.from(seen.values());
+};
+
 // ── Seed data ────────────────────────────────────────────────────────────────
 const MOCK_PARTICIPANTS: Participant[] = [
   { id: 'p1', name: 'Aarya Shah', email: 'aarya@example.com', eventId: '1', eventTitle: 'Hackathon 2025', registeredAt: '2025-01-10' },
@@ -100,7 +114,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   const [events, setEvents] = useState<EventType[]>(EVENTS_DATA as any);
   const [projects, setProjects] = useState<ProjectType[]>(MOCK_PROJECTS as any);
-  const [team, setTeam] = useState<TeamMember[]>(MOCK_TEAM);
+  const [team, setTeam] = useState<TeamMember[]>(deduplicateTeamMembers(MOCK_TEAM));
   const [blogs, setBlogs] = useState<BlogPost[]>(MOCK_BLOGS);
   const [managedBlogs, setManagedBlogs] = useState<ManagedBlog[]>(MOCK_MANAGED_BLOGS);
   const [achievements, setAchievements] = useState<AchievementType[]>(MOCK_ACHIEVEMENTS);
@@ -167,7 +181,8 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
     api.get('/team').then(res => {
       if (res.data.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
-        setTeam(prev => mergeById(prev, res.data.data));
+        const deduped = deduplicateTeamMembers(res.data.data);
+        setTeam(prev => mergeById(prev, deduped));
       }
     }).catch(err => console.error('Failed to fetch team:', err));
 
