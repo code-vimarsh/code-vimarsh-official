@@ -19,10 +19,18 @@ const DM: Record<Domain, { icon: React.ReactNode; color: string; bg: string }> =
   'Frontend / Web': { icon: <Globe size={11} />, color: '#06b6d4', bg: 'rgba(6,182,212,0.12)' },
 };
 
+const DEFAULT_DOMAIN: Domain = 'Software Dev';
+
+const getDomainMeta = (domain?: string) => {
+  return domain && domain in DM ? DM[domain as Domain] : DM[DEFAULT_DOMAIN];
+};
+
 
 /* ── Roadmap Modal ───────────────────────────────────────────────────── */
 const RoadmapModal: React.FC<{ alum: Alum; onClose: () => void }> = ({ alum, onClose }) => {
-  const dm = DM[alum.domain];
+  const dm = getDomainMeta(alum.domain);
+  const roadmap = Array.isArray(alum.roadmap) ? alum.roadmap : [];
+  const achievements = Array.isArray(alum.achievements) ? alum.achievements : [];
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -75,7 +83,7 @@ const RoadmapModal: React.FC<{ alum: Alum; onClose: () => void }> = ({ alum, onC
               {/* Connector */}
               <div className="absolute top-[25px] left-[12.5%] right-[12.5%] h-[2px] pointer-events-none"
                 style={{ background: `linear-gradient(90deg, ${dm.color}40, ${dm.color}80, ${dm.color}40)` }} />
-              {alum.roadmap.map((step, i) => (
+              {roadmap.map((step, i) => (
                 <div key={i} className="flex flex-col items-center">
                   <div
                     className="w-12 h-12 rounded-full border-2 flex items-center justify-center z-10 mb-4 text-xs font-black"
@@ -99,14 +107,14 @@ const RoadmapModal: React.FC<{ alum: Alum; onClose: () => void }> = ({ alum, onC
             </div>
             {/* Mobile vertical */}
             <div className="md:hidden space-y-4">
-              {alum.roadmap.map((step, i) => (
+              {roadmap.map((step, i) => (
                 <div key={i} className="flex gap-4">
                   <div className="flex flex-col items-center">
                     <div className="w-10 h-10 rounded-full border-2 flex items-center justify-center text-[11px] font-black flex-shrink-0"
                       style={{ borderColor: dm.color, color: dm.color, background: '#0b0f19', boxShadow: `0 0 12px ${dm.color}30` }}>
                       {step.phase}
                     </div>
-                    {i < alum.roadmap.length - 1 && <div className="w-px flex-1 mt-1.5" style={{ background: `${dm.color}25` }} />}
+                    {i < roadmap.length - 1 && <div className="w-px flex-1 mt-1.5" style={{ background: `${dm.color}25` }} />}
                   </div>
                   <div className="flex-1 pb-3">
                     <p className="font-bold text-sm mb-2" style={{ color: '#f5f0e8' }}>{step.title}</p>
@@ -132,7 +140,7 @@ const RoadmapModal: React.FC<{ alum: Alum; onClose: () => void }> = ({ alum, onC
             <div className="rounded-2xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${dm.color}18` }}>
               <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: dm.color }}>🏆 Achievements</p>
               <ul className="space-y-2">
-                {alum.achievements.map((a, i) => (
+                {achievements.map((a, i) => (
                   <li key={i} className="flex items-start gap-2 text-xs" style={{ color: '#9ca3af' }}>
                     <Star size={10} className="mt-0.5 flex-shrink-0" style={{ color: dm.color }} /> {a}
                   </li>
@@ -148,7 +156,8 @@ const RoadmapModal: React.FC<{ alum: Alum; onClose: () => void }> = ({ alum, onC
 
 /* ── Horizontal Card (photo left, details right) ─────────────── */
 const AlumniCard: React.FC<{ alum: Alum; side: 'left' | 'right'; onOpen: () => void }> = ({ alum, side, onOpen }) => {
-  const dm = DM[alum.domain];
+  const dm = getDomainMeta(alum.domain);
+  const tech = Array.isArray(alum.tech) ? alum.tech : [];
   const isLeft = side === 'left';
 
   return (
@@ -234,16 +243,16 @@ const AlumniCard: React.FC<{ alum: Alum; side: 'left' | 'right'; onOpen: () => v
 
         {/* Tech tags */}
         <div className="flex flex-wrap gap-1.5 mt-3">
-          {alum.tech.slice(0, 4).map(t => (
+          {tech.slice(0, 4).map(t => (
             <span
               key={t}
               className="text-[10px] px-2 py-0.5 rounded-md border"
               style={{ borderColor: `${dm.color}25`, background: `${dm.color}08`, color: 'rgba(255,255,255,0.4)' }}
             >{t}</span>
           ))}
-          {alum.tech.length > 4 && (
+          {tech.length > 4 && (
             <span className="text-[10px] px-2 py-0.5 rounded-md border" style={{ borderColor: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.2)' }}>
-              +{alum.tech.length - 4}
+              +{tech.length - 4}
             </span>
           )}
         </div>
@@ -281,6 +290,7 @@ const AlumniCard: React.FC<{ alum: Alum; side: 'left' | 'right'; onOpen: () => v
 const Alumni: React.FC = () => {
   const { alumni } = useGlobalState();
   const [modalAlum, setModalAlum] = useState<Alum | null>(null);
+  const alumniList = Array.isArray(alumni) ? alumni : [];
 
   return (
     <>
@@ -368,7 +378,7 @@ const Alumni: React.FC = () => {
             zIndex: 0,
           }} />
 
-          {alumni.map((alum, i) => {
+          {alumniList.map((alum, i) => {
             const side: 'left' | 'right' = i % 2 === 0 ? 'left' : 'right';
             return (
               <div key={alum.id} className="relative">
