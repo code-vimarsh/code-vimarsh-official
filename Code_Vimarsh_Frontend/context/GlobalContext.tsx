@@ -59,22 +59,6 @@ interface GlobalContextType {
 
 const GlobalContext = createContext<GlobalContextType | undefined>(undefined);
 
-const mergeById = <T extends { id: string }>(existing: T[], incoming: T[]) => {
-  const merged = [...existing];
-
-  incoming.forEach(item => {
-    const index = merged.findIndex(current => current.id === item.id);
-    if (index === -1) {
-      merged.push(item);
-      return;
-    }
-
-    merged[index] = item;
-  });
-
-  return merged;
-};
-
 // Deduplicate team members by email (unique constraint)
 const deduplicateTeamMembers = (members: TeamMember[]): TeamMember[] => {
   const seen = new Map<string, TeamMember>();
@@ -182,7 +166,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     api.get('/team').then(res => {
       if (res.data.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
         const deduped = deduplicateTeamMembers(res.data.data);
-        setTeam(prev => mergeById(prev, deduped));
+        setTeam(deduped);
       }
     }).catch(err => console.error('Failed to fetch team:', err));
 
