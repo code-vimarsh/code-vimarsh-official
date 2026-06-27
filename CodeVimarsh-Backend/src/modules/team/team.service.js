@@ -16,7 +16,7 @@ const deduplicateByEmail = (members) => {
 };
 
 export const getAll = async () => {
-  const members = await prisma.teamMember.findMany({ orderBy: { created_at: "desc" } });
+  const members = await prisma.teamMember.findMany({ orderBy: { created_at: "asc" } });
   return deduplicateByEmail(members);
 };
 export const create = async (data) => prisma.teamMember.create({ data });
