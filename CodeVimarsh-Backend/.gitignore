@@ -1,7 +1,0 @@
-node_modules/
-.env
-generated/
-*.log
-.DS_Store
-CodeVimarsh.postman_collection.json
-CodeVimarsh.postman_environment.json
