@@ -167,3 +167,5 @@ export const getAllRegistrations = async () => {
   });
   return registrations;
 };
+
+

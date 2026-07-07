@@ -114,3 +114,5 @@ export const getAllRegistrations = async (req, res, next) => {
     next(err);
   }
 };
+
+

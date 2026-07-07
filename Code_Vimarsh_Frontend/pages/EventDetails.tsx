@@ -82,6 +82,7 @@ const EventNotFound: React.FC<{ id?: string }> = ({ id }) => {
  */
 const EventDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const { events } = useGlobalState();
   const location = useLocation();
   const [event, setEvent] = useState<Event | null | undefined>(undefined);
   const [loading, setLoading] = useState(true);
@@ -107,7 +108,7 @@ const EventDetails: React.FC = () => {
     }
   }, [event, location.search]);
 
-  // ── Data resolution (fetches from backend API) ──────────
+  // ── Data resolution (fetches from backend API with local fallback) ──────────
   useEffect(() => {
     setLoading(true);
     setEvent(undefined);
@@ -144,16 +145,62 @@ const EventDetails: React.FC = () => {
           };
           setEvent(mapped);
         } else {
-          setEvent(null);
+          // Fallback to local events cache
+          const local = events.find(x => x.id === id);
+          if (local) {
+            setEvent({
+              id: local.id,
+              title: local.title,
+              description: local.description || '',
+              fullDescription: local.long_description || local.description || '',
+              date: local.status === 'Live' ? 'live' : (local.date || ''),
+              displayDate: local.status === 'Live' ? 'Happening Now' : new Date(local.date || '').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+              time: '',
+              location: local.location || 'TBA',
+              venue: local.location || '',
+              status: (local.status?.toLowerCase() || 'upcoming') as any,
+              image: local.image || '',
+              images: local.images || [],
+              tags: local.tags || [],
+              speakers: [],
+              capacity: local.capacity || 0,
+              registeredCount: 0,
+            });
+          } else {
+            setEvent(null);
+          }
         }
         setLoading(false);
       })
       .catch(err => {
         console.error('[EventDetails] Failed to fetch event:', err);
-        setEvent(null);
+        // Fallback to local events cache
+        const local = events.find(x => x.id === id);
+        if (local) {
+          setEvent({
+            id: local.id,
+            title: local.title,
+            description: local.description || '',
+            fullDescription: local.long_description || local.description || '',
+            date: local.status === 'Live' ? 'live' : (local.date || ''),
+            displayDate: local.status === 'Live' ? 'Happening Now' : new Date(local.date || '').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+            time: '',
+            location: local.location || 'TBA',
+            venue: local.location || '',
+            status: (local.status?.toLowerCase() || 'upcoming') as any,
+            image: local.image || '',
+            images: local.images || [],
+            tags: local.tags || [],
+            speakers: [],
+            capacity: local.capacity || 0,
+            registeredCount: 0,
+          });
+        } else {
+          setEvent(null);
+        }
         setLoading(false);
       });
-  }, [id]);
+  }, [id, events]);
 
   const openRegistration = () => {
     setIsRegisterOpen(true);

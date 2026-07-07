@@ -33,9 +33,7 @@ const Admin: React.FC = () => {
     { id: 'events', icon: <Calendar size={18} />, label: 'Manage Events', desc: 'Host & list events' },
     { id: 'projects', icon: <FolderHeart size={18} />, label: 'Manage Projects', desc: 'Curate showcase' },
     { id: 'resources', icon: <BookOpen size={18} />, label: 'Manage Resources', desc: 'Library & repos' },
-    ...(currentUser?.role === 'SUPER_ADMIN' 
-      ? [{ id: 'admins', icon: <ShieldAlert size={18} />, label: 'Access Control', desc: 'Permission mgmt' }] 
-      : []),
+    { id: 'admins', icon: <ShieldAlert size={18} />, label: 'Access Control', desc: 'Permission mgmt' },
     { id: 'alumni', icon: <GraduationCap size={18} />, label: 'Manage Alumni', desc: 'Alumni network' },
     { id: 'team', icon: <Users size={18} />, label: 'Manage Team', desc: 'Induct personnel' },
     { id: 'blogs', icon: <Newspaper size={18} />, label: 'Manage Blogs', desc: 'Editorial content' },

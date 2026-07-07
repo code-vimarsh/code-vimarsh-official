@@ -24,9 +24,9 @@ import {
 const SEED_FORMS: EventForm[] = [
   {
     id: 'form_seed_001',
-    eventId: 'evt-001',
-    title: 'Open Source Sprint – Registration',
-    description: 'Join us for the live sprint! Fill in your details to get your Discord role and contribution tracking set up.',
+    eventId: 'evt-6',
+    title: 'Workshop on Open Source Contribution – Registration',
+    description: 'Join us for the hands-on Git & GitHub workshop! Fill in your details to reserve your seat.',
     isPublished: true,
     isDraft: false,
     createdAt: new Date().toISOString(),
@@ -55,7 +55,7 @@ const SEED_FORMS: EventForm[] = [
         type: 'phone',
         label: 'WhatsApp Number',
         placeholder: '+91 XXXXX XXXXX',
-        required: false,
+        required: true,
         helpText: "We'll send event updates here",
         order: 2,
       },
@@ -64,9 +64,8 @@ const SEED_FORMS: EventForm[] = [
         type: 'short_text',
         label: 'GitHub Username',
         placeholder: 'e.g. octocat',
-        required: true,
+        required: false,
         order: 3,
-        validation: { pattern: '^[a-zA-Z0-9-]{1,39}$', patternMessage: 'Enter a valid GitHub username' },
       },
       {
         id: generateFieldId(),
@@ -79,40 +78,37 @@ const SEED_FORMS: EventForm[] = [
           { id: generateOptionId(), label: 'Intermediate (6m – 2y)', value: 'intermediate' },
           { id: generateOptionId(), label: 'Advanced (2+ years)', value: 'advanced' },
         ],
-      },
-      {
-        id: generateFieldId(),
-        type: 'checkbox',
-        label: 'Areas of Interest',
-        required: false,
-        helpText: 'Select all that apply',
-        order: 5,
-        options: [
-          { id: generateOptionId(), label: 'Frontend (React / Vue)', value: 'frontend' },
-          { id: generateOptionId(), label: 'Backend (Node / Python)', value: 'backend' },
-          { id: generateOptionId(), label: 'DevOps / CI-CD', value: 'devops' },
-          { id: generateOptionId(), label: 'Documentation', value: 'docs' },
-          { id: generateOptionId(), label: 'Testing / QA', value: 'testing' },
-        ],
-      },
-      {
-        id: generateFieldId(),
-        type: 'long_text',
-        label: 'Why do you want to participate?',
-        placeholder: 'Tell us briefly what motivates you...',
-        required: false,
-        order: 6,
-        validation: { maxLength: 300 },
-      },
-      {
-        id: generateFieldId(),
-        type: 'description_block',
-        label: 'By submitting this form you agree to abide by the Code Vimarsh Code of Conduct and participate respectfully.',
-        required: false,
-        order: 7,
-      },
+      }
     ],
   },
+  {
+    id: 'form_seed_002',
+    eventId: 'evt-5',
+    title: 'Leetcode Weekly Contest Discussion – Registration',
+    description: 'Register for the live Leetcode weekly contest discussion and solution walkthrough.',
+    isPublished: true,
+    isDraft: false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    fields: [
+      {
+        id: generateFieldId(),
+        type: 'short_text',
+        label: 'Full Name',
+        placeholder: 'e.g. Subham Shah',
+        required: true,
+        order: 0,
+      },
+      {
+        id: generateFieldId(),
+        type: 'email',
+        label: 'Email Address',
+        placeholder: 'you@example.com',
+        required: true,
+        order: 1,
+      }
+    ],
+  }
 ];
 
 // ─── Runtime stores (replaces DB) ────────────────────────────────────────────

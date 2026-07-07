@@ -55,6 +55,7 @@ router.get("/", eventsController.getAllEvents);
  */
 router.get("/registrations", authenticate, requireSuperAdmin, eventsController.getAllRegistrations);
 
+
 /**
  * @swagger
  * /events/{id}:

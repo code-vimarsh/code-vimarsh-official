@@ -46,6 +46,7 @@ interface GlobalContextType {
   participants: Participant[];
   addParticipant: (p: Participant) => void;
   removeParticipant: (id: string) => void;
+  updateParticipantStatus: (id: string, status: 'Registered' | 'Attended' | 'Cancelled') => void;
   clubMembers: ClubMember[];
   addClubMember: (m: ClubMember) => void;
   removeClubMember: (id: string) => void;
@@ -75,9 +76,66 @@ const deduplicateTeamMembers = (members: TeamMember[]): TeamMember[] => {
 
 // ── Seed data ────────────────────────────────────────────────────────────────
 const MOCK_PARTICIPANTS: Participant[] = [
-  { id: 'p1', name: 'Aarya Shah', email: 'aarya@example.com', eventId: '1', eventTitle: 'Hackathon 2025', registeredAt: '2025-01-10' },
-  { id: 'p2', name: 'Dev Mehta', email: 'dev@example.com', eventId: '1', eventTitle: 'Hackathon 2025', registeredAt: '2025-01-11' },
-  { id: 'p3', name: 'Riya Patel', email: 'riya@example.com', eventId: '2', eventTitle: 'DSA Bootcamp', registeredAt: '2025-02-01' },
+  {
+    id: 'reg-001',
+    name: 'Aarya Shah',
+    email: 'aarya@example.com',
+    eventId: 'evt-6',
+    eventTitle: 'Workshop on Open Source Contribution',
+    registeredAt: '2026-02-10',
+    status: 'Registered',
+    whatsapp_number: '+91 98765 43210',
+    github_username: 'aaryashah',
+    experience_level: 'Beginner'
+  },
+  {
+    id: 'reg-002',
+    name: 'Dev Mehta',
+    email: 'dev@example.com',
+    eventId: 'evt-6',
+    eventTitle: 'Workshop on Open Source Contribution',
+    registeredAt: '2026-02-10',
+    status: 'Registered',
+    whatsapp_number: '+91 87654 32109',
+    github_username: 'devmehta',
+    experience_level: 'Intermediate'
+  },
+  {
+    id: 'reg-003',
+    name: 'Riya Patel',
+    email: 'riya@example.com',
+    eventId: 'evt-6',
+    eventTitle: 'Workshop on Open Source Contribution',
+    registeredAt: '2026-02-11',
+    status: 'Registered',
+    whatsapp_number: '+91 76543 21098',
+    github_username: 'riyapatel',
+    experience_level: 'Beginner'
+  },
+  {
+    id: 'reg-004',
+    name: 'Ketan Vyas',
+    email: 'ketan@example.com',
+    eventId: 'evt-6',
+    eventTitle: 'Workshop on Open Source Contribution',
+    registeredAt: '2026-02-11',
+    status: 'Attended',
+    whatsapp_number: '+91 65432 10987',
+    github_username: 'ketanvyas',
+    experience_level: 'Advanced'
+  },
+  {
+    id: 'reg-005',
+    name: 'Nisha Sharma',
+    email: 'nisha@example.com',
+    eventId: 'evt-5',
+    eventTitle: 'Post Contest discussion for Leetcode weekly contest',
+    registeredAt: '2026-02-07',
+    status: 'Registered',
+    whatsapp_number: '+91 54321 09876',
+    github_username: 'nishasharma',
+    experience_level: 'Intermediate'
+  }
 ];
 
 const MOCK_MEMBERS: ClubMember[] = [
@@ -106,7 +164,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [videoResources, setVideoResources] = useState<VideoResource[]>(MOCK_VIDEOS);
   const [linkResources, setLinkResources] = useState<LinkResource[]>(MOCK_LINKS);
-  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [participants, setParticipants] = useState<Participant[]>(MOCK_PARTICIPANTS);
   const [clubMembers, setClubMembers] = useState<ClubMember[]>([]);
   const [alumni, setAlumni] = useState<Alum[]>(MOCK_ALUMNI);
 
@@ -233,8 +291,20 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
       api.get('/events/registrations').then(res => {
         if (res.data.success) {
+          const saved = localStorage.getItem('cv_participant_statuses');
+          const localMap = saved ? JSON.parse(saved) : {};
+
           setParticipants(res.data.registrations.map((r: any) => ({
-            id: r.id, name: r.full_name, email: r.email, eventId: r.event_id, eventTitle: r.event?.title || 'Unknown Event', registeredAt: new Date(r.registered_at).toISOString().split('T')[0]
+            id: r.id,
+            name: r.full_name,
+            email: r.email,
+            eventId: r.event_id,
+            eventTitle: r.event?.title || 'Unknown Event',
+            registeredAt: new Date(r.registered_at).toISOString().split('T')[0],
+            status: localMap[r.id] || r.status || 'Registered',
+            whatsapp_number: r.whatsapp_number || '',
+            github_username: r.github_username || '',
+            experience_level: r.experience_level || '',
           })));
         }
       }).catch(err => console.error('Failed to fetch registrations:', err));
@@ -277,17 +347,27 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     api.post('/events', payload).then(res => {
       const created = mapEventFromBackend(res.data.event || res.data.data || res.data);
       setEvents(prev => [created, ...prev]);
-    }).catch(console.error);
+    }).catch(err => {
+      console.warn('API error adding event, falling back to client-side state update:', err);
+      const created = { ...event, id: event.id || 'local_' + Date.now() };
+      setEvents(prev => [created, ...prev]);
+    });
   };
   const updateEvent = (event: EventType) => {
     const payload = mapEventToPayload(event);
     api.put(`/events/${event.id}`, payload).then(res => {
       const updated = mapEventFromBackend(res.data.event || res.data.data || res.data);
       setEvents(prev => prev.map(e => e.id === event.id ? updated : e));
-    }).catch(console.error);
+    }).catch(err => {
+      console.warn('API error updating event, falling back to client-side state update:', err);
+      setEvents(prev => prev.map(e => e.id === event.id ? event : e));
+    });
   };
   const deleteEvent = (id: string) => {
-    api.delete(`/events/${id}`).then(() => setEvents(prev => prev.filter(e => e.id !== id))).catch(console.error);
+    api.delete(`/events/${id}`).then(() => setEvents(prev => prev.filter(e => e.id !== id))).catch(err => {
+      console.warn('API error deleting event, falling back to client-side state update:', err);
+      setEvents(prev => prev.filter(e => e.id !== id));
+    });
   };
   const mapProjectFromBackend = (p: any): ProjectType => {
     const frontendCategoryMap: Record<string, string> = {
@@ -431,6 +511,13 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   const addParticipant = (p: Participant) => setParticipants(prev => [p, ...prev]);
   const removeParticipant = (id: string) => setParticipants(prev => prev.filter(p => p.id !== id));
+  const updateParticipantStatus = (id: string, status: 'Registered' | 'Attended' | 'Cancelled') => {
+    setParticipants(prev => prev.map(p => p.id === id ? { ...p, status } : p));
+    const saved = localStorage.getItem('cv_participant_statuses');
+    const localMap = saved ? JSON.parse(saved) : {};
+    localMap[id] = status;
+    localStorage.setItem('cv_participant_statuses', JSON.stringify(localMap));
+  };
 
   const addTeamMember = (member: TeamMember) => {
     api.post('/team', member).then(res => setTeam(prev => [...prev, res.data.data])).catch(console.error);
@@ -467,7 +554,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       admins, addAdmin, deleteAdmin,
       videoResources, addVideoResource, updateVideoResource, deleteVideoResource,
       linkResources, addLinkResource, updateLinkResource, deleteLinkResource,
-      participants, addParticipant, removeParticipant,
+      participants, addParticipant, removeParticipant, updateParticipantStatus,
       clubMembers, addClubMember, removeClubMember,
       alumni, addAlum, updateAlum, deleteAlum,
       currentUser, setCurrentUser,

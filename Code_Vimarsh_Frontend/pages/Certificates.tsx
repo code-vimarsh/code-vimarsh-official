@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useGlobalState } from '../context/GlobalContext';
 import {
     Download, Loader2, Award, Users, ChevronDown,
-    CheckCircle, Maximize2, X, Layout, Sparkles, Palette
+    CheckCircle, Maximize2, X, Layout, Sparkles, Palette, Package
 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import CertificateCanvas from '../components/CertificateCanvas';
@@ -102,12 +102,15 @@ const Certificates: React.FC = () => {
         }
     };
 
-    const bulkParticipants = participants.filter(p => p.eventId === bulkEventId);
+    const bulkParticipants = participants.filter(p => p.eventId === bulkEventId && p.status === 'Attended');
 
     const handleBulkGenerate = async () => {
         if (!bulkParticipants.length) return;
         setBulkStatus('generating');
         setBulkProgress({ done: 0, total: bulkParticipants.length });
+
+        const JSZip = (await import('jszip')).default;
+        const zip = new JSZip();
 
         for (let i = 0; i < bulkParticipants.length; i++) {
             const p = bulkParticipants[i];
@@ -128,7 +131,21 @@ const Certificates: React.FC = () => {
 
             const el = wrapper.querySelector<HTMLElement>(':scope > div');
             if (el) {
-                await captureElement(el, `CV_${form.certType}_${p.name.replace(/\s+/g, '_')}.png`);
+                const canvas = await html2canvas(el, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: null,
+                    logging: false,
+                    width: 900,
+                    height: 636,
+                    scrollX: 0,
+                    scrollY: 0,
+                });
+                const dataUrl = canvas.toDataURL('image/png');
+                const base64 = dataUrl.split(',')[1];
+                const safeName = p.name.replace(/\s+/g, '_');
+                zip.file(`CV_${form.certType}_${safeName}.png`, base64, { base64: true });
             }
 
             root.unmount();
@@ -136,6 +153,17 @@ const Certificates: React.FC = () => {
             setBulkProgress({ done: i + 1, total: bulkParticipants.length });
             await new Promise(r => setTimeout(r, 200));
         }
+
+        // Generate and download ZIP
+        const blob = await zip.generateAsync({ type: 'blob' });
+        const selectedEvent = events.find(e => e.id === bulkEventId);
+        const zipName = `Certificates_${(selectedEvent?.title || 'Event').replace(/\s+/g, '_')}.zip`;
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = zipName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
 
         setBulkStatus('done');
         setTimeout(() => setBulkStatus('idle'), 5000);
@@ -341,11 +369,14 @@ const Certificates: React.FC = () => {
                                 className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-2.5 text-sm text-white focus:border-primary focus:outline-none appearance-none"
                             >
                                 <option value="">Select event…</option>
-                                {events.map(ev => (
-                                    <option key={ev.id} value={ev.id}>
-                                        {ev.title} ({participants.filter(p => p.eventId === ev.id).length})
-                                    </option>
-                                ))}
+                                {events.map(ev => {
+                                    const attendedCount = participants.filter(p => p.eventId === ev.id && p.status === 'Attended').length;
+                                    return (
+                                        <option key={ev.id} value={ev.id}>
+                                            {ev.title} ({attendedCount} attended)
+                                        </option>
+                                    );
+                                })}
                             </select>
                             <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-textMuted pointer-events-none" />
                         </div>
@@ -365,7 +396,7 @@ const Certificates: React.FC = () => {
                             disabled={!bulkEventId || !bulkParticipants.length || bulkStatus === 'generating'}
                             className="w-full bg-bgDark border border-surfaceLight hover:border-primary/40 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm transition-all"
                         >
-                            <Download size={14} /> Bulk Generate
+                            <Package size={14} /> Bulk Generate ZIP ({bulkParticipants.length} attended)
                         </button>
                     </div>
                 </div>

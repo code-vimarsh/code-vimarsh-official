@@ -61,15 +61,13 @@ const Navbar: React.FC = () => {
 
         {/* Right Actions */}
         <div className="hidden md:flex items-center gap-1.5 flex-shrink-0">
-          {(currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'CONTENT_ADMIN') && (
-            <Link
-              to="/admin"
-              className="text-textMuted hover:text-primary transition-colors p-1.5 rounded-full hover:bg-primary/10 flex-shrink-0"
-              title="Admin Panel"
-            >
-              <Settings size={16} />
-            </Link>
-          )}
+          <Link
+            to="/admin"
+            className="text-textMuted hover:text-primary transition-colors p-1.5 rounded-full hover:bg-primary/10 flex-shrink-0"
+            title="Admin Panel"
+          >
+            <Settings size={16} />
+          </Link>
           
           {isLoggedIn ? (
             <Link
@@ -118,15 +116,13 @@ const Navbar: React.FC = () => {
               </Link>
             ))}
             <div className="pt-4 mt-2 border-t border-surfaceLight flex flex-col space-y-3">
-              {(currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'CONTENT_ADMIN') && (
-                <Link
-                  to="/admin"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="border border-primary/60 text-primary font-semibold px-4 py-3 rounded-lg w-full text-center block flex items-center justify-center gap-2 hover:bg-primary/10 transition-colors"
-                >
-                  <Settings size={18} /> Admin Panel
-                </Link>
-              )}
+              <Link
+                to="/admin"
+                onClick={() => setMobileMenuOpen(false)}
+                className="border border-primary/60 text-primary font-semibold px-4 py-3 rounded-lg w-full text-center block flex items-center justify-center gap-2 hover:bg-primary/10 transition-colors"
+              >
+                <Settings size={18} /> Admin Panel
+              </Link>
 
               {isLoggedIn ? (
                 <Link

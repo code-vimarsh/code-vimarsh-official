@@ -28,7 +28,9 @@ import {
   Type, AlignLeft, Mail, Phone, Hash, Link2,
   Calendar, Paperclip, CircleDot, CheckSquare,
   ChevronsUpDown, FileText, Heading, Images,
+  Users,
 } from 'lucide-react';
+import CheckInScanner from './CheckInScanner';
 import ImageGalleryPicker from '../shared/ImageGalleryPicker';
 import { useGlobalState } from '../../context/GlobalContext';
 
@@ -692,6 +694,7 @@ const ManageEvents: React.FC = () => {
   const [draft, setDraft] = useState<AdminEvent | null>(null);
   const [savedFlash, setSavedFlash] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [checkInEvent, setCheckInEvent] = useState<AdminEvent | null>(null);
 
   const adminEvents = events as AdminEvent[];
 
@@ -745,6 +748,15 @@ const ManageEvents: React.FC = () => {
     const evt = adminEvents.find(x => x.id === id);
     if (evt) updateEvent({ ...evt, isPublished: !current });
   };
+
+  // If an event is selected for check-in, render the scanner view
+  if (checkInEvent) {
+    return (
+      <div className="space-y-6 max-w-6xl mx-auto">
+        <CheckInScanner event={checkInEvent} onBack={() => setCheckInEvent(null)} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
@@ -801,6 +813,13 @@ const ManageEvents: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => setCheckInEvent(evt)}
+                      className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-primary/30 text-primary hover:bg-primary/10 transition-colors font-medium"
+                      title="View Registrations & Check-In"
+                    >
+                      <Users size={12} /> Check-In
+                    </button>
                     <button
                       onClick={(e) => togglePublish(evt.id, !!evt.isPublished, e)}
                       className="text-xs px-3 py-1.5 rounded-lg border border-white/10 text-white/70 hover:text-white hover:bg-white/5 transition-colors"

@@ -148,6 +148,7 @@ export interface VideoResource {
   thumbnail: string;
   category?: string;
   tags?: string[];
+  bestFor?: string;
 }
 
 export interface LinkResource {
@@ -158,6 +159,7 @@ export interface LinkResource {
   tags?: string[];
   bestFor?: string;
   contentType?: string;
+  type?: string;
 }
 
 export interface Resource {
@@ -186,6 +188,10 @@ export interface Participant {
   eventId: string;       // which event they registered for
   eventTitle: string;    // denormalized for display
   registeredAt: string;
+  status: 'Registered' | 'Attended' | 'Cancelled';
+  whatsapp_number?: string;
+  github_username?: string;
+  experience_level?: string;
 }
 
 export interface ClubMember {
