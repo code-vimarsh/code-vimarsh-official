@@ -22,6 +22,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Plus, Trash2, Pencil, ChevronDown, ChevronUp,
   X, Save, Check,
@@ -861,9 +862,9 @@ const ScannerModal: React.FC<ScannerModalProps> = ({ eventId, eventTitle, formFi
     };
   }, [scanning]);
 
-  return (
-    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/85 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-[#0c0c0c] border border-white/10 w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+  return createPortal(
+    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/85 backdrop-blur-sm p-0 sm:p-4 animate-in fade-in duration-200">
+      <div className="bg-[#0c0c0c] border-0 sm:border border-white/10 w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-4xl rounded-none sm:rounded-2xl shadow-2xl overflow-hidden flex flex-col">
         {/* Header */}
         <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between bg-black/20">
           <div>
@@ -881,7 +882,7 @@ const ScannerModal: React.FC<ScannerModalProps> = ({ eventId, eventTitle, formFi
         </div>
 
         {/* Body */}
-        <div className="p-6 overflow-y-auto space-y-6 flex-1">
+        <div className="p-4 sm:p-6 overflow-y-auto space-y-4 sm:space-y-6 flex-1">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Live Scanner Card */}
             <div className="bg-surface border border-surfaceLight rounded-2xl p-5 flex flex-col justify-between space-y-4">
@@ -1065,7 +1066,8 @@ const ScannerModal: React.FC<ScannerModalProps> = ({ eventId, eventTitle, formFi
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 
@@ -1161,9 +1163,9 @@ const ManageEvents: React.FC = () => {
                 key={evt.id}
                 className={`rounded-xl p-4 transition-all ${editingId === evt.id ? 'ring-1 ring-primary bg-white/5' : 'bg-[#111] hover:bg-[#151515]'} border border-white/5`}
               >
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
                       <h4 className="font-semibold text-white truncate text-base">{evt.title}</h4>
                       {evt.isPublished && (
                         <span className="bg-primary/20 text-primary text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded">
@@ -1185,7 +1187,7 @@ const ManageEvents: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
                     <button
                       onClick={(e) => togglePublish(evt.id, !!evt.isPublished, e)}
                       className="text-xs px-3 py-1.5 rounded-lg border border-white/10 text-white/70 hover:text-white hover:bg-white/5 transition-colors"

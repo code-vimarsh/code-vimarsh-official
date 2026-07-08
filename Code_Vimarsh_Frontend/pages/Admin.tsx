@@ -162,7 +162,24 @@ const Admin: React.FC = () => {
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col min-w-0 bg-bgDark relative">
-        {/* Top Navigation Bar removed per request (Admin only) */}
+        {/* Mobile Header Bar / Menu Toggler */}
+        <div className="lg:hidden flex items-center justify-between p-4 bg-surface border-b border-surfaceLight/80 sticky top-0 z-30 backdrop-blur-md bg-surface/90">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="p-2 hover:bg-surfaceLight/50 rounded-xl text-textMuted hover:text-white transition-colors"
+              title="Open menu"
+            >
+              <Menu size={22} />
+            </button>
+            <span className="font-display font-black text-lg text-white tracking-tighter">
+              Control <span className="text-primary italic">Panel</span>
+            </span>
+          </div>
+          <span className="text-[10px] font-bold text-primary bg-primary/10 border border-primary/20 px-2.5 py-1 rounded-full uppercase tracking-widest">
+            {activeTab}
+          </span>
+        </div>
 
         {/* Dynamic Viewport */}
         <div className="flex-1 p-4 sm:p-8 lg:p-14 overflow-y-auto custom-scrollbar scroll-smooth">
