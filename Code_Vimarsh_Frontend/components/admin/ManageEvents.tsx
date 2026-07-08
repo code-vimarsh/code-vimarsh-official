@@ -522,44 +522,110 @@ const EventEditor: React.FC<EventEditorProps> = ({
     }, 5000);
   };
 
-  const exportToCSV = () => {
+  const exportToExcel = () => {
     const eventRegs = participants.filter(p => p.eventId === draft.id);
     if (eventRegs.length === 0) {
       alert("No registrations to export.");
       return;
     }
-    const headers = ["Ticket ID", "Full Name", "Email", "Registration Date", "Status"];
-    
+
     const customFields = draft.formFields || [];
+    const headers = ["Ticket ID", "Full Name", "Email", "Registration Date", "Status"];
     customFields.forEach(f => {
       headers.push(f.label || "Field");
     });
 
-    const csvRows = [headers.join(",")];
+    const totalCount = eventRegs.length;
+    const attendedCount = eventRegs.filter(r => r.status === 'attended').length;
+    const attendanceRate = totalCount > 0 ? Math.round((attendedCount / totalCount) * 100) : 0;
+    const reportDate = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const colSpan = headers.length;
 
-    eventRegs.forEach(r => {
-      const rowData = [
-        `"${r.id.replace(/"/g, '""')}"`,
-        `"${r.name.replace(/"/g, '""')}"`,
-        `"${r.email.replace(/"/g, '""')}"`,
-        `"${r.registeredAt.replace(/"/g, '""')}"`,
-        `"${r.status.replace(/"/g, '""')}"`
+    // Headers HTML
+    const headersHtml = headers.map(h => `<th style="background-color: #2b2d42; color: #ffffff; font-size: 12px; font-weight: bold; height: 35px; border: 1px solid #4a4e69; text-align: left; padding: 5px 10px; font-family: Arial, sans-serif;">${h}</th>`).join("");
+
+    // Rows HTML
+    const rowsHtml = eventRegs.map((r, idx) => {
+      const rowClass = idx % 2 === 0 ? "background-color: #ffffff;" : "background-color: #f9fafb;";
+      
+      const statusStyle = r.status === 'attended' 
+        ? 'background-color: #d1fae5; color: #065f46; font-weight: bold; text-align: center;' 
+        : 'background-color: #dbeafe; color: #1e40af; font-weight: bold; text-align: center;';
+      const statusLabel = r.status === 'attended' ? 'ATTENDED' : 'REGISTERED';
+
+      const rowCells = [
+        `<td style="font-size: 11px; border: 1px solid #e5e7eb; padding: 8px 10px; font-family: monospace;">${r.id}</td>`,
+        `<td style="font-size: 11px; border: 1px solid #e5e7eb; padding: 8px 10px; font-weight: 500; font-family: Arial, sans-serif;">${r.name}</td>`,
+        `<td style="font-size: 11px; border: 1px solid #e5e7eb; padding: 8px 10px; font-family: Arial, sans-serif;">${r.email}</td>`,
+        `<td style="font-size: 11px; border: 1px solid #e5e7eb; padding: 8px 10px; font-family: Arial, sans-serif;">${r.registeredAt}</td>`,
+        `<td style="font-size: 10px; border: 1px solid #e5e7eb; padding: 8px 10px; font-family: Arial, sans-serif; ${statusStyle}">${statusLabel}</td>`
       ];
 
       customFields.forEach(f => {
         const val = r.customAnswers ? r.customAnswers[f.id] : '';
         const displayVal = typeof val === 'object' ? JSON.stringify(val) : String(val || '');
-        rowData.push(`"${displayVal.replace(/"/g, '""')}"`);
+        rowCells.push(`<td style="font-size: 11px; border: 1px solid #e5e7eb; padding: 8px 10px; font-family: Arial, sans-serif;">${displayVal}</td>`);
       });
 
-      csvRows.push(rowData.join(","));
-    });
+      return `<tr style="${rowClass}">${rowCells.join("")}</tr>`;
+    }).join("");
 
-    const blob = new Blob([csvRows.join("\n")], { type: 'text/csv;charset=utf-8;' });
+    const template = `
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<!--[if gte mso 9]>
+<xml>
+ <x:ExcelWorkbook>
+  <x:ExcelWorksheets>
+   <x:ExcelWorksheet>
+    <x:Name>Event Report</x:Name>
+    <x:WorksheetOptions>
+     <x:DisplayGridlines/>
+    </x:WorksheetOptions>
+   </x:ExcelWorksheet>
+  </x:ExcelWorksheets>
+ </x:ExcelWorkbook>
+</xml>
+<![endif]-->
+</head>
+<body style="font-family: Arial, sans-serif; margin: 0; padding: 20px;">
+  <table>
+    <tr>
+      <td colspan="${colSpan}" style="background-color: #ff6a00; color: #ffffff; font-size: 20px; font-weight: bold; text-align: center; height: 50px; vertical-align: middle; font-family: Arial, sans-serif;">CODE VIMARSH NEXUS</td>
+    </tr>
+    <tr>
+      <td colspan="${colSpan}" style="background-color: #1a1a1a; color: #ff9a00; font-size: 14px; font-weight: bold; text-align: center; height: 35px; vertical-align: middle; font-family: Arial, sans-serif;">OFFICIAL REPORT: ${draft.title.toUpperCase()}</td>
+    </tr>
+    <tr>
+      <td colspan="${colSpan}" style="background-color: #f3f4f6; color: #374151; font-size: 11px; text-align: center; height: 30px; vertical-align: middle; border: 1px solid #d1d5db; font-family: Arial, sans-serif;">
+        Total Registrations: <b>${totalCount}</b> &nbsp;|&nbsp; 
+        Attended Check-ins: <b>${attendedCount}</b> &nbsp;|&nbsp; 
+        Attendance Rate: <b>${attendanceRate}%</b> &nbsp;|&nbsp;
+        Generated At: <b>${reportDate}</b>
+      </td>
+    </tr>
+    <tr style="height: 20px;">
+      <td colspan="${colSpan}" style="border: none; background-color: #ffffff;"></td>
+    </tr>
+    <thead>
+      <tr>
+        ${headersHtml}
+      </tr>
+    </thead>
+    <tbody>
+      ${rowsHtml}
+    </tbody>
+  </table>
+</body>
+</html>
+    `;
+
+    const blob = new Blob([template], { type: 'application/vnd.ms-excel;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `${draft.title.replace(/\s+/g, '_')}_Registrations.csv`);
+    link.setAttribute("download", `${draft.title.replace(/\s+/g, '_')}_Registrations.xls`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -937,7 +1003,7 @@ const EventEditor: React.FC<EventEditorProps> = ({
             </div>
 
             <button
-              onClick={exportToCSV}
+              onClick={exportToExcel}
               className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-surface border border-surfaceLight hover:border-primary/40 hover:bg-black transition-all uppercase tracking-wider"
             >
               <Download size={14} className="text-primary" /> Export to Excel

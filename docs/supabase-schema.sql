@@ -9,15 +9,10 @@ create table if not exists public.profiles (
   full_name text not null, -- Frontend maps to name
   email text unique not null,
   role text not null default 'USER' check (role in ('USER','CONTENT_ADMIN','SUPER_ADMIN')),
-  avatar_url text, -- Frontend maps to avatar
-  avatar_public_id text,
   github_url text,
   linkedin_url text,
   leetcode_url text,
   is_verified boolean default false,
-  -- Frontend expects xp and level fields for gamification
-  xp integer default 0,
-  level integer default 1,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -261,16 +256,15 @@ create policy "Admin can view contacts" on public.contacts for select using (exi
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (user_id, email, full_name, prn, role, xp, level)
+  insert into public.profiles (user_id, email, full_name, prn, role)
   values (
     new.id,
     new.email,
     coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', ''),
     new.raw_user_meta_data->>'prn',
-    'USER',
-    0,
-    1
-  );
+    'USER'
+  )
+  on conflict (user_id) do nothing;
   return new;
 end;
 $$ language plpgsql security definer;

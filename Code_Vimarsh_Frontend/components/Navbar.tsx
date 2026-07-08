@@ -61,7 +61,7 @@ const Navbar: React.FC = () => {
 
         {/* Right Actions */}
         <div className="hidden md:flex items-center gap-1.5 flex-shrink-0">
-          {(currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'CONTENT_ADMIN') && (
+          {isLoggedIn && currentUser && currentUser.role !== 'USER' && (
             <Link
               to="/admin"
               className="text-textMuted hover:text-primary transition-colors p-1.5 rounded-full hover:bg-primary/10 flex-shrink-0"
@@ -118,7 +118,7 @@ const Navbar: React.FC = () => {
               </Link>
             ))}
             <div className="pt-4 mt-2 border-t border-surfaceLight flex flex-col space-y-3">
-              {(currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'CONTENT_ADMIN') && (
+              {isLoggedIn && currentUser && currentUser.role !== 'USER' && (
                 <Link
                   to="/admin"
                   onClick={() => setMobileMenuOpen(false)}

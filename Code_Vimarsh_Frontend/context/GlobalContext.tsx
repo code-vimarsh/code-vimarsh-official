@@ -151,8 +151,6 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
                 name: profile.full_name,
                 email: profile.email,
                 role: profile.role as any,
-                xp: profile.xp || 0,
-                level: profile.level || 1,
                 github_url: profile.github_url || undefined,
                 linkedin_url: profile.linkedin_url || undefined,
                 leetcode_url: profile.leetcode_url || undefined,
@@ -364,6 +362,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           if (data) {
             const fetched = data.map((r: any) => ({
               id: r.id?.toString(),
+              ticketCode: r.ticket_code || r.id?.toString().slice(0, 4),
               name: r.full_name,
               email: r.email,
               eventId: r.event_id,

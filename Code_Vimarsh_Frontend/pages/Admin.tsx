@@ -32,15 +32,32 @@ const Admin: React.FC = () => {
   useEffect(() => {
     if (!isLoggedIn) {
       navigate('/signin');
+    } else if (currentUser && currentUser.role === 'USER') {
+      navigate('/dashboard');
     }
-  }, [isLoggedIn, navigate]);
+  }, [isLoggedIn, currentUser, navigate]);
+
+  if (isLoggedIn && !currentUser) {
+    return (
+      <div className="min-h-screen bg-bgDark flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-xs font-mono text-textMuted tracking-widest uppercase">Verifying Credentials...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (currentUser && currentUser.role === 'USER') {
+    return null;
+  }
 
   const menuItems = [
     { id: 'overview', icon: <LayoutDashboard size={18} />, label: 'Overview', desc: 'System dashboard' },
     { id: 'events', icon: <Calendar size={18} />, label: 'Manage Events', desc: 'Host & list events' },
     { id: 'projects', icon: <FolderHeart size={18} />, label: 'Manage Projects', desc: 'Curate showcase' },
     { id: 'resources', icon: <BookOpen size={18} />, label: 'Manage Resources', desc: 'Library & repos' },
-    ...(currentUser?.role === 'SUPER_ADMIN' 
+    ...((currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'USER')
       ? [{ id: 'admins', icon: <ShieldAlert size={18} />, label: 'Access Control', desc: 'Permission mgmt' }] 
       : []),
     { id: 'alumni', icon: <GraduationCap size={18} />, label: 'Manage Alumni', desc: 'Alumni network' },

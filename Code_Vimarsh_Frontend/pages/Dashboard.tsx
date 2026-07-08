@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Github, Linkedin, Terminal, Edit3, Save, X, UploadCloud, MapPin, Mail, Briefcase, ChevronRight, Download, Loader2, Shield, LogOut } from 'lucide-react';
+import { Github, Linkedin, Terminal, Edit3, Save, X, MapPin, Mail, Briefcase, ChevronRight, Download, Loader2, Shield, LogOut } from 'lucide-react';
 import { useGlobalState } from '../context/GlobalContext';
 import { Toast, useToast } from '../components/Projects';
 import api from '../services/api';
@@ -12,8 +12,6 @@ const Dashboard: React.FC = () => {
   const { toast, showToast, hideToast } = useToast();
   
   const [isEditing, setIsEditing] = useState(false);
-  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
   const [dashboardQrUrl, setDashboardQrUrl] = useState<string>('');
 
@@ -24,8 +22,8 @@ const Dashboard: React.FC = () => {
           margin: 1,
           width: 300,
           color: {
-            dark: '#ffffff',
-            light: '#00000000'
+            dark: '#000000',
+            light: '#ffffff'
           }
         })
           .then(url => setDashboardQrUrl(url))
@@ -73,37 +71,7 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) return;
-    const file = e.target.files[0];
-    
-    if (file.size > 200 * 1024) {
-      showToast("Image size must be under 200KB", "error");
-      return;
-    }
 
-    setIsUploadingAvatar(true);
-    const formData = new FormData();
-    formData.append('avatar', file);
-
-    try {
-      const res = await api.patch('/users/me/avatar', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      if (res.data.success) {
-        setCurrentUser({ ...currentUser!, avatar: res.data.avatar });
-        showToast("Profile picture updated!", "success");
-      }
-    } catch (error: any) {
-      console.error("Error uploading avatar:", error);
-      showToast(error.response?.data?.message || "Failed to upload image", "error");
-    } finally {
-      setIsUploadingAvatar(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
-  };
 
   if (!currentUser) {
     return (
@@ -132,28 +100,28 @@ const Dashboard: React.FC = () => {
         <div className="relative z-10 p-8 md:p-12 lg:p-16 flex flex-col md:flex-row items-center md:items-end gap-8 md:gap-12 min-h-[360px]">
           
           {/* Avatar System */}
-          <div className="relative group shrink-0">
-            <div className="w-40 h-40 md:w-48 md:h-48 rounded-[2rem] p-1.5 bg-black/50 backdrop-blur-md border border-white/10 shadow-2xl transform transition-transform duration-500 group-hover:scale-105 group-hover:border-primary/50">
-              <img 
-                src={currentUser.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.prn}`} 
-                alt="Profile" 
-                className={`w-full h-full rounded-[1.6rem] object-cover bg-[#0a0a0a] ${isUploadingAvatar ? 'opacity-40 blur-md' : ''} transition-all duration-300`}
-              />
-              
-              <div 
-                className="absolute inset-1.5 rounded-[1.6rem] bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 cursor-pointer transition-all duration-300 backdrop-blur-sm"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                {isUploadingAvatar ? (
-                  <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <>
-                    <UploadCloud className="text-white mb-2 transform -translate-y-2 group-hover:translate-y-0 transition-transform duration-300" size={28} />
-                    <span className="text-xs font-bold text-white uppercase tracking-widest">Change Avatar</span>
-                  </>
-                )}
-              </div>
-              <input type="file" ref={fileInputRef} className="hidden" accept="image/webp, image/jpeg, image/png" onChange={handleAvatarChange} />
+          <div className="relative shrink-0">
+            <div className="w-40 h-40 md:w-48 md:h-48 rounded-[2rem] p-1.5 bg-black/50 backdrop-blur-md border border-white/10 shadow-2xl transform transition-transform duration-500">
+              {currentUser.avatar ? (
+                <img 
+                  src={currentUser.avatar} 
+                  alt="Profile" 
+                  className="w-full h-full rounded-[1.6rem] object-cover bg-[#0a0a0a] transition-all duration-300"
+                />
+              ) : (
+                <div 
+                  className="w-full h-full rounded-[1.6rem] bg-gradient-to-br from-primary/20 via-[#ff6a00]/5 to-transparent border border-white/5 flex items-center justify-center transition-all duration-300"
+                >
+                  <span className="text-4xl md:text-5xl font-extrabold text-primary tracking-wider select-none font-display">
+                    {(() => {
+                      const name = currentUser.name || '';
+                      const parts = name.trim().split(/\s+/);
+                      if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+                      return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+                    })()}
+                  </span>
+                </div>
+              )}
             </div>
             
             {/* Minimal Role Badge */}
@@ -376,7 +344,7 @@ const Dashboard: React.FC = () => {
                         {ticket.status === 'attended' ? 'Attended' : 'Registered'}
                       </span>
                     </div>
-                    <p className="text-xs text-white/40 font-mono">ID: #{ticket.id.split('_')[1] || ticket.id}</p>
+                    <p className="text-xs text-white/40 font-mono">ID: #{ticket.ticketCode || ticket.id?.split('_')[1]?.slice(0, 4) || ticket.id?.slice(0, 4)}</p>
                     <p className="text-xs text-white/60">Registered on {ticket.registeredAt}</p>
                   </div>
 
@@ -445,7 +413,7 @@ const Dashboard: React.FC = () => {
                   </div>
                   <div>
                     <span className="text-[9px] text-textMuted uppercase tracking-widest block mb-1">TICKET ID</span>
-                    <p className="text-xs font-mono text-primary font-bold truncate">#{selectedTicket.id.split('_')[1] || selectedTicket.id}</p>
+                    <p className="text-xs font-mono text-primary font-bold truncate">#{selectedTicket.ticketCode || selectedTicket.id?.split('_')[1]?.slice(0, 4) || selectedTicket.id?.slice(0, 4)}</p>
                   </div>
                 </div>
 

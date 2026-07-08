@@ -39,22 +39,30 @@ export const Step3OTP: React.FC<Step3OTPProps> = ({
     if (!cleanValue) return;
 
     const newDigits = [...digits];
-    // If user pasted a code or typed multiple digits
-    if (cleanValue.length > 1) {
-      const parts = cleanValue.slice(0, 8 - index).split('');
-      parts.forEach((char, i) => {
-        newDigits[index + i] = char;
-      });
-      setDigits(newDigits);
-      const nextFocus = Math.min(index + parts.length, 7);
-      inputsRef.current[nextFocus]?.focus();
-    } else {
-      newDigits[index] = cleanValue;
-      setDigits(newDigits);
-      if (index < 7) {
-        inputsRef.current[index + 1]?.focus();
-      }
+    newDigits[index] = cleanValue.slice(-1);
+    setDigits(newDigits);
+
+    if (index < 7) {
+      inputsRef.current[index + 1]?.focus();
     }
+    setErrorMsg('');
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text');
+    const cleanValue = pastedData.replace(/[^0-9]/g, '');
+    if (!cleanValue) return;
+
+    const newDigits = [...digits];
+    const parts = cleanValue.slice(0, 8).split('');
+    parts.forEach((char, i) => {
+      newDigits[i] = char;
+    });
+    setDigits(newDigits);
+
+    const nextFocus = Math.min(parts.length, 7);
+    inputsRef.current[nextFocus]?.focus();
     setErrorMsg('');
   };
 
@@ -130,18 +138,19 @@ export const Step3OTP: React.FC<Step3OTPProps> = ({
         </p>
       </div>
 
-      <div className="flex justify-center gap-1.5 md:gap-2.5 py-4">
+      <div className="flex justify-center gap-1.5 sm:gap-2 py-4">
         {digits.map((digit, index) => (
           <input
             key={index}
             type="text"
             inputMode="numeric"
-            maxLength={8}
+            maxLength={1}
             value={digit}
             onChange={(e) => handleChange(index, e.target.value)}
             onKeyDown={(e) => handleKeyDown(index, e)}
+            onPaste={handlePaste}
             ref={(el) => (inputsRef.current[index] = el)}
-            className="w-8 h-10 md:w-10 md:h-12 text-center text-lg font-bold bg-[#15151b]/70 border border-white/10 rounded-lg text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all shadow-lg"
+            className="flex-1 min-w-[28px] max-w-[36px] sm:max-w-[40px] aspect-[4/5] text-center text-lg sm:text-xl font-bold bg-[#15151b]/70 border border-white/10 rounded-lg text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all shadow-lg"
           />
         ))}
       </div>

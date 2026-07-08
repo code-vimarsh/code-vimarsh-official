@@ -33,7 +33,7 @@ const EventRegistrationRenderer: React.FC<EventRegistrationRendererProps> = ({
   eventId,
   eventTitle,
 }) => {
-  const { addParticipant } = useGlobalState();
+  const { currentUser, events, participants, addParticipant } = useGlobalState();
   const [form, setForm] = useState<EventForm | null>(null);
   const [loading, setLoading] = useState(true);
   const [values, setValues] = useState<Record<string, FieldValue>>({});
@@ -54,16 +54,58 @@ const EventRegistrationRenderer: React.FC<EventRegistrationRendererProps> = ({
     setErrors({});
     setSubmitError(null);
 
-    // Simulated async load (replace with: const res = await fetch(`/api/forms/event/${eventId}`) )
-    const t = setTimeout(() => {
-      const fetched = getFormByEventId(eventId);
-      setForm(fetched ?? null);
-      if (fetched) setValues(buildInitialValues(fetched.fields));
-      setLoading(false);
-    }, 80);
+    const event = events.find(e => e.id === eventId);
+    if (event) {
+      const fetchedForm: EventForm = {
+        eventId: event.id,
+        isPublished: event.isPublished ?? false,
+        fields: event.formFields || [],
+      };
+      setForm(fetchedForm);
+      
+      const initialVals = buildInitialValues(fetchedForm.fields);
+      if (currentUser) {
+        fetchedForm.fields.forEach(f => {
+          if (f.type === 'email' || f.label.toLowerCase().includes('email')) {
+            initialVals[f.id] = currentUser.email || '';
+          } else if (f.label.toLowerCase().includes('name') || f.label.toLowerCase().includes('full name') || f.label.toLowerCase() === 'fullname') {
+            initialVals[f.id] = currentUser.name || '';
+          }
+        });
+      }
+      setValues(initialVals);
+    } else {
+      setForm(null);
+    }
+    setLoading(false);
+  }, [eventId, events, currentUser]);
 
-    return () => clearTimeout(t);
-  }, [eventId]);
+  useEffect(() => {
+    if (submitted && registeredParticipant) {
+      QRCode.toDataURL(registeredParticipant.id, {
+        margin: 1,
+        width: 300,
+        color: {
+          dark: '#000000',
+          light: '#ffffff'
+        }
+      })
+        .then(url => setQrCodeUrl(url))
+        .catch(err => console.error(err));
+    }
+  }, [submitted, registeredParticipant]);
+
+  useEffect(() => {
+    if (currentUser) {
+      const existing = participants.find(
+        (p) => p.eventId === eventId && p.email.toLowerCase() === currentUser.email.toLowerCase()
+      );
+      if (existing) {
+        setRegisteredParticipant(existing);
+        setSubmitted(true);
+      }
+    }
+  }, [currentUser, participants, eventId]);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
 
@@ -105,6 +147,17 @@ const EventRegistrationRenderer: React.FC<EventRegistrationRendererProps> = ({
       const nameVal = nameField ? (values[nameField.id] as string) : 'Participant';
       const emailVal = emailField ? (values[emailField.id] as string) : '';
 
+      if (emailVal) {
+        const isAlreadyRegistered = participants.some(
+          (p) => p.eventId === eventId && p.email.toLowerCase() === emailVal.toLowerCase()
+        );
+        if (isAlreadyRegistered) {
+          setSubmitError('You have already registered for this event.');
+          setSubmitting(false);
+          return;
+        }
+      }
+
       let newPart: any = null;
 
       try {
@@ -121,16 +174,20 @@ const EventRegistrationRenderer: React.FC<EventRegistrationRendererProps> = ({
           throw new Error(`The event ID "${eventId}" is not a valid UUID format. Bypassing database insert and simulating locally.`);
         }
 
+        const ticketCode = Math.floor(1000 + Math.random() * 9000).toString();
+
         // Query: Insert registration details into Supabase event_registrations
         const { data, error } = await supabase
           .from('event_registrations')
           .insert([{
             event_id: eventId,
+            user_id: currentUser?.id || null,
             full_name: nameVal,
             email: emailVal,
             phone: phoneVal,
             custom_answers: values,
             status: 'registered',
+            ticket_code: ticketCode,
           }])
           .select()
           .single();
@@ -139,22 +196,27 @@ const EventRegistrationRenderer: React.FC<EventRegistrationRendererProps> = ({
           throw error;
         }
 
-        if (data) {
-          newPart = {
-            id: data.id,
-            name: data.full_name,
-            email: data.email,
-            eventId: data.event_id,
-            eventTitle: eventTitle || 'Event',
-            registeredAt: new Date(data.registered_at).toISOString().split('T')[0],
-            status: data.status as 'registered' | 'attended',
-            customAnswers: data.custom_answers || {},
-          };
+        if (!data) {
+          throw new Error('Supabase insert succeeded but RLS prevented selecting the row.');
         }
+
+        newPart = {
+          id: data.id,
+          ticketCode: data.ticket_code || ticketCode,
+          name: data.full_name,
+          email: data.email,
+          eventId: data.event_id,
+          eventTitle: eventTitle || 'Event',
+          registeredAt: new Date(data.registered_at).toISOString().split('T')[0],
+          status: data.status as 'registered' | 'attended',
+          customAnswers: data.custom_answers || {},
+        };
       } catch (dbErr) {
         console.warn('Supabase registration bypassed/failed:', dbErr);
+        const localCode = Math.floor(1000 + Math.random() * 9000).toString();
         newPart = {
           id: `reg_${Math.random().toString(36).substr(2, 9)}_${Date.now().toString(36)}`,
+          ticketCode: localCode,
           name: nameVal,
           email: emailVal,
           eventId: eventId,
@@ -211,21 +273,6 @@ const EventRegistrationRenderer: React.FC<EventRegistrationRendererProps> = ({
 
   // ── Success state ──────────────────────────────────────────────────────────
 
-  useEffect(() => {
-    if (submitted && registeredParticipant) {
-      QRCode.toDataURL(registeredParticipant.id, {
-        margin: 1,
-        width: 300,
-        color: {
-          dark: '#ffffff',
-          light: '#00000000'
-        }
-      })
-        .then(url => setQrCodeUrl(url))
-        .catch(err => console.error(err));
-    }
-  }, [submitted, registeredParticipant]);
-
   const handleDownloadTicket = async () => {
     if (!ticketRef.current) return;
     try {
@@ -273,7 +320,7 @@ const EventRegistrationRenderer: React.FC<EventRegistrationRendererProps> = ({
           <div className="space-y-4 mb-6">
             <div>
               <span className="text-[9px] text-textMuted uppercase tracking-widest block mb-1">EVENT TITLE</span>
-              <h3 className="text-xl font-display font-black text-white leading-tight tracking-tight uppercase italic truncate">
+              <h3 className="text-xl font-display font-black text-white leading-normal tracking-tight uppercase italic pb-1.5">
                 {eventTitle || 'CONFERENCE'}
               </h3>
             </div>
@@ -281,22 +328,24 @@ const EventRegistrationRenderer: React.FC<EventRegistrationRendererProps> = ({
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <span className="text-[9px] text-textMuted uppercase tracking-widest block mb-1">CANDIDATE</span>
-                <p className="text-sm font-bold text-white truncate">{registeredParticipant?.name}</p>
+                <p className="text-sm font-bold text-white leading-normal pb-1">{registeredParticipant?.name}</p>
               </div>
               <div>
                 <span className="text-[9px] text-textMuted uppercase tracking-widest block mb-1">TICKET ID</span>
-                <p className="text-xs font-mono text-primary font-bold truncate">#{registeredParticipant?.id.split('_')[1] || registeredParticipant?.id}</p>
+                <p className="text-xs font-mono text-primary font-bold leading-normal pb-1 truncate">
+                  #{registeredParticipant?.ticketCode || registeredParticipant?.id?.slice(0, 4) || ''}
+                </p>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <span className="text-[9px] text-textMuted uppercase tracking-widest block mb-1">DATE</span>
-                <p className="text-xs text-white/80 font-semibold">{registeredParticipant?.registeredAt}</p>
+                <p className="text-xs text-white/80 font-semibold leading-normal pb-1">{registeredParticipant?.registeredAt}</p>
               </div>
               <div>
                 <span className="text-[9px] text-textMuted uppercase tracking-widest block mb-1">STATUS</span>
-                <span className="text-[10px] font-bold text-green-400 bg-green-500/10 border border-green-500/20 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] font-bold text-green-400 bg-green-500/10 border border-green-500/20 px-2 py-0.5 rounded-full inline-block leading-none mt-1">
                   CONFIRMED
                 </span>
               </div>
@@ -371,7 +420,7 @@ const EventRegistrationRenderer: React.FC<EventRegistrationRendererProps> = ({
                 value={values[field.id] ?? ''}
                 onChange={(v) => handleChange(field.id, v)}
                 error={errors[field.id]}
-                disabled={submitting}
+                disabled={submitting || (currentUser && (field.type === 'email' || field.label.toLowerCase().includes('email') || field.label.toLowerCase().includes('name')))}
               />
             </motion.div>
           ))}

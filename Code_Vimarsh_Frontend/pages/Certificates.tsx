@@ -84,6 +84,8 @@ const Certificates: React.FC = () => {
     const [bulkStatus, setBulkStatus] = useState<'idle' | 'generating' | 'done'>('idle');
     const [bulkProgress, setBulkProgress] = useState({ done: 0, total: 0 });
     const [showPreview, setShowPreview] = useState(false);
+    const [selectedEventId, setSelectedEventId] = useState('');
+    const [selectedStudentId, setSelectedStudentId] = useState('');
 
     const captureRef = useRef<HTMLDivElement>(null!);
 
@@ -278,6 +280,63 @@ const Certificates: React.FC = () => {
                             <Award size={13} className="text-primary" /> 4. Personalization
                         </h3>
 
+                        <div className="space-y-3 p-4 rounded-xl border border-white/5 bg-black/10">
+                            <span className="text-[10px] font-black uppercase text-primary tracking-widest block">Auto-fill from Attendee List</span>
+                            
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1.5">
+                                    <label className="text-[9px] font-bold text-textMuted uppercase tracking-widest">1. Select Event</label>
+                                    <div className="relative">
+                                        <select
+                                            value={selectedEventId}
+                                            onChange={e => {
+                                                const evId = e.target.value;
+                                                setSelectedEventId(evId);
+                                                setSelectedStudentId('');
+                                                const found = events.find(ev => ev.id === evId);
+                                                if (found) {
+                                                    setForm(prev => ({ ...prev, eventName: found.title, recipientName: '' }));
+                                                } else {
+                                                    setForm(prev => ({ ...prev, eventName: '', recipientName: '' }));
+                                                }
+                                            }}
+                                            className="w-full bg-bgDark border border-surfaceLight rounded-xl px-3 py-2 text-xs text-white focus:border-primary focus:outline-none appearance-none cursor-pointer"
+                                        >
+                                            <option value="">Select event…</option>
+                                            {events.map(ev => <option key={ev.id} value={ev.id}>{ev.title}</option>)}
+                                        </select>
+                                        <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-textMuted pointer-events-none" />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-[9px] font-bold text-textMuted uppercase tracking-widest">2. Attended Student</label>
+                                    <div className="relative">
+                                        <select
+                                            value={selectedStudentId}
+                                            disabled={!selectedEventId}
+                                            onChange={e => {
+                                                const sId = e.target.value;
+                                                setSelectedStudentId(sId);
+                                                const p = participants.find(part => part.id === sId);
+                                                if (p) {
+                                                    setForm(prev => ({ ...prev, recipientName: p.name }));
+                                                }
+                                            }}
+                                            className="w-full bg-bgDark border border-surfaceLight rounded-xl px-3 py-2 text-xs text-white focus:border-primary focus:outline-none appearance-none cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                        >
+                                            <option value="">Select student…</option>
+                                            {participants
+                                                .filter(p => p.eventId === selectedEventId && p.status === 'attended')
+                                                .map(p => <option key={p.id} value={p.id}>{p.name}</option>)
+                                            }
+                                        </select>
+                                        <ChevronDown size={12} className="absolute right-3 top-1/2 -translate-y-1/2 text-textMuted pointer-events-none" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest">Full Name *</label>
                             <input
@@ -290,21 +349,10 @@ const Certificates: React.FC = () => {
 
                         <div className="space-y-1.5">
                             <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest">Event or Milestone *</label>
-                            <div className="relative">
-                                <select
-                                    value={form.eventName}
-                                    onChange={e => setForm({ ...form, eventName: e.target.value })}
-                                    className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-2.5 text-sm text-white focus:border-primary focus:outline-none appearance-none cursor-pointer"
-                                >
-                                    <option value="">Select event…</option>
-                                    {events.map(ev => <option key={ev.id} value={ev.title}>{ev.title}</option>)}
-                                </select>
-                                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-textMuted pointer-events-none" />
-                            </div>
                             <input
                                 value={form.eventName}
                                 onChange={e => setForm({ ...form, eventName: e.target.value })}
-                                className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:outline-none transition-all mt-1"
+                                className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:outline-none transition-all"
                                 placeholder="Or custom event name"
                             />
                         </div>

@@ -29,6 +29,7 @@ const SignUp: React.FC = () => {
   const [direction, setDirection]       = useState(1);
   const [isLoading, setIsLoading]       = useState(false);
   const [authError, setAuthError]       = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [submitted, setSubmitted]       = useState(false);
   const [otpLoading, setOtpLoading]     = useState(false);
 
@@ -40,6 +41,7 @@ const SignUp: React.FC = () => {
       const value = e.target.value;
       setForm((prev) => ({ ...prev, [field]: value }));
       setAuthError('');
+      setSuccessMessage('');
       if (touched[field]) {
         const err = validateField(field, value, { ...form, [field]: value });
         setErrors((prev) => ({ ...prev, [field]: err }));
@@ -65,6 +67,7 @@ const SignUp: React.FC = () => {
 
   const handleContinue = () => {
     setAuthError('');
+    setSuccessMessage('');
     setTouched({ prn: true, fullName: true, email: true });
     const errs = validateSignUp(form);
     const step1Errors: SignUpErrors = {};
@@ -79,6 +82,7 @@ const SignUp: React.FC = () => {
 
   const handleBack = () => {
     setAuthError('');
+    setSuccessMessage('');
     setDirection(-1);
     setStep(1);
   };
@@ -91,11 +95,12 @@ const SignUp: React.FC = () => {
     if (Object.keys(errs).length > 0) return;
 
     setIsLoading(true);
+    setSuccessMessage('');
     try {
-      // 1. Check if a profile with the same PRN or Email already exists
+      // 1. Check if a profile with the same PRN or Email already exists and is verified
       const { data: existingProfiles, error: checkErr } = await supabase
         .from('profiles')
-        .select('prn, email')
+        .select('prn, email, is_verified')
         .or(`prn.eq.${form.prn},email.eq.${form.email}`);
 
       if (checkErr) {
@@ -103,14 +108,19 @@ const SignUp: React.FC = () => {
       }
 
       if (existingProfiles && existingProfiles.length > 0) {
-        const hasPrn = existingProfiles.some(p => p.prn === form.prn);
-        const hasEmail = existingProfiles.some(p => p.email === form.email);
-        if (hasPrn && hasEmail) {
-          throw new Error('An account with this PRN and Email already exists. Please sign in instead.');
-        } else if (hasPrn) {
-          throw new Error('An account with this PRN already exists. Please check your PRN or sign in.');
-        } else {
-          throw new Error('An account with this Email already exists. Please check your Email or sign in.');
+        // Only block if the account has already completed OTP verification
+        const verifiedProfiles = existingProfiles.filter(p => p.is_verified === true);
+        
+        if (verifiedProfiles.length > 0) {
+          const hasPrn = verifiedProfiles.some(p => p.prn === form.prn);
+          const hasEmail = verifiedProfiles.some(p => p.email === form.email);
+          if (hasPrn && hasEmail) {
+            throw new Error('An account with this PRN and Email already exists. Please sign in instead.');
+          } else if (hasPrn) {
+            throw new Error('An account with this PRN already exists. Please check your PRN or sign in.');
+          } else {
+            throw new Error('An account with this Email already exists. Please check your Email or sign in.');
+          }
         }
       }
 
@@ -139,10 +149,16 @@ const SignUp: React.FC = () => {
       if (err) {
         if (typeof err === 'string') {
           errMsg = err;
-        } else if (err.message) {
-          errMsg = typeof err.message === 'object' ? JSON.stringify(err.message) : err.message;
         } else {
-          errMsg = JSON.stringify(err);
+          const detail: Record<string, any> = {};
+          try {
+            Object.getOwnPropertyNames(err).forEach(key => {
+              detail[key] = err[key];
+            });
+            errMsg = detail.message || detail.msg || JSON.stringify(detail);
+          } catch (e) {
+            errMsg = err.message || String(err);
+          }
         }
       }
       setAuthError(errMsg);
@@ -174,7 +190,7 @@ const SignUp: React.FC = () => {
 
       setOtpLoading(false);
       setSubmitted(true);
-      setTimeout(() => navigate('/signin'), 1700);
+      setTimeout(() => { window.location.href = '/signin'; }, 1700);
     } catch (err: any) {
       console.error('Supabase OTP verification failed:', err);
       setOtpLoading(false);
@@ -183,10 +199,16 @@ const SignUp: React.FC = () => {
       if (err) {
         if (typeof err === 'string') {
           errMsg = err;
-        } else if (err.message) {
-          errMsg = typeof err.message === 'object' ? JSON.stringify(err.message) : err.message;
         } else {
-          errMsg = JSON.stringify(err);
+          const detail: Record<string, any> = {};
+          try {
+            Object.getOwnPropertyNames(err).forEach(key => {
+              detail[key] = err[key];
+            });
+            errMsg = detail.message || detail.msg || JSON.stringify(detail);
+          } catch (e) {
+            errMsg = err.message || String(err);
+          }
         }
       }
       setAuthError(errMsg);
@@ -195,12 +217,14 @@ const SignUp: React.FC = () => {
 
   const handleResendOtp = async () => {
     try {
+      setSuccessMessage('');
+      setAuthError('');
       const { error } = await supabase.auth.resend({
         type: 'signup',
         email: form.email
       });
       if (error) throw error;
-      alert('A new verification code has been sent to your email.');
+      setSuccessMessage('A new verification code has been sent to your email.');
     } catch (err: any) {
       console.error('Supabase OTP resend failed:', err);
       
@@ -208,10 +232,16 @@ const SignUp: React.FC = () => {
       if (err) {
         if (typeof err === 'string') {
           errMsg = err;
-        } else if (err.message) {
-          errMsg = typeof err.message === 'object' ? JSON.stringify(err.message) : err.message;
         } else {
-          errMsg = JSON.stringify(err);
+          const detail: Record<string, any> = {};
+          try {
+            Object.getOwnPropertyNames(err).forEach(key => {
+              detail[key] = err[key];
+            });
+            errMsg = detail.message || detail.msg || JSON.stringify(detail);
+          } catch (e) {
+            errMsg = err.message || String(err);
+          }
         }
       }
       setAuthError(errMsg);
@@ -237,6 +267,14 @@ const SignUp: React.FC = () => {
             role="alert"
           >
             {authError}
+          </div>
+        )}
+        {successMessage && (
+          <div
+            className="rounded-xl border border-green-500/30 bg-green-500/5 px-4 py-3 mb-4 text-sm text-green-400"
+            role="alert"
+          >
+            {successMessage}
           </div>
         )}
         <StepDots step={step === 3 ? 3 : step} />

@@ -10,8 +10,6 @@ export interface User {
   email: string;
   role: 'USER' | 'CONTENT_ADMIN' | 'SUPER_ADMIN';
   avatar?: string;
-  xp: number;
-  level: number;
   global_rank?: number;
   github_url?: string;
   linkedin_url?: string;
@@ -181,6 +179,7 @@ export interface AdminUser {
 
 export interface Participant {
   id: string;
+  ticketCode?: string;
   name: string;
   email: string;
   eventId: string;       // which event they registered for
