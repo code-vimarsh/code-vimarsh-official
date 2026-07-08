@@ -1,7 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import api from '../services/api';
 import { supabase } from '../services/supabase';
 
 import { AuthCard } from '../components/Auth';

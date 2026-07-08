@@ -3,9 +3,9 @@ import { motion } from 'framer-motion';
 
 // ─── Step progress dots shown at the top of the SignUp form ───────────────────
 
-const StepDots: React.FC<{ step: 1 | 2 }> = ({ step }) => (
-  <div className="flex items-center justify-center gap-2 mb-6" aria-label={`Step ${step} of 2`}>
-    {[1, 2].map((s) => (
+const StepDots: React.FC<{ step: 1 | 2 | 3 }> = ({ step }) => (
+  <div className="flex items-center justify-center gap-2 mb-6" aria-label={`Step ${step} of 3`}>
+    {[1, 2, 3].map((s) => (
       <motion.div
         key={s}
         animate={
@@ -17,7 +17,7 @@ const StepDots: React.FC<{ step: 1 | 2 }> = ({ step }) => (
         className="h-1.5 rounded-full"
       />
     ))}
-    <span className="sr-only">Step {step} of 2</span>
+    <span className="sr-only">Step {step} of 3</span>
   </div>
 );
 

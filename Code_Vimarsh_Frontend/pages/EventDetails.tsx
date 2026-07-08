@@ -8,7 +8,7 @@ import EventBanner from '../components/events/EventBanner';
 import EventSpeakers from '../components/events/EventSpeakers';
 import EventRegistrationRenderer from '../components/events/EventRegistrationRenderer';
 import { useGlobalState } from '../context/GlobalContext';
-import api from '../services/api';
+import { supabase } from '../services/supabase';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -156,11 +156,18 @@ const EventDetails: React.FC = () => {
       return null;
     };
 
-    // Fetch event by ID from backend
-    api.get(`/events/${id}`)
-      .then(res => {
-        if (res.data.success && res.data.event) {
-          const e = res.data.event;
+    (supabase
+      .from('events')
+      .select(`
+        *,
+        event_speakers(*),
+        event_registrations(count)
+      `)
+      .eq('id', id)
+      .single() as any)
+      .then(({ data: e, error }: any) => {
+        if (error) throw error;
+        if (e) {
           const mapped: Event = {
             id: e.id,
             title: e.title,
@@ -175,9 +182,9 @@ const EventDetails: React.FC = () => {
             image: e.banner_image || e.image || '',
             images: e.images || [],
             tags: e.topics || [],
-            speakers: e.speakers || [],
+            speakers: e.event_speakers || [],
             capacity: e.max_participants,
-            registeredCount: e._count?.registrations || 0,
+            registeredCount: e.event_registrations?.[0]?.count || 0,
           };
           setEvent(mapped);
         } else {

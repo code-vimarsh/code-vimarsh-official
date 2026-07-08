@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import api from '../services/api';
 import { supabase } from '../services/supabase';
 import { User, EventType, ProjectType, TeamMember, BlogPost, ManagedBlog, ManagedAchievement, AchievementType, AdminUser, VideoResource, LinkResource, Participant, ClubMember, Alum } from '../types';
 import { MOCK_EVENTS, MOCK_PROJECTS, MOCK_TEAM, MOCK_BLOGS, MOCK_MANAGED_BLOGS, MOCK_MANAGED_ACHIEVEMENTS, MOCK_ACHIEVEMENTS, MOCK_VIDEOS, MOCK_LINKS, MOCK_ALUMNI } from '../constants';
@@ -215,7 +214,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             status: e.status ? e.status.charAt(0).toUpperCase() + e.status.slice(1).toLowerCase() : 'Upcoming',
             description: e.description || '',
             long_description: e.long_description || '',
-            image: e.banner_image_url || e.image || '',
+            image: e.banner_image || e.image || '',
             images: e.images || [],
             formFields: e.form_fields || [],
             isPublished: e.is_published ?? false,
@@ -248,7 +247,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     (supabase
       .from('team_members') as any)
       .select('*')
-      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true })
       .then(({ data, error }) => {
         if (error) throw error;
         if (data && data.length > 0) {
@@ -301,7 +300,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     (supabase
       .from('achievements') as any)
       .select('*')
-      .order('sort_order', { ascending: true })
+      .order('order', { ascending: true })
       .then(({ data, error }) => {
         if (error) throw error;
         if (data && data.length > 0) {
@@ -337,17 +336,21 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       .catch(err => console.error('Failed to fetch resources from Supabase:', err));
 
     if (isLoggedIn) {
-      api.get('/admin/users').then(res => {
-        if (res.data.success) {
-          const users = res.data.users;
-          setClubMembers(users.map((u: any) => ({
-            id: u.id, name: u.name, email: u.email, role: u.role === 'USER' ? 'Member' : u.role, joinedAt: new Date(u.created_at).toISOString().split('T')[0]
-          })));
-          setAdmins(users.filter((u: any) => u.role === 'CONTENT_ADMIN' || u.role === 'SUPER_ADMIN').map((u: any) => ({
-            id: u.id, name: u.name, email: u.email, role: u.role === 'CONTENT_ADMIN' ? 'Content Admin' : 'Super Admin', addedAt: new Date(u.created_at).toISOString().split('T')[0]
-          })));
-        }
-      }).catch(err => console.error('Failed to fetch users:', err));
+      (supabase
+        .from('profiles')
+        .select('*') as any)
+        .then(({ data, error }) => {
+          if (error) throw error;
+          if (data) {
+            setClubMembers(data.map((u: any) => ({
+              id: u.id, name: u.full_name || u.name, email: u.email, role: u.role === 'USER' ? 'Member' : u.role, joinedAt: new Date(u.created_at).toISOString().split('T')[0]
+            })));
+            setAdmins(data.filter((u: any) => u.role === 'CONTENT_ADMIN' || u.role === 'SUPER_ADMIN').map((u: any) => ({
+              id: u.id, name: u.full_name || u.name, email: u.email, role: u.role === 'CONTENT_ADMIN' ? 'Content Admin' : 'Super Admin', addedAt: new Date(u.created_at).toISOString().split('T')[0]
+            })));
+          }
+        })
+        .catch(err => console.error('Failed to fetch users from profiles:', err));
 
       // Direct Supabase query to get event registrations
       (supabase
@@ -430,6 +433,9 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const addEvent = async (event: EventType) => {
     try {
       const payload = mapEventToPayload(event);
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id || currentUser?.id || 'unknown';
+
       const { data, error } = await supabase
         .from('events')
         .insert([{
@@ -442,11 +448,12 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           location: payload.location,
           start_date: payload.start_date,
           end_date: payload.end_date,
-          banner_image_url: payload.banner_image,
+          banner_image: payload.banner_image,
           topics: payload.topics,
           max_participants: payload.max_participants,
           form_fields: payload.form_fields,
           is_published: payload.is_published,
+          created_by: userId,
         }])
         .select()
         .single();
@@ -476,7 +483,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           location: payload.location,
           start_date: payload.start_date,
           end_date: payload.end_date,
-          banner_image_url: payload.banner_image,
+          banner_image: payload.banner_image,
           topics: payload.topics,
           max_participants: payload.max_participants,
           form_fields: payload.form_fields,
@@ -535,9 +542,9 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     email: m.email || '',
     role: m.role || '',
     section: m.section as any,
-    image: m.image_url || '',
-    linkedin: m.linkedin_url || '',
-    github: m.github_url || '',
+    image: m.image || m.image_url || '',
+    linkedin: m.linkedin || m.linkedin_url || '',
+    github: m.github || m.github_url || '',
   });
 
   const mapAlumFromBackend = (a: any): Alum => ({
@@ -569,7 +576,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     topic: b.topic || '',
     shortDescription: b.short_description || '',
     content: b.content || '',
-    featuredImage: b.featured_image_url || '',
+    featuredImage: b.featured_image || b.featured_image_url || '',
     images: b.images || [],
     authorName: b.author_name || 'Unknown',
     authorRole: b.author_role || 'Guest',
@@ -587,7 +594,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     tag: a.tag || '',
     icon: a.icon || '',
     category: a.category || '',
-    order: a.sort_order || 0,
+    order: a.order || a.sort_order || 0,
     createdAt: a.created_at || new Date().toISOString(),
     updatedAt: a.updated_at || new Date().toISOString(),
   });
@@ -597,13 +604,14 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     title: r.title,
     category: r.category || 'website',
     url: r.url || '',
-    thumbnail: r.thumbnail_url || '',
+    thumbnail: r.thumbnail || r.thumbnail_url || '',
     tags: r.tags || [],
     bestFor: r.best_for || '',
-    type: r.content_type || ''
+    type: r.content_type || '',
+    contentType: r.content_type || ''
   });
 
-  const addProject = (project: ProjectType) => {
+  const addProject = async (project: ProjectType) => {
     const backendCategoryMap: Record<string, string> = {
       'Web': 'Web',
       'Mobile': 'App',
@@ -611,18 +619,36 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       'Systems': 'Other',
       'Open Source': 'Other'
     };
-    const payload = {
-      title: project.title,
-      short_description: project.description,
-      category: backendCategoryMap[project.category] || 'Other',
-      tech_stack: project.tech,
-      github_link: project.links?.github,
-      image: project.image,
-      author_name: project.author
-    };
-    api.post('/projects', payload).then(res => setProjects(prev => [mapProjectFromBackend(res.data.data), ...prev])).catch(console.error);
+    try {
+      // Get the current user id for created_by (required field)
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id || currentUser?.id || 'unknown';
+
+      const { data, error } = await supabase
+        .from('projects')
+        .insert([{
+          title: project.title,
+          short_description: project.description,
+          category: backendCategoryMap[project.category] || 'Other',
+          tech_stack: project.tech || [],
+          github_link: project.links?.github || '',
+          image: project.image || '',
+          author_name: project.author || 'Unknown',
+          created_by: userId,
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setProjects(prev => [mapProjectFromBackend(data), ...prev]);
+      }
+    } catch (err) {
+      console.error('Supabase addProject failed, falling back to local state:', err);
+      setProjects(prev => [{ ...project, id: 'mock_' + Date.now() }, ...prev]);
+    }
   };
-  const updateProject = (project: ProjectType) => {
+  const updateProject = async (project: ProjectType) => {
     const backendCategoryMap: Record<string, string> = {
       'Web': 'Web',
       'Mobile': 'App',
@@ -630,31 +656,59 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       'Systems': 'Other',
       'Open Source': 'Other'
     };
-    const payload = {
-      title: project.title,
-      short_description: project.description,
-      category: backendCategoryMap[project.category] || 'Other',
-      tech_stack: project.tech,
-      github_link: project.links?.github,
-      image: project.image,
-      author_name: project.author
-    };
-    api.put(`/projects/${project.id}`, payload).then(res => {
-      const updated = mapProjectFromBackend(res.data.data);
-      setProjects(prev => prev.map(p => p.id === project.id ? updated : p));
-    }).catch(console.error);
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .update({
+          title: project.title,
+          short_description: project.description,
+          category: backendCategoryMap[project.category] || 'Other',
+          tech_stack: project.tech || [],
+          github_link: project.links?.github || '',
+          image: project.image || '',
+          author_name: project.author || 'Unknown',
+        })
+        .eq('id', project.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        const updated = mapProjectFromBackend(data);
+        setProjects(prev => prev.map(p => p.id === project.id ? updated : p));
+      }
+    } catch (err) {
+      console.error('Supabase updateProject failed, falling back to local state:', err);
+      setProjects(prev => prev.map(p => p.id === project.id ? project : p));
+    }
   };
-  const deleteProject = (id: string) => {
-    api.delete(`/projects/${id}`).then(() => setProjects(prev => prev.filter(p => p.id !== id))).catch(console.error);
+  const deleteProject = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      setProjects(prev => prev.filter(p => p.id !== id));
+    } catch (err) {
+      console.error('Supabase deleteProject failed, falling back to local state:', err);
+      setProjects(prev => prev.filter(p => p.id !== id));
+    }
   };
   const addAdmin = (admin: AdminUser) => setAdmins(prev => [admin, ...prev]);
-  const deleteAdmin = (id: string) => {
-    api.patch(`/admin/users/${id}/role`, { role: 'USER' })
-      .then(res => {
-        if (res.data.success) {
-          setAdmins(prev => prev.filter(a => a.id !== id));
-        }
-      }).catch(console.error);
+  const deleteAdmin = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role: 'USER' })
+        .eq('id', id);
+
+      if (error) throw error;
+      setAdmins(prev => prev.filter(a => a.id !== id));
+    } catch (err) {
+      console.error('Supabase deleteAdmin failed:', err);
+    }
   };
 
   const mapBlogToPayload = (blog: ManagedBlog) => ({
@@ -671,79 +725,263 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     status: blog.status,
   });
 
-  const addManagedBlog = (blog: ManagedBlog) => {
+  const addManagedBlog = async (blog: ManagedBlog) => {
     const payload = mapBlogToPayload(blog);
-    api.post('/blogs', payload).then(res => {
-      const created = res.data.data;
-      setManagedBlogs(prev => [{
-        ...blog,
-        id: created.id,
-        slug: created.slug || blog.slug,
-        createdAt: created.created_at || new Date().toISOString(),
-        updatedAt: created.updated_at || new Date().toISOString(),
-      }, ...prev]);
-    }).catch(console.error);
+    try {
+      const { data, error } = await supabase
+        .from('blogs')
+        .insert([payload])
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setManagedBlogs(prev => [{
+          ...blog,
+          id: data.id,
+          slug: data.slug || blog.slug,
+          createdAt: data.created_at || new Date().toISOString(),
+          updatedAt: data.updated_at || new Date().toISOString(),
+        }, ...prev]);
+      }
+    } catch (err) {
+      console.error('Supabase addManagedBlog failed:', err);
+      setManagedBlogs(prev => [{ ...blog, id: 'mock_' + Date.now() }, ...prev]);
+    }
   };
-  const updateManagedBlog = (blog: ManagedBlog) => {
+  const updateManagedBlog = async (blog: ManagedBlog) => {
     const payload = mapBlogToPayload(blog);
-    api.put(`/blogs/${blog.id}`, payload).then(() => {
+    try {
+      const { error } = await supabase
+        .from('blogs')
+        .update(payload)
+        .eq('id', blog.id);
+
+      if (error) throw error;
       setManagedBlogs(prev => prev.map(b => b.id === blog.id ? { ...blog, updatedAt: new Date().toISOString() } : b));
-    }).catch(console.error);
+    } catch (err) {
+      console.error('Supabase updateManagedBlog failed:', err);
+      setManagedBlogs(prev => prev.map(b => b.id === blog.id ? { ...blog, updatedAt: new Date().toISOString() } : b));
+    }
   };
-  const deleteManagedBlog = (id: string) => {
-    api.delete(`/blogs/${id}`).then(() => setManagedBlogs(prev => prev.filter(b => b.id !== id))).catch(console.error);
+  const deleteManagedBlog = async (id: string) => {
+    try {
+      const { error } = await supabase.from('blogs').delete().eq('id', id);
+      if (error) throw error;
+      setManagedBlogs(prev => prev.filter(b => b.id !== id));
+    } catch (err) {
+      console.error('Supabase deleteManagedBlog failed:', err);
+      setManagedBlogs(prev => prev.filter(b => b.id !== id));
+    }
   };
-  const toggleBlogStatus = (id: string) => {
+  const toggleBlogStatus = async (id: string) => {
     const blog = managedBlogs.find(b => b.id === id);
     if (!blog) return;
     const newStatus = blog.status === 'Published' ? 'Draft' : 'Published';
-    api.put(`/blogs/${id}`, { status: newStatus }).then(() => {
+    try {
+      const { error } = await supabase
+        .from('blogs')
+        .update({ status: newStatus })
+        .eq('id', id);
+
+      if (error) throw error;
       setManagedBlogs(prev => prev.map(b =>
         b.id === id ? { ...b, status: newStatus as any, updatedAt: new Date().toISOString() } : b
       ));
-    }).catch(console.error);
+    } catch (err) {
+      console.error('Supabase toggleBlogStatus failed:', err);
+      setManagedBlogs(prev => prev.map(b =>
+        b.id === id ? { ...b, status: newStatus as any, updatedAt: new Date().toISOString() } : b
+      ));
+    }
   };
 
-  const addManagedAchievement = (a: ManagedAchievement) => {
-    api.post('/achievements', a).then(res => setManagedAchievements(prev => [...prev, res.data.data].sort((x, y) => x.order - y.order))).catch(console.error);
+  const addManagedAchievement = async (a: ManagedAchievement) => {
+    try {
+      const { data, error } = await supabase
+        .from('achievements')
+        .insert([{
+          title: a.title,
+          description: a.description,
+          date: a.date,
+          tag: a.tag,
+          icon: a.icon,
+          category: a.category,
+          order: a.order || 0,
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        const mapped = mapAchievementFromBackend(data);
+        setManagedAchievements(prev => [...prev, mapped].sort((x, y) => x.order - y.order));
+      }
+    } catch (err) {
+      console.error('Supabase addManagedAchievement failed:', err);
+      setManagedAchievements(prev => [...prev, { ...a, id: 'mock_' + Date.now() }].sort((x, y) => x.order - y.order));
+    }
   };
-  const updateManagedAchievement = (a: ManagedAchievement) => {
-    api.put(`/achievements/${a.id}`, a).then(res => setManagedAchievements(prev => prev.map(x => x.id === a.id ? res.data.data : x).sort((x, y) => x.order - y.order))).catch(console.error);
+  const updateManagedAchievement = async (a: ManagedAchievement) => {
+    try {
+      const { data, error } = await supabase
+        .from('achievements')
+        .update({
+          title: a.title,
+          description: a.description,
+          date: a.date,
+          tag: a.tag,
+          icon: a.icon,
+          category: a.category,
+          order: a.order || 0,
+        })
+        .eq('id', a.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        const mapped = mapAchievementFromBackend(data);
+        setManagedAchievements(prev => prev.map(x => x.id === a.id ? mapped : x).sort((x, y) => x.order - y.order));
+      }
+    } catch (err) {
+      console.error('Supabase updateManagedAchievement failed:', err);
+      setManagedAchievements(prev => prev.map(x => x.id === a.id ? a : x).sort((x, y) => x.order - y.order));
+    }
   };
-  const deleteManagedAchievement = (id: string) => {
-    api.delete(`/achievements/${id}`).then(() => setManagedAchievements(prev => prev.filter(x => x.id !== id))).catch(console.error);
+  const deleteManagedAchievement = async (id: string) => {
+    try {
+      const { error } = await supabase.from('achievements').delete().eq('id', id);
+      if (error) throw error;
+      setManagedAchievements(prev => prev.filter(x => x.id !== id));
+    } catch (err) {
+      console.error('Supabase deleteManagedAchievement failed:', err);
+      setManagedAchievements(prev => prev.filter(x => x.id !== id));
+    }
   };
 
-  const addVideoResource = (video: VideoResource) => {
-    api.post('/resources', { ...video, best_for: video.bestFor, category: 'youtube' }).then(res => {
-      const added = { ...res.data.data, bestFor: res.data.data.best_for, type: res.data.data.content_type };
-      setVideoResources(prev => [added, ...prev]);
-    }).catch(console.error);
+  const addVideoResource = async (video: VideoResource) => {
+    try {
+      const { data, error } = await supabase
+        .from('resources')
+        .insert([{
+          title: video.title,
+          category: 'youtube',
+          url: video.url || '',
+          thumbnail: (video as any).thumbnail || '',
+          tags: video.tags || [],
+          best_for: video.bestFor || '',
+          content_type: (video as any).contentType || (video as any).type || '',
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setVideoResources(prev => [mapResourceFromBackend(data), ...prev]);
+      }
+    } catch (err) {
+      console.error('Supabase addVideoResource failed:', err);
+      setVideoResources(prev => [{ ...video, id: 'mock_' + Date.now() }, ...prev]);
+    }
   };
-  const updateVideoResource = (video: VideoResource) => {
-    api.put(`/resources/${video.id}`, { ...video, best_for: video.bestFor, category: 'youtube' }).then(res => {
-      const updated = { ...res.data.data, bestFor: res.data.data.best_for, type: res.data.data.content_type };
-      setVideoResources(prev => prev.map(v => v.id === video.id ? updated : v));
-    }).catch(console.error);
+  const updateVideoResource = async (video: VideoResource) => {
+    try {
+      const { data, error } = await supabase
+        .from('resources')
+        .update({
+          title: video.title,
+          category: 'youtube',
+          url: video.url || '',
+          thumbnail: (video as any).thumbnail || '',
+          tags: video.tags || [],
+          best_for: video.bestFor || '',
+          content_type: (video as any).contentType || (video as any).type || '',
+        })
+        .eq('id', video.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setVideoResources(prev => prev.map(v => v.id === video.id ? mapResourceFromBackend(data) : v));
+      }
+    } catch (err) {
+      console.error('Supabase updateVideoResource failed:', err);
+      setVideoResources(prev => prev.map(v => v.id === video.id ? video : v));
+    }
   };
-  const deleteVideoResource = (id: string) => {
-    api.delete(`/resources/${id}`).then(() => setVideoResources(prev => prev.filter(v => v.id !== id))).catch(console.error);
+  const deleteVideoResource = async (id: string) => {
+    try {
+      const { error } = await supabase.from('resources').delete().eq('id', id);
+      if (error) throw error;
+      setVideoResources(prev => prev.filter(v => v.id !== id));
+    } catch (err) {
+      console.error('Supabase deleteVideoResource failed:', err);
+      setVideoResources(prev => prev.filter(v => v.id !== id));
+    }
   };
 
-  const addLinkResource = (link: LinkResource) => {
-    api.post('/resources', { ...link, content_type: link.type, category: 'website' }).then(res => {
-      const added = { ...res.data.data, bestFor: res.data.data.best_for, type: res.data.data.content_type };
-      setLinkResources(prev => [added, ...prev]);
-    }).catch(console.error);
+  const addLinkResource = async (link: LinkResource) => {
+    try {
+      const { data, error } = await supabase
+        .from('resources')
+        .insert([{
+          title: link.title,
+          category: link.category || 'website',
+          url: link.url || '',
+          thumbnail: (link as any).thumbnail || '',
+          tags: link.tags || [],
+          best_for: link.bestFor || '',
+          content_type: link.contentType || (link as any).type || '',
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setLinkResources(prev => [mapResourceFromBackend(data), ...prev]);
+      }
+    } catch (err) {
+      console.error('Supabase addLinkResource failed:', err);
+      setLinkResources(prev => [{ ...link, id: 'mock_' + Date.now() }, ...prev]);
+    }
   };
-  const updateLinkResource = (link: LinkResource) => {
-    api.put(`/resources/${link.id}`, { ...link, content_type: link.type, category: 'website' }).then(res => {
-      const updated = { ...res.data.data, bestFor: res.data.data.best_for, type: res.data.data.content_type };
-      setLinkResources(prev => prev.map(l => l.id === link.id ? updated : l));
-    }).catch(console.error);
+  const updateLinkResource = async (link: LinkResource) => {
+    try {
+      const { data, error } = await supabase
+        .from('resources')
+        .update({
+          title: link.title,
+          category: link.category || 'website',
+          url: link.url || '',
+          thumbnail: (link as any).thumbnail || '',
+          tags: link.tags || [],
+          best_for: link.bestFor || '',
+          content_type: link.contentType || (link as any).type || '',
+        })
+        .eq('id', link.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setLinkResources(prev => prev.map(l => l.id === link.id ? mapResourceFromBackend(data) : l));
+      }
+    } catch (err) {
+      console.error('Supabase updateLinkResource failed:', err);
+      setLinkResources(prev => prev.map(l => l.id === link.id ? link : l));
+    }
   };
-  const deleteLinkResource = (id: string) => {
-    api.delete(`/resources/${id}`).then(() => setLinkResources(prev => prev.filter(l => l.id !== id))).catch(console.error);
+  const deleteLinkResource = async (id: string) => {
+    try {
+      const { error } = await supabase.from('resources').delete().eq('id', id);
+      if (error) throw error;
+      setLinkResources(prev => prev.filter(l => l.id !== id));
+    } catch (err) {
+      console.error('Supabase deleteLinkResource failed:', err);
+      setLinkResources(prev => prev.filter(l => l.id !== id));
+    }
   };
 
   const addParticipant = (p: Participant) => {
@@ -752,13 +990,19 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       localStorage.setItem('cv_participants', JSON.stringify(updated));
       return updated;
     });
-    api.post('/events/registrations', {
-      event_id: p.eventId,
-      full_name: p.name,
-      email: p.email,
-      status: p.status,
-      custom_answers: p.customAnswers || {}
-    }).catch(err => console.warn('Failed to sync registration to backend:', err));
+    // Sync to Supabase directly
+    supabase
+      .from('event_registrations')
+      .insert([{
+        event_id: p.eventId,
+        full_name: p.name,
+        email: p.email,
+        status: p.status,
+        custom_answers: p.customAnswers || {}
+      }])
+      .then(({ error }) => {
+        if (error) console.warn('Failed to sync registration to Supabase:', error);
+      });
   };
   const removeParticipant = (id: string) => {
     setParticipants(prev => {
@@ -786,27 +1030,149 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       });
   };
 
-  const addTeamMember = (member: TeamMember) => {
-    api.post('/team', member).then(res => setTeam(prev => [...prev, res.data.data])).catch(console.error);
+  const addTeamMember = async (member: TeamMember) => {
+    try {
+      const { data, error } = await supabase
+        .from('team_members')
+        .insert([{
+          name: member.name,
+          role: member.role,
+          section: member.section,
+          image_url: member.image || '',
+          email: member.email,
+          linkedin_url: member.linkedin || '',
+          github_url: member.github || '',
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setTeam(prev => [...prev, mapTeamMemberFromBackend(data)]);
+      }
+    } catch (err) {
+      console.error('Supabase addTeamMember failed:', err);
+      setTeam(prev => [...prev, { ...member, id: 'mock_' + Date.now() }]);
+    }
   };
-  const updateTeamMember = (member: TeamMember) => {
-    api.put(`/team/${member.id}`, member).then(res => setTeam(prev => prev.map(m => m.id === member.id ? res.data.data : m))).catch(console.error);
+  const updateTeamMember = async (member: TeamMember) => {
+    try {
+      const { data, error } = await supabase
+        .from('team_members')
+        .update({
+          name: member.name,
+          role: member.role,
+          section: member.section,
+          image_url: member.image || '',
+          email: member.email,
+          linkedin_url: member.linkedin || '',
+          github_url: member.github || '',
+        })
+        .eq('id', member.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setTeam(prev => prev.map(m => m.id === member.id ? mapTeamMemberFromBackend(data) : m));
+      }
+    } catch (err) {
+      console.error('Supabase updateTeamMember failed:', err);
+      setTeam(prev => prev.map(m => m.id === member.id ? member : m));
+    }
   };
-  const deleteTeamMember = (id: string) => {
-    api.delete(`/team/${id}`).then(() => setTeam(prev => prev.filter(m => m.id !== id))).catch(console.error);
+  const deleteTeamMember = async (id: string) => {
+    try {
+      const { error } = await supabase.from('team_members').delete().eq('id', id);
+      if (error) throw error;
+      setTeam(prev => prev.filter(m => m.id !== id));
+    } catch (err) {
+      console.error('Supabase deleteTeamMember failed:', err);
+      setTeam(prev => prev.filter(m => m.id !== id));
+    }
   };
 
   const addClubMember = (m: ClubMember) => setClubMembers(prev => [m, ...prev]);
   const removeClubMember = (id: string) => setClubMembers(prev => prev.filter(m => m.id !== id));
 
-  const addAlum = (alum: Alum) => {
-    api.post('/alumni', alum).then(res => setAlumni(prev => [res.data.data, ...prev])).catch(console.error);
+  const addAlum = async (alum: Alum) => {
+    try {
+      const { data, error } = await supabase
+        .from('alumni')
+        .insert([{
+          name: alum.name,
+          initials: alum.initials || '',
+          photo: alum.photo || '',
+          role: alum.role,
+          company: alum.company,
+          batch: alum.batch,
+          location: alum.location,
+          domain: alum.domain,
+          bio: alum.bio || '',
+          advice: alum.advice || '',
+          tech: alum.tech || [],
+          linkedin: alum.linkedin || '',
+          github: alum.github || '',
+          website: alum.website || '',
+          achievements: alum.achievements || [],
+          roadmap: alum.roadmap || null,
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setAlumni(prev => [mapAlumFromBackend(data), ...prev]);
+      }
+    } catch (err) {
+      console.error('Supabase addAlum failed:', err);
+      setAlumni(prev => [{ ...alum, id: 'mock_' + Date.now() }, ...prev]);
+    }
   };
-  const updateAlum = (alum: Alum) => {
-    api.put(`/alumni/${alum.id}`, alum).then(res => setAlumni(prev => prev.map(a => a.id === alum.id ? res.data.data : a))).catch(console.error);
+  const updateAlum = async (alum: Alum) => {
+    try {
+      const { data, error } = await supabase
+        .from('alumni')
+        .update({
+          name: alum.name,
+          initials: alum.initials || '',
+          photo: alum.photo || '',
+          role: alum.role,
+          company: alum.company,
+          batch: alum.batch,
+          location: alum.location,
+          domain: alum.domain,
+          bio: alum.bio || '',
+          advice: alum.advice || '',
+          tech: alum.tech || [],
+          linkedin: alum.linkedin || '',
+          github: alum.github || '',
+          website: alum.website || '',
+          achievements: alum.achievements || [],
+          roadmap: alum.roadmap || null,
+        })
+        .eq('id', alum.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setAlumni(prev => prev.map(a => a.id === alum.id ? mapAlumFromBackend(data) : a));
+      }
+    } catch (err) {
+      console.error('Supabase updateAlum failed:', err);
+      setAlumni(prev => prev.map(a => a.id === alum.id ? alum : a));
+    }
   };
-  const deleteAlum = (id: string) => {
-    api.delete(`/alumni/${id}`).then(() => setAlumni(prev => prev.filter(a => a.id !== id))).catch(console.error);
+  const deleteAlum = async (id: string) => {
+    try {
+      const { error } = await supabase.from('alumni').delete().eq('id', id);
+      if (error) throw error;
+      setAlumni(prev => prev.filter(a => a.id !== id));
+    } catch (err) {
+      console.error('Supabase deleteAlum failed:', err);
+      setAlumni(prev => prev.filter(a => a.id !== id));
+    }
   };
 
   return (

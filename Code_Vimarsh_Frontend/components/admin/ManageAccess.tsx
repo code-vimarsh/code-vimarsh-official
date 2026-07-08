@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useGlobalState } from '../../context/GlobalContext';
 import { ShieldAlert, Users, Trash2, ShieldCheck, Mail, Calendar, Search, UserPlus } from 'lucide-react';
+import { supabase } from '../../services/supabase';
 
 const ManageAccess: React.FC = () => {
     const { admins, clubMembers, deleteAdmin } = useGlobalState();
@@ -27,15 +28,18 @@ const ManageAccess: React.FC = () => {
 
         setIsSubmitting(true);
         try {
-            const api = (await import('../../services/api')).default;
-            const res = await api.patch(`/admin/users/${targetUser.id}/role`, { role: roleMap[newAdmin.role] });
-            if (res.data.success) {
-                alert("Permissions granted successfully! Refresh to see changes immediately.");
-                setNewAdmin({ name: '', email: '', role: 'Moderator' });
-            }
-        } catch (err) {
+            const { error } = await supabase
+                .from('profiles')
+                .update({ role: roleMap[newAdmin.role] })
+                .eq('id', targetUser.id);
+
+            if (error) throw error;
+
+            alert("Permissions granted successfully! Refresh to see changes immediately.");
+            setNewAdmin({ name: '', email: '', role: 'Moderator' });
+        } catch (err: any) {
             console.error("Failed to upgrade user:", err);
-            alert("Failed to grant permissions.");
+            alert("Failed to grant permissions: " + err.message);
         } finally {
             setIsSubmitting(false);
         }

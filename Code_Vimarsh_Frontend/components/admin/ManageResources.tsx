@@ -236,7 +236,7 @@ const ManageResources: React.FC = () => {
                                         </thead>
                                         <tbody className="divide-y divide-surfaceLight/30">
                                             {filteredLinks.map(link => (
-                                                <tr key={link.id} className="hover:bg-surfaceLight/10 transition-colors group">
+                                                <tr key={link.id} className={`hover:bg-surfaceLight/10 transition-colors group ${editingLink === link.id ? 'bg-primary/5 text-primary border-l-2 border-primary' : ''}`}>
                                                     <td className="px-6 py-4">
                                                         <div className="flex flex-col">
                                                             <p className="font-bold text-white group-hover:text-primary transition-colors">{link.title}</p>

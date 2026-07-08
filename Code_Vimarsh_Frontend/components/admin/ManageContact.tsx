@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, CheckCircle, Trash2, Clock, AlertCircle } from 'lucide-react';
-import api from '../../services/api';
+import { supabase } from '../../services/supabase';
 
 interface ContactMessage {
   id: string;
@@ -24,12 +24,17 @@ const ManageContact: React.FC = () => {
 
   const fetchMessages = async () => {
     try {
-      const res = await api.get('/contact');
-      if (res.data.success) {
-        setMessages(res.data.data);
+      const { data, error: fetchError } = await supabase
+        .from('contact_messages')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (fetchError) throw fetchError;
+      if (data) {
+        setMessages(data as any);
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch messages');
+      setError(err.message || 'Failed to fetch messages');
     } finally {
       setLoading(false);
     }
@@ -38,12 +43,15 @@ const ManageContact: React.FC = () => {
   const toggleStatus = async (id: string, currentStatus: string) => {
     const newStatus = currentStatus === 'Open' ? 'Resolved' : 'Open';
     try {
-      const res = await api.patch(`/contact/${id}/status`, { status: newStatus });
-      if (res.data.success) {
-        setMessages(messages.map(m => m.id === id ? { ...m, status: newStatus as any } : m));
-      }
+      const { error: updateError } = await supabase
+        .from('contact_messages')
+        .update({ status: newStatus })
+        .eq('id', id);
+
+      if (updateError) throw updateError;
+      setMessages(messages.map(m => m.id === id ? { ...m, status: newStatus as any } : m));
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to update status');
+      alert(err.message || 'Failed to update status');
     }
   };
 
@@ -51,12 +59,15 @@ const ManageContact: React.FC = () => {
     if (!window.confirm("Are you sure you want to permanently delete this message?")) return;
     setDeletingId(id);
     try {
-      const res = await api.delete(`/contact/${id}`);
-      if (res.data.success) {
-        setMessages(messages.filter(m => m.id !== id));
-      }
+      const { error: deleteError } = await supabase
+        .from('contact_messages')
+        .delete()
+        .eq('id', id);
+
+      if (deleteError) throw deleteError;
+      setMessages(messages.filter(m => m.id !== id));
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to delete message');
+      alert(err.message || 'Failed to delete message');
     } finally {
       setDeletingId(null);
     }

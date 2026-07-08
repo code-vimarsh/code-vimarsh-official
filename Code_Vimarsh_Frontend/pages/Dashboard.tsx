@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Github, Linkedin, Terminal, Edit3, Save, X, MapPin, Mail, Briefcase, ChevronRight, Download, Loader2, Shield, LogOut } from 'lucide-react';
 import { useGlobalState } from '../context/GlobalContext';
 import { Toast, useToast } from '../components/Projects';
-import api from '../services/api';
+import { supabase } from '../services/supabase';
 import { downloadBoardingPass } from '../utils/downloadBoardingPass';
 
 const Dashboard: React.FC = () => {
@@ -59,13 +59,30 @@ const Dashboard: React.FC = () => {
   const handleSaveProfile = async () => {
     try {
       if (!currentUser) return;
-      const res = await api.put(`/users/${currentUser.id}`, socialLinks);
-      if (res.data.success) {
-        setCurrentUser(res.data.user);
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({
+          github_url: socialLinks.github_url,
+          linkedin_url: socialLinks.linkedin_url,
+          leetcode_url: socialLinks.leetcode_url,
+        })
+        .eq('id', currentUser.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setCurrentUser({
+          ...currentUser,
+          github_url: data.github_url,
+          linkedin_url: data.linkedin_url,
+          leetcode_url: data.leetcode_url,
+        });
         setIsEditing(false);
         showToast("Profile updated successfully!", "success");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating profile:", error);
       showToast("Failed to update profile", "error");
     }

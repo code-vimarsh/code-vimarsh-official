@@ -1,7 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import api from '../services/api';
 import { supabase } from '../services/supabase';
 
 import { AuthCard } from '../components/Auth';
@@ -277,7 +276,7 @@ const SignUp: React.FC = () => {
             {successMessage}
           </div>
         )}
-        <StepDots step={step === 3 ? 3 : step} />
+        <StepDots step={step} />
 
         <div className="overflow-hidden">
           <AnimatePresence mode="wait" custom={direction}>

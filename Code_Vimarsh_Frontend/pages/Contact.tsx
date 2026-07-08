@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Mail, MapPin, Send, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { EmbersBackground } from '../components/Achievements/GlowDots';
-import api from '../services/api';
+import { supabase } from '../services/supabase';
 
 const inputBase =
   'w-full px-3.5 py-2.5 bg-bgDark border border-surfaceLight rounded-lg text-white text-sm placeholder-textMuted ' +
@@ -81,24 +81,34 @@ const Contact: React.FC = () => {
     
     try {
       const payload = {
-        name: formData.get('user_name'),
-        email: formData.get('user_email'),
-        subject: formData.get('subject'),
-        message: formData.get('message'),
+        name: formData.get('user_name') as string,
+        email: formData.get('user_email') as string,
+        subject: formData.get('subject') as string,
+        message: formData.get('message') as string,
       };
       
-      const response = await api.post('/contact', payload);
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id || null;
+
+      const { error } = await supabase
+        .from('contact_messages')
+        .insert([{
+          name: payload.name,
+          email: payload.email,
+          subject: payload.subject,
+          message: payload.message,
+          user_id: userId,
+          status: 'Open'
+        }]);
       
-      if (response.data.success) {
-        setStatus('success');
-        form.reset();
-        setTimeout(() => setStatus('idle'), 5000);
-      } else {
-        throw new Error(response.data.message || 'Unexpected response');
-      }
+      if (error) throw error;
+
+      setStatus('success');
+      form.reset();
+      setTimeout(() => setStatus('idle'), 5000);
     } catch (err: any) {
       setStatus('error');
-      setErrMsg(err.response?.data?.message || err.message || 'Something went wrong. Try again.');
+      setErrMsg(err.message || 'Something went wrong. Try again.');
       setTimeout(() => { setStatus('idle'); setErrMsg(''); }, 5000);
     }
   };

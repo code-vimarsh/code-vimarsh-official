@@ -78,7 +78,7 @@ const ManageTeamMembers: React.FC = () => {
             <div className="grid lg:grid-cols-12 gap-10">
                 {/* Recruitment Form */}
                 <div className="lg:col-span-5 xl:col-span-4">
-                    <div className="sticky top-10 bg-surface border border-surfaceLight p-8 rounded-3xl relative overflow-hidden group shadow-2xl shadow-black/40">
+                    <div className="lg:sticky lg:top-10 bg-surface border border-surfaceLight p-6 sm:p-8 rounded-3xl relative group shadow-2xl shadow-black/40">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-[60px] -mr-16 -mt-16 transition-all group-hover:bg-primary/10"></div>
 
                         <div className="flex justify-between items-center mb-8 relative z-10">
@@ -110,15 +110,14 @@ const ManageTeamMembers: React.FC = () => {
                                 <input required value={newTeamMember.role} onChange={e => setNewTeamMember({ ...newTeamMember, role: e.target.value })} className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-3.5 text-sm focus:border-primary focus:outline-none transition-all" placeholder="e.g. Lead System Architect" />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest px-1">Full Name</label>
-                                    <input required value={newTeamMember.name} onChange={e => setNewTeamMember({ ...newTeamMember, name: e.target.value })} className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-3.5 text-sm focus:border-primary focus:outline-none" placeholder="Aryan Buha" />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest px-1">Institutional Email</label>
-                                    <input required type="email" value={newTeamMember.email} onChange={e => setNewTeamMember({ ...newTeamMember, email: e.target.value })} className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-3.5 text-sm focus:border-primary focus:outline-none" placeholder="name@domain.com" />
-                                </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest px-1">Full Name</label>
+                                <input required value={newTeamMember.name} onChange={e => setNewTeamMember({ ...newTeamMember, name: e.target.value })} className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-3.5 text-sm focus:border-primary focus:outline-none transition-all" placeholder="Aryan Buha" />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest px-1">Institutional Email</label>
+                                <input required type="email" value={newTeamMember.email} onChange={e => setNewTeamMember({ ...newTeamMember, email: e.target.value })} className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-3.5 text-sm focus:border-primary focus:outline-none transition-all" placeholder="name@domain.com" />
                             </div>
 
                             <div className="space-y-1.5">
@@ -150,15 +149,14 @@ const ManageTeamMembers: React.FC = () => {
                                 )}
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest px-1 flex items-center gap-1.5"><Linkedin size={10} className="text-blue-400" /> LinkedIn</label>
-                                    <input value={newTeamMember.linkedin} onChange={e => setNewTeamMember({ ...newTeamMember, linkedin: e.target.value })} className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-3 text-xs focus:border-blue-400 focus:outline-none transition-all" placeholder="linkedin.com/in/..." />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest px-1 flex items-center gap-1.5"><Github size={10} className="text-white" /> GitHub</label>
-                                    <input value={newTeamMember.github} onChange={e => setNewTeamMember({ ...newTeamMember, github: e.target.value })} className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-3 text-xs focus:border-white focus:outline-none transition-all" placeholder="github.com/..." />
-                                </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest px-1 flex items-center gap-1.5"><Linkedin size={10} className="text-blue-400" /> LinkedIn</label>
+                                <input value={newTeamMember.linkedin} onChange={e => setNewTeamMember({ ...newTeamMember, linkedin: e.target.value })} className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-3 text-xs focus:border-blue-400 focus:outline-none transition-all" placeholder="linkedin.com/in/..." />
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-textMuted uppercase tracking-widest px-1 flex items-center gap-1.5"><Github size={10} className="text-white" /> GitHub</label>
+                                <input value={newTeamMember.github} onChange={e => setNewTeamMember({ ...newTeamMember, github: e.target.value })} className="w-full bg-bgDark border border-surfaceLight rounded-xl px-4 py-3 text-xs focus:border-white focus:outline-none transition-all" placeholder="github.com/..." />
                             </div>
 
                             <button type="submit" className={`w-full ${editingTeamMember ? 'bg-white text-black' : 'bg-primary text-black'} font-black py-4 rounded-2xl transition-all shadow-xl shadow-primary/20 hover:shadow-primary/40 text-[11px] uppercase tracking-[0.2em] transform active:scale-95`}>
