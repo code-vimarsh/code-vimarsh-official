@@ -103,9 +103,9 @@ const LiveHeroBanner: React.FC<{ event: Event }> = ({ event }) => {
 
             {event.capacity !== undefined && event.registeredCount !== undefined && (() => {
               const spotsLeft = event.capacity! - event.registeredCount!;
-              return spotsLeft > 0
-                ? <p className="text-center text-[11px] text-amber-400/80 font-medium">{spotsLeft} spot{spotsLeft !== 1 ? 's' : ''} remaining</p>
-                : <p className="text-center text-[11px] text-red-400/80 font-medium">Event is full — join the waitlist</p>;
+              return spotsLeft <= 0
+                ? <p className="text-center text-[11px] text-red-400/80 font-medium">Event is full — join the waitlist</p>
+                : null;
             })()}
           </div>
 

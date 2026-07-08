@@ -77,11 +77,6 @@ const EventRegistrationButton: React.FC<EventRegistrationButtonProps> = ({
           Register Now
         </motion.a>
 
-        {spotsLeft !== null && spotsLeft > 0 && (
-          <p className="text-center text-xs text-amber-400/80 font-medium">
-            {spotsLeft} spot{spotsLeft !== 1 ? 's' : ''} remaining — register fast
-          </p>
-        )}
         {spotsLeft === 0 && (
           <p className="text-center text-xs text-red-400/80 font-medium">
             Event is at capacity

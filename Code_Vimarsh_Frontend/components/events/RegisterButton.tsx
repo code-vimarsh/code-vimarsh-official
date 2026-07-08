@@ -65,11 +65,6 @@ const RegisterButton: React.FC<RegisterButtonProps> = ({
         Register Now
       </motion.a>
 
-      {spotsLeft !== null && spotsLeft > 0 && (
-        <p className="text-center text-[11px] text-amber-400/80 font-medium">
-          {spotsLeft} spot{spotsLeft !== 1 ? 's' : ''} remaining
-        </p>
-      )}
       {spotsLeft === 0 && (
         <p className="text-center text-[11px] text-red-400/80 font-medium">
           Event is full — join the waitlist
