@@ -148,6 +148,8 @@ export interface VideoResource {
   thumbnail: string;
   category?: string;
   tags?: string[];
+  bestFor?: string;
+  type?: string;
 }
 
 export interface LinkResource {
@@ -158,6 +160,7 @@ export interface LinkResource {
   tags?: string[];
   bestFor?: string;
   contentType?: string;
+  type?: string;
 }
 
 export interface Resource {
@@ -220,6 +223,8 @@ export interface Alum {
   name: string; 
   initials: string; 
   photo?: string;
+  email?: string;
+  graduation_year?: number;
   role: string; 
   company: string; 
   batch: string; 

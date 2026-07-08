@@ -1,13 +1,14 @@
 import React, { useState, useRef } from 'react';
 import { useGlobalState } from '../../context/GlobalContext';
-import { Plus, Trash2, Upload, X, Search, Filter, ExternalLink, Github, Code2, Layers, User } from 'lucide-react';
+import { Plus, Trash2, Upload, X, Search, Filter, ExternalLink, Github, Code2, Layers, User, Pencil, Save } from 'lucide-react';
 
 const ManageProjects: React.FC = () => {
-    const { projects, addProject, deleteProject } = useGlobalState();
+    const { projects, addProject, updateProject, deleteProject } = useGlobalState();
 
     // Local State
     const [searchQuery, setSearchQuery] = useState('');
     const [filterCategory, setFilterCategory] = useState('All');
+    const [editingId, setEditingId] = useState<string | null>(null);
 
     const [newProject, setNewProject] = useState({
         title: '', author: '', tech: '', github: '',
@@ -27,19 +28,54 @@ const ManageProjects: React.FC = () => {
     const handleAddProject = (e: React.FormEvent) => {
         e.preventDefault();
         if (!newProject.title || !newProject.image) return;
-        addProject({
-            id: Date.now().toString(),
-            title: newProject.title,
-            author: newProject.author,
-            description: newProject.description,
-            category: newProject.category,
-            tech: newProject.tech.split(',').map(t => t.trim()),
-            image: newProject.image,
-            links: { github: newProject.github }
-        });
+
+        if (editingId) {
+            updateProject({
+                id: editingId,
+                title: newProject.title,
+                author: newProject.author,
+                description: newProject.description,
+                category: newProject.category,
+                tech: newProject.tech.split(',').map(t => t.trim()),
+                image: newProject.image,
+                links: { github: newProject.github }
+            });
+            setEditingId(null);
+        } else {
+            addProject({
+                id: Date.now().toString(),
+                title: newProject.title,
+                author: newProject.author,
+                description: newProject.description,
+                category: newProject.category,
+                tech: newProject.tech.split(',').map(t => t.trim()),
+                image: newProject.image,
+                links: { github: newProject.github }
+            });
+        }
+
         setNewProject({ title: '', author: '', tech: '', github: '', description: '', category: 'Web', image: '' });
         setProjectImgMode('url');
-        // TODO: Add toast notification
+    };
+
+    const startEdit = (proj: any) => {
+        setEditingId(proj.id);
+        setNewProject({
+            title: proj.title,
+            author: proj.author,
+            tech: proj.tech.join(', '),
+            github: proj.links?.github || '',
+            description: proj.description,
+            category: proj.category,
+            image: proj.image || ''
+        });
+        setProjectImgMode('url');
+    };
+
+    const cancelEdit = () => {
+        setEditingId(null);
+        setNewProject({ title: '', author: '', tech: '', github: '', description: '', category: 'Web', image: '' });
+        setProjectImgMode('url');
     };
 
     const filteredProjects = projects.filter(p => {
@@ -69,10 +105,17 @@ const ManageProjects: React.FC = () => {
                     <div className="sticky top-10 bg-surface border border-surfaceLight p-8 rounded-3xl relative overflow-hidden group">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-primary/10 transition-colors"></div>
 
-                        <h3 className="font-bold text-xl mb-8 flex items-center text-white relative z-10">
-                            <Plus size={22} className="mr-3 text-primary" />
-                            Ship New Project
-                        </h3>
+                        <div className="flex justify-between items-center mb-8 relative z-10">
+                            <h3 className="font-bold text-xl flex items-center text-white">
+                                {editingId ? <Pencil size={22} className="mr-3 text-primary" /> : <Plus size={22} className="mr-3 text-primary" />}
+                                {editingId ? 'Edit Project' : 'Ship New Project'}
+                            </h3>
+                            {editingId && (
+                                <button type="button" onClick={cancelEdit} className="text-[10px] font-black uppercase tracking-widest text-textMuted hover:text-red-400 flex items-center gap-1 transition-colors">
+                                    <X size={12} /> Abandon
+                                </button>
+                            )}
+                        </div>
 
                         <form onSubmit={handleAddProject} className="space-y-6 relative z-10">
                             <div className="space-y-1.5">
@@ -151,8 +194,9 @@ const ManageProjects: React.FC = () => {
                                 </div>
                             </div>
 
-                            <button type="submit" disabled={!newProject.image || !newProject.title} className="w-full bg-primary hover:bg-secondary disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed text-black font-black py-4 rounded-2xl transition-all shadow-xl shadow-primary/20 hover:shadow-primary/40 text-sm uppercase tracking-widest transform active:scale-95">
-                                Add Project to Hall of Fame
+                            <button type="submit" disabled={!newProject.image || !newProject.title} className="w-full bg-primary hover:bg-secondary disabled:opacity-30 disabled:grayscale disabled:cursor-not-allowed text-black font-black py-4 rounded-2xl transition-all shadow-xl shadow-primary/20 hover:shadow-primary/40 text-sm uppercase tracking-widest transform active:scale-95 flex items-center justify-center gap-2">
+                                {editingId ? <Save size={16} /> : null}
+                                {editingId ? 'Save Changes' : 'Add Project to Hall of Fame'}
                             </button>
                         </form>
                     </div>
@@ -189,7 +233,7 @@ const ManageProjects: React.FC = () => {
                             </div>
                         ) : (
                             filteredProjects.map((proj, idx) => (
-                                <div key={proj.id} className="bg-surface border border-surfaceLight hover:border-primary/40 p-5 rounded-3xl flex flex-col sm:flex-row items-center gap-6 transition-all duration-300 group hover:shadow-xl hover:shadow-black/40">
+                                <div key={proj.id} className={`bg-surface border ${editingId === proj.id ? 'border-primary shadow-xl shadow-primary/10' : 'border-surfaceLight'} hover:border-primary/40 p-5 rounded-3xl flex flex-col sm:flex-row items-center gap-6 transition-all duration-300 group hover:shadow-xl hover:shadow-black/40`}>
                                     {/* Thumbnail */}
                                     <div className="w-full sm:w-48 h-28 rounded-2xl overflow-hidden border border-surfaceLight shrink-0 relative group-hover:border-primary/20 transition-colors">
                                         <img src={proj.image} alt={proj.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
@@ -212,6 +256,9 @@ const ManageProjects: React.FC = () => {
                                                 <Github size={18} />
                                             </a>
                                         )}
+                                        <button onClick={() => startEdit(proj)} className="p-3 bg-bgDark border border-surfaceLight text-textMuted hover:text-white hover:bg-surfaceLight transition-all rounded-2xl" title="Edit Project">
+                                            <Pencil size={18} />
+                                        </button>
                                         <button onClick={() => deleteProject(proj.id)} className="p-3 bg-bgDark border border-red-500/20 text-textMuted hover:text-white hover:bg-red-500/80 transition-all rounded-2xl" title="Delete Project">
                                             <Trash2 size={18} />
                                         </button>
