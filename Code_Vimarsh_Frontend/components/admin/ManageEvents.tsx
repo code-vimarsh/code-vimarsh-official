@@ -706,20 +706,27 @@ const ScannerModal: React.FC<ScannerModalProps> = ({ eventId, eventTitle, formFi
 
   const playBeep = (isSuccess: boolean) => {
     try {
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
+      if (isSuccess) {
+        const audio = new Audio('/assets/freesound_community-store-scanner-beep-90395.mp3');
+        audio.volume = 0.4;
+        audio.play().catch(e => console.error('Audio play failed:', e));
+      } else {
+        // Synth warning buzzer for error/invalid/duplicate scans
+        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
 
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(isSuccess ? 880 : 330, audioCtx.currentTime); // High beep for success, low beep for error/already registered
-      gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
 
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
 
-      osc.start();
-      osc.stop(audioCtx.currentTime + 0.15);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.35);
+      }
     } catch (err) {
       console.error('AudioContext beep failed:', err);
     }
