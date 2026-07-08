@@ -187,6 +187,7 @@ create table if not exists public.resources (
   best_for text, -- Frontend maps to bestFor
   thumbnail_url text, -- Frontend maps to thumbnail
   thumbnail_public_id text,
+  tags text[] default '{}', -- Added: Resource tags list
   created_by uuid references public.profiles(id) on delete set null,
   created_at timestamptz not null default now()
 );
@@ -231,18 +232,21 @@ create policy "Public read access for alumni" on public.alumni for select using 
 create policy "Public read access for published blogs" on public.blogs for select using (status = 'Published');
 create policy "Public read access for achievements" on public.achievements for select using (true);
 create policy "Public read access for resources" on public.resources for select using (true);
+create policy "Public read access for profiles" on public.profiles for select using (true);
 
--- Authenticated users can create event registrations
-create policy "Authenticated users can create registrations" on public.event_registrations for insert with check (auth.uid() is not null);
+-- Event registrations policies
+create policy "Public can create registrations" on public.event_registrations for insert with check (true);
+create policy "Users can view own registrations" on public.event_registrations for select using (user_id in (select id from public.profiles where user_id = auth.uid()));
+create policy "Admins can manage registrations" on public.event_registrations for all using (exists (select 1 from public.profiles where user_id = auth.uid() and role in ('CONTENT_ADMIN', 'SUPER_ADMIN')));
 
--- Admin write access policies (to be implemented with Supabase Auth)
-create policy "Admin write access for events" on public.events for all using (auth.uid() is not null);
-create policy "Admin write access for projects" on public.projects for all using (auth.uid() is not null);
-create policy "Admin write access for team" on public.team_members for all using (auth.uid() is not null);
-create policy "Admin write access for alumni" on public.alumni for all using (auth.uid() is not null);
-create policy "Admin write access for blogs" on public.blogs for all using (auth.uid() is not null);
-create policy "Admin write access for achievements" on public.achievements for all using (auth.uid() is not null);
-create policy "Admin write access for resources" on public.resources for all using (auth.uid() is not null);
+-- Admin write access policies (to be implemented with Supabase Auth role mappings)
+create policy "Admin write access for events" on public.events for all using (exists (select 1 from public.profiles where user_id = auth.uid() and role in ('CONTENT_ADMIN', 'SUPER_ADMIN')));
+create policy "Admin write access for projects" on public.projects for all using (exists (select 1 from public.profiles where user_id = auth.uid() and role in ('CONTENT_ADMIN', 'SUPER_ADMIN')));
+create policy "Admin write access for team" on public.team_members for all using (exists (select 1 from public.profiles where user_id = auth.uid() and role in ('CONTENT_ADMIN', 'SUPER_ADMIN')));
+create policy "Admin write access for alumni" on public.alumni for all using (exists (select 1 from public.profiles where user_id = auth.uid() and role in ('CONTENT_ADMIN', 'SUPER_ADMIN')));
+create policy "Admin write access for blogs" on public.blogs for all using (exists (select 1 from public.profiles where user_id = auth.uid() and role in ('CONTENT_ADMIN', 'SUPER_ADMIN')));
+create policy "Admin write access for achievements" on public.achievements for all using (exists (select 1 from public.profiles where user_id = auth.uid() and role in ('CONTENT_ADMIN', 'SUPER_ADMIN')));
+create policy "Admin write access for resources" on public.resources for all using (exists (select 1 from public.profiles where user_id = auth.uid() and role in ('CONTENT_ADMIN', 'SUPER_ADMIN')));
 
 -- Users can update their own profile
 create policy "Users can update own profile" on public.profiles for update using (auth.uid() = user_id);
@@ -251,4 +255,26 @@ create policy "Users can update own profile" on public.profiles for update using
 create policy "Public can create contact" on public.contacts for insert with check (true);
 
 -- Admin can view contact messages
-create policy "Admin can view contacts" on public.contacts for select using (auth.uid() is not null);
+create policy "Admin can view contacts" on public.contacts for select using (exists (select 1 from public.profiles where user_id = auth.uid() and role in ('CONTENT_ADMIN', 'SUPER_ADMIN')));
+
+-- Trigger to automatically create a profile for new auth.users upon signup
+create or replace function public.handle_new_user()
+returns trigger as $$
+begin
+  insert into public.profiles (user_id, email, full_name, prn, role, xp, level)
+  values (
+    new.id,
+    new.email,
+    coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', ''),
+    new.raw_user_meta_data->>'prn',
+    'USER',
+    0,
+    1
+  );
+  return new;
+end;
+$$ language plpgsql security definer;
+
+create or replace trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();

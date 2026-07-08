@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import api from '../services/api';
+import { supabase } from '../services/supabase';
 
 import { AuthCard } from '../components/Auth';
 import {
@@ -9,6 +10,7 @@ import {
   Step1Identity,
   Step2Password,
   SuccessScreen,
+  Step3OTP,
 } from '../components/SignUp';
 import type { SignUpFormData, SignUpErrors } from '../components/Auth/types';
 import { validateSignUp, validateField } from '../utils/authValidation';
@@ -20,13 +22,15 @@ const INITIAL_FORM: SignUpFormData = {
 const SignUp: React.FC = () => {
   const navigate = useNavigate();
 
-  const [form, setForm]           = useState<SignUpFormData>(INITIAL_FORM);
-  const [errors, setErrors]       = useState<SignUpErrors>({});
-  const [touched, setTouched]     = useState<Partial<Record<keyof SignUpFormData, boolean>>>({});
-  const [step, setStep]           = useState<1 | 2>(1);
-  const [direction, setDirection] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [form, setForm]                 = useState<SignUpFormData>(INITIAL_FORM);
+  const [errors, setErrors]             = useState<SignUpErrors>({});
+  const [touched, setTouched]           = useState<Partial<Record<keyof SignUpFormData, boolean>>>({});
+  const [step, setStep]                 = useState<1 | 2 | 3>(1);
+  const [direction, setDirection]       = useState(1);
+  const [isLoading, setIsLoading]       = useState(false);
+  const [authError, setAuthError]       = useState('');
+  const [submitted, setSubmitted]       = useState(false);
+  const [otpLoading, setOtpLoading]     = useState(false);
 
   const passwordMatch =
     form.confirmPassword.length > 0 ? form.password === form.confirmPassword : null;
@@ -35,6 +39,7 @@ const SignUp: React.FC = () => {
     (field: keyof SignUpFormData) => (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = e.target.value;
       setForm((prev) => ({ ...prev, [field]: value }));
+      setAuthError('');
       if (touched[field]) {
         const err = validateField(field, value, { ...form, [field]: value });
         setErrors((prev) => ({ ...prev, [field]: err }));
@@ -59,6 +64,7 @@ const SignUp: React.FC = () => {
   );
 
   const handleContinue = () => {
+    setAuthError('');
     setTouched({ prn: true, fullName: true, email: true });
     const errs = validateSignUp(form);
     const step1Errors: SignUpErrors = {};
@@ -72,6 +78,7 @@ const SignUp: React.FC = () => {
   };
 
   const handleBack = () => {
+    setAuthError('');
     setDirection(-1);
     setStep(1);
   };
@@ -85,26 +92,129 @@ const SignUp: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const payload = {
-        prn: form.prn,
-        name: form.fullName, // map frontend fullName to backend name
+      // 1. Check if a profile with the same PRN or Email already exists
+      const { data: existingProfiles, error: checkErr } = await supabase
+        .from('profiles')
+        .select('prn, email')
+        .or(`prn.eq.${form.prn},email.eq.${form.email}`);
+
+      if (checkErr) {
+        console.warn('Pre-signup existence check skipped:', checkErr);
+      }
+
+      if (existingProfiles && existingProfiles.length > 0) {
+        const hasPrn = existingProfiles.some(p => p.prn === form.prn);
+        const hasEmail = existingProfiles.some(p => p.email === form.email);
+        if (hasPrn && hasEmail) {
+          throw new Error('An account with this PRN and Email already exists. Please sign in instead.');
+        } else if (hasPrn) {
+          throw new Error('An account with this PRN already exists. Please check your PRN or sign in.');
+        } else {
+          throw new Error('An account with this Email already exists. Please check your Email or sign in.');
+        }
+      }
+
+      // 2. Trigger Supabase Sign Up which auto-sends verification OTP email via your configured SMTP server
+      const { error } = await supabase.auth.signUp({
         email: form.email,
         password: form.password,
-      };
-      
-      const response = await api.post('/auth/register', payload);
-      
-      if (response.data.success) {
-        setIsLoading(false);
-        setSubmitted(true);
-        setTimeout(() => navigate('/signin'), 1700);
-      } else {
-        throw new Error(response.data.message || 'Registration failed');
-      }
-    } catch (err: any) {
+        options: {
+          data: {
+            full_name: form.fullName,
+            prn: form.prn,
+          }
+        }
+      });
+
+      if (error) throw error;
+
       setIsLoading(false);
-      // Basic error handling - could map backend errors back to the form state
-      alert(err.response?.data?.message || err.message || 'Failed to register. Please try again.');
+      setDirection(1);
+      setStep(3);
+    } catch (err: any) {
+      console.error('Supabase Sign Up failed:', err);
+      setIsLoading(false);
+      
+      let errMsg = 'Failed to initialize signup. Please check your network and try again.';
+      if (err) {
+        if (typeof err === 'string') {
+          errMsg = err;
+        } else if (err.message) {
+          errMsg = typeof err.message === 'object' ? JSON.stringify(err.message) : err.message;
+        } else {
+          errMsg = JSON.stringify(err);
+        }
+      }
+      setAuthError(errMsg);
+    }
+  };
+
+  const handleVerifyOtp = async (enteredOtp: string) => {
+    setOtpLoading(true);
+    try {
+      // Verify OTP against Supabase Auth using type: 'signup' (or type: 'email')
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: form.email,
+        token: enteredOtp,
+        type: 'signup'
+      });
+
+      if (error) throw error;
+
+      // Mark the profile as verified in the database profiles table
+      if (data.user) {
+        const { error: profileErr } = await supabase
+          .from('profiles')
+          .update({ is_verified: true })
+          .eq('user_id', data.user.id);
+        if (profileErr) {
+          console.warn('Profile verification update failed:', profileErr);
+        }
+      }
+
+      setOtpLoading(false);
+      setSubmitted(true);
+      setTimeout(() => navigate('/signin'), 1700);
+    } catch (err: any) {
+      console.error('Supabase OTP verification failed:', err);
+      setOtpLoading(false);
+      
+      let errMsg = 'Failed to verify code. Please try again.';
+      if (err) {
+        if (typeof err === 'string') {
+          errMsg = err;
+        } else if (err.message) {
+          errMsg = typeof err.message === 'object' ? JSON.stringify(err.message) : err.message;
+        } else {
+          errMsg = JSON.stringify(err);
+        }
+      }
+      setAuthError(errMsg);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: form.email
+      });
+      if (error) throw error;
+      alert('A new verification code has been sent to your email.');
+    } catch (err: any) {
+      console.error('Supabase OTP resend failed:', err);
+      
+      let errMsg = 'Failed to resend verification code.';
+      if (err) {
+        if (typeof err === 'string') {
+          errMsg = err;
+        } else if (err.message) {
+          errMsg = typeof err.message === 'object' ? JSON.stringify(err.message) : err.message;
+        } else {
+          errMsg = JSON.stringify(err);
+        }
+      }
+      setAuthError(errMsg);
     }
   };
 
@@ -112,14 +222,24 @@ const SignUp: React.FC = () => {
 
   return (
     <AuthCard
-      title={step === 1 ? 'Create your account' : 'Secure your account'}
+      title={step === 1 ? 'Create your account' : step === 2 ? 'Secure your account' : 'Verify your email'}
       subtitle={step === 1
         ? 'Join the Code Vimarsh developer community'
-        : 'Set a strong password to protect your account'
+        : step === 2
+        ? 'Set a strong password to protect your account'
+        : 'Enter the OTP code sent to your email'
       }
     >
       <form onSubmit={handleSubmit} noValidate>
-        <StepDots step={step} />
+        {authError && (
+          <div
+            className="rounded-xl border border-red-500/30 bg-red-500/5 px-4 py-3 mb-4 text-sm text-red-400"
+            role="alert"
+          >
+            {authError}
+          </div>
+        )}
+        <StepDots step={step === 3 ? 3 : step} />
 
         <div className="overflow-hidden">
           <AnimatePresence mode="wait" custom={direction}>
@@ -143,6 +263,15 @@ const SignUp: React.FC = () => {
                 handleChange={handleChange}
                 handleBlur={handleBlur}
                 onBack={handleBack}
+              />
+            )}
+            {step === 3 && (
+              <Step3OTP
+                email={form.email}
+                isLoading={otpLoading}
+                onVerify={handleVerifyOtp}
+                onResend={handleResendOtp}
+                direction={direction}
               />
             )}
           </AnimatePresence>

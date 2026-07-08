@@ -81,6 +81,7 @@ const EventNotFound: React.FC<{ id?: string }> = ({ id }) => {
  * To integrate backend: swap the useEffect body with a fetch/useQuery call.
  */
 const EventDetails: React.FC = () => {
+  const { events } = useGlobalState();
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
   const [event, setEvent] = useState<Event | null | undefined>(undefined);
@@ -119,6 +120,35 @@ const EventDetails: React.FC = () => {
       return;
     }
 
+    const getLocalFallback = () => {
+      const localEv = events.find((e: any) => e.id === id);
+      if (localEv) {
+        return {
+          id: localEv.id,
+          title: localEv.title,
+          description: localEv.description || '',
+          fullDescription: localEv.long_description || localEv.description || '',
+          date: localEv.status === 'Live' || localEv.status === 'live' ? 'live' : (localEv.date || ''),
+          displayDate: localEv.status === 'Live' || localEv.status === 'live'
+            ? 'Happening Now'
+            : localEv.date 
+              ? new Date(localEv.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+              : 'TBA',
+          time: '',
+          location: localEv.location || 'TBA',
+          venue: localEv.location || '',
+          status: (localEv.status?.toLowerCase() || 'upcoming') as any,
+          image: localEv.image || '',
+          images: localEv.images || [],
+          tags: localEv.tags || [],
+          speakers: (localEv as any).speakers || [],
+          capacity: (localEv as any).capacity || 0,
+          registeredCount: 0,
+        };
+      }
+      return null;
+    };
+
     // Fetch event by ID from backend
     api.get(`/events/${id}`)
       .then(res => {
@@ -144,16 +174,16 @@ const EventDetails: React.FC = () => {
           };
           setEvent(mapped);
         } else {
-          setEvent(null);
+          setEvent(getLocalFallback());
         }
         setLoading(false);
       })
       .catch(err => {
         console.error('[EventDetails] Failed to fetch event:', err);
-        setEvent(null);
+        setEvent(getLocalFallback());
         setLoading(false);
       });
-  }, [id]);
+  }, [id, events]);
 
   const openRegistration = () => {
     setIsRegisterOpen(true);

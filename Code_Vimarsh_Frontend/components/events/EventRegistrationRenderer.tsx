@@ -6,13 +6,17 @@
  * Fetches the published EventForm config via getFormByEventId and renders it.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, Loader2 } from 'lucide-react';
+import { CheckCircle, Loader2, Download, Shield } from 'lucide-react';
 import type { EventForm, FieldValue } from '../../types/formBuilder';
 import { getFormByEventId, submitResponse } from '../../data/formSchemas';
 import { validateForm, buildInitialValues, isFieldVisible } from './ValidationEngine';
 import DynamicFieldRenderer from './DynamicFieldRenderer';
+import { useGlobalState } from '../../context/GlobalContext';
+import { supabase } from '../../services/supabase';
+import QRCode from 'qrcode';
+import html2canvas from 'html2canvas';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -29,6 +33,7 @@ const EventRegistrationRenderer: React.FC<EventRegistrationRendererProps> = ({
   eventId,
   eventTitle,
 }) => {
+  const { addParticipant } = useGlobalState();
   const [form, setForm] = useState<EventForm | null>(null);
   const [loading, setLoading] = useState(true);
   const [values, setValues] = useState<Record<string, FieldValue>>({});
@@ -36,6 +41,9 @@ const EventRegistrationRenderer: React.FC<EventRegistrationRendererProps> = ({
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [registeredParticipant, setRegisteredParticipant] = useState<any | null>(null);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  const ticketRef = useRef<HTMLDivElement>(null);
 
   // ── Load form config ───────────────────────────────────────────────────────
 
@@ -92,8 +100,74 @@ const EventRegistrationRenderer: React.FC<EventRegistrationRendererProps> = ({
 
     setSubmitting(true);
     try {
-      // Replace with: await fetch(`/api/forms/${form.id}/respond`, { method: 'POST', body: JSON.stringify({ values }) })
+      const nameField = form.fields.find(f => f.label.toLowerCase().includes('name') || f.type === 'short_text');
+      const emailField = form.fields.find(f => f.label.toLowerCase().includes('email') || f.type === 'email');
+      const nameVal = nameField ? (values[nameField.id] as string) : 'Participant';
+      const emailVal = emailField ? (values[emailField.id] as string) : '';
+
+      let newPart: any = null;
+
+      try {
+        const phoneField = form.fields.find(f => f.label.toLowerCase().includes('phone') || f.label.toLowerCase().includes('whatsapp') || f.label.toLowerCase().includes('contact'));
+        const phoneVal = phoneField ? (values[phoneField.id] as string) : '';
+
+        // Check if event ID is a valid UUID. Pre-seeded mock events (like evt-6) use mock IDs.
+        const isValidUUID = (uuidStr: string) => {
+          const regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+          return regex.test(uuidStr);
+        };
+
+        if (!isValidUUID(eventId)) {
+          throw new Error(`The event ID "${eventId}" is not a valid UUID format. Bypassing database insert and simulating locally.`);
+        }
+
+        // Query: Insert registration details into Supabase event_registrations
+        const { data, error } = await supabase
+          .from('event_registrations')
+          .insert([{
+            event_id: eventId,
+            full_name: nameVal,
+            email: emailVal,
+            phone: phoneVal,
+            custom_answers: values,
+            status: 'registered',
+          }])
+          .select()
+          .single();
+
+        if (error) {
+          throw error;
+        }
+
+        if (data) {
+          newPart = {
+            id: data.id,
+            name: data.full_name,
+            email: data.email,
+            eventId: data.event_id,
+            eventTitle: eventTitle || 'Event',
+            registeredAt: new Date(data.registered_at).toISOString().split('T')[0],
+            status: data.status as 'registered' | 'attended',
+            customAnswers: data.custom_answers || {},
+          };
+        }
+      } catch (dbErr) {
+        console.warn('Supabase registration bypassed/failed:', dbErr);
+        newPart = {
+          id: `reg_${Math.random().toString(36).substr(2, 9)}_${Date.now().toString(36)}`,
+          name: nameVal,
+          email: emailVal,
+          eventId: eventId,
+          eventTitle: eventTitle || 'Event',
+          registeredAt: new Date().toISOString().split('T')[0],
+          status: 'registered' as const,
+          customAnswers: values
+        };
+      }
+
       submitResponse({ formId: form.id, eventId, answers: values });
+      addParticipant(newPart);
+      setRegisteredParticipant(newPart);
       setSubmitted(true);
     } catch (err) {
       setSubmitError('Something went wrong. Please try again.');
@@ -137,32 +211,130 @@ const EventRegistrationRenderer: React.FC<EventRegistrationRendererProps> = ({
 
   // ── Success state ──────────────────────────────────────────────────────────
 
+  useEffect(() => {
+    if (submitted && registeredParticipant) {
+      QRCode.toDataURL(registeredParticipant.id, {
+        margin: 1,
+        width: 300,
+        color: {
+          dark: '#ffffff',
+          light: '#00000000'
+        }
+      })
+        .then(url => setQrCodeUrl(url))
+        .catch(err => console.error(err));
+    }
+  }, [submitted, registeredParticipant]);
+
+  const handleDownloadTicket = async () => {
+    if (!ticketRef.current) return;
+    try {
+      const canvas = await html2canvas(ticketRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#0a0a0a'
+      });
+      const link = document.createElement('a');
+      link.download = `CV_Ticket_${registeredParticipant.name.replace(/\s+/g, '_')}.png`;
+      link.href = canvas.toDataURL('image/png');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Failed to capture ticket:', err);
+    }
+  };
+
   if (submitted) {
     return (
       <motion.div
         key="success"
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="flex flex-col items-center justify-center gap-5 py-10 text-center"
+        className="flex flex-col items-center justify-center gap-6 py-6 text-center"
       >
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ type: 'spring', stiffness: 350, damping: 22, delay: 0.1 }}
-          className="w-16 h-16 rounded-full flex items-center justify-center"
-          style={{ background: 'rgba(34,197,94,0.10)', border: '1px solid rgba(34,197,94,0.25)' }}
+        <div
+          ref={ticketRef}
+          className="relative w-full max-w-sm rounded-[2rem] bg-gradient-to-b from-[#161616] to-[#0a0a0a] border border-white/10 p-8 shadow-2xl text-left overflow-hidden select-none"
         >
-          <CheckCircle size={32} className="text-green-400" />
-        </motion.div>
+          <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-primary via-orange-500 to-primary" />
+          <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+          
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <Shield className="text-primary" size={16} />
+              <span className="text-[10px] font-bold text-white uppercase tracking-[0.2em]">CODE VIMARSH NEXUS</span>
+            </div>
+            <span className="text-[9px] font-mono text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">
+              ENTRY PASS
+            </span>
+          </div>
 
-        <div className="space-y-1">
-          <p className="text-lg font-bold text-white">You're registered! 🎉</p>
-          {eventTitle && (
-            <p className="text-sm text-textMuted">
-              Successfully registered for <span className="text-white/70 font-medium">{eventTitle}</span>.
+          <div className="space-y-4 mb-6">
+            <div>
+              <span className="text-[9px] text-textMuted uppercase tracking-widest block mb-1">EVENT TITLE</span>
+              <h3 className="text-xl font-display font-black text-white leading-tight tracking-tight uppercase italic truncate">
+                {eventTitle || 'CONFERENCE'}
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <span className="text-[9px] text-textMuted uppercase tracking-widest block mb-1">CANDIDATE</span>
+                <p className="text-sm font-bold text-white truncate">{registeredParticipant?.name}</p>
+              </div>
+              <div>
+                <span className="text-[9px] text-textMuted uppercase tracking-widest block mb-1">TICKET ID</span>
+                <p className="text-xs font-mono text-primary font-bold truncate">#{registeredParticipant?.id.split('_')[1] || registeredParticipant?.id}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <span className="text-[9px] text-textMuted uppercase tracking-widest block mb-1">DATE</span>
+                <p className="text-xs text-white/80 font-semibold">{registeredParticipant?.registeredAt}</p>
+              </div>
+              <div>
+                <span className="text-[9px] text-textMuted uppercase tracking-widest block mb-1">STATUS</span>
+                <span className="text-[10px] font-bold text-green-400 bg-green-500/10 border border-green-500/20 px-2 py-0.5 rounded-full">
+                  CONFIRMED
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="relative my-6 flex items-center justify-between">
+            <div className="absolute left-0 -ml-10 w-4 h-8 bg-[#0a0a0a] rounded-r-full border-r border-y border-white/10" />
+            <div className="w-full border-t border-dashed border-white/10 mx-2" />
+            <div className="absolute right-0 -mr-10 w-4 h-8 bg-[#0a0a0a] rounded-l-full border-l border-y border-white/10" />
+          </div>
+
+          <div className="flex flex-col items-center justify-center p-6 bg-black/40 border border-white/5 rounded-2xl relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 via-transparent to-transparent pointer-events-none" />
+            
+            {qrCodeUrl ? (
+              <div className="relative p-2 bg-white rounded-xl shadow-xl shadow-primary/5">
+                <img src={qrCodeUrl} alt="QR Code Ticket" className="w-40 h-40 object-contain block" />
+              </div>
+            ) : (
+              <div className="w-40 h-40 flex items-center justify-center border border-dashed border-white/20 rounded-xl animate-pulse">
+                <Loader2 className="animate-spin text-primary" size={24} />
+              </div>
+            )}
+            
+            <p className="text-[9px] text-textMuted font-mono uppercase tracking-[0.15em] mt-4 text-center">
+              SCAN FOR ATTENDANCE CHECK-IN
             </p>
-          )}
-          <p className="text-xs text-textMuted mt-2">Check your email for confirmation details.</p>
+          </div>
+        </div>
+
+        <div className="flex gap-3">
+          <button
+            onClick={handleDownloadTicket}
+            className="flex items-center gap-2 px-6 py-3.5 rounded-xl text-xs font-bold text-black bg-primary hover:bg-secondary hover:shadow-[0_0_20px_rgba(255,106,0,0.4)] transition-all transform hover:-translate-y-0.5"
+          >
+            <Download size={14} /> Download Pass
+          </button>
         </div>
       </motion.div>
     );

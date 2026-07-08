@@ -21,16 +21,18 @@
  * No separate routes. No modals. No new pages.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Plus, Trash2, Pencil, ChevronDown, ChevronUp,
   X, Save, Check,
   Type, AlignLeft, Mail, Phone, Hash, Link2,
   Calendar, Paperclip, CircleDot, CheckSquare,
   ChevronsUpDown, FileText, Heading, Images,
+  QrCode, Search, CheckCircle2, XCircle, Download, Camera
 } from 'lucide-react';
 import ImageGalleryPicker from '../shared/ImageGalleryPicker';
 import { useGlobalState } from '../../context/GlobalContext';
+import { Html5Qrcode } from 'html5-qrcode';
 
 import type { FieldType, FormField, FieldOption } from '../../types/formBuilder';
 import { FIELD_TYPE_META, generateFieldId, generateOptionId, createDefaultField } from '../../types/formBuilder';
@@ -488,10 +490,119 @@ interface EventEditorProps {
 const EventEditor: React.FC<EventEditorProps> = ({
   draft, isNew, savedFlash, onDraftChange, onSave, onDiscard,
 }) => {
+  const { participants, checkInParticipant } = useGlobalState();
+  const [activePanel, setActivePanel] = useState<'details' | 'registrations'>('details');
+  const [scanning, setScanning] = useState(false);
+  const [manualId, setManualId] = useState('');
+  const [scanResult, setScanResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+
   const [formBuilderOpen,  setFormBuilderOpen]  = useState(false);
   const [imagesOpen,       setImagesOpen]        = useState(false);
 
   const inp = INPUT;
+
+  const handleCheckIn = (id: string) => {
+    const part = participants.find(p => p.id === id && p.eventId === draft.id);
+    if (!part) {
+      setScanResult({ success: false, message: `Invalid ticket ID: ${id}` });
+      return;
+    }
+    
+    if (part.status === 'attended') {
+      setScanResult({ success: true, message: `${part.name} is already checked in!` });
+      return;
+    }
+
+    checkInParticipant(id, 'attended');
+    setScanResult({ success: true, message: `Welcome, ${part.name}! Checked in successfully.` });
+    
+    setTimeout(() => {
+      setScanResult(null);
+    }, 5000);
+  };
+
+  const exportToCSV = () => {
+    const eventRegs = participants.filter(p => p.eventId === draft.id);
+    if (eventRegs.length === 0) {
+      alert("No registrations to export.");
+      return;
+    }
+    const headers = ["Ticket ID", "Full Name", "Email", "Registration Date", "Status"];
+    
+    const customFields = draft.formFields || [];
+    customFields.forEach(f => {
+      headers.push(f.label || "Field");
+    });
+
+    const csvRows = [headers.join(",")];
+
+    eventRegs.forEach(r => {
+      const rowData = [
+        `"${r.id.replace(/"/g, '""')}"`,
+        `"${r.name.replace(/"/g, '""')}"`,
+        `"${r.email.replace(/"/g, '""')}"`,
+        `"${r.registeredAt.replace(/"/g, '""')}"`,
+        `"${r.status.replace(/"/g, '""')}"`
+      ];
+
+      customFields.forEach(f => {
+        const val = r.customAnswers ? r.customAnswers[f.id] : '';
+        const displayVal = typeof val === 'object' ? JSON.stringify(val) : String(val || '');
+        rowData.push(`"${displayVal.replace(/"/g, '""')}"`);
+      });
+
+      csvRows.push(rowData.join(","));
+    });
+
+    const blob = new Blob([csvRows.join("\n")], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${draft.title.replace(/\s+/g, '_')}_Registrations.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  useEffect(() => {
+    let html5Qrcode: Html5Qrcode | null = null;
+    if (scanning && activePanel === 'registrations') {
+      html5Qrcode = new Html5Qrcode("qr-scanner-element");
+      html5Qrcode.start(
+        { facingMode: "environment" },
+        {
+          fps: 10,
+          qrbox: (width, height) => {
+            const size = Math.min(width, height) * 0.7;
+            return { width: size, height: size };
+          }
+        },
+        (decodedText) => {
+          handleCheckIn(decodedText);
+        },
+        () => {
+          // ignore scan feed errors
+        }
+      ).catch(err => {
+        console.error("Scanner failed to start:", err);
+        setScanning(false);
+      });
+    }
+    return () => {
+      if (html5Qrcode) {
+        if (html5Qrcode.isScanning) {
+          html5Qrcode.stop().catch(err => console.error("Scanner stop error:", err));
+        }
+      }
+    };
+  }, [scanning, activePanel]);
+
+  useEffect(() => {
+    setActivePanel('details');
+    setScanning(false);
+    setScanResult(null);
+  }, [draft.id]);
 
   return (
     <div
@@ -519,168 +630,383 @@ const EventEditor: React.FC<EventEditorProps> = ({
         )}
       </div>
 
-      <div className="px-6 py-5 space-y-5">
-        {/* Title */}
-        <div>
-          <label className="text-xs text-textMuted mb-1.5 block">Event Title *</label>
-          <input
-            value={draft.title}
-            onChange={(e) => onDraftChange({ ...draft, title: e.target.value })}
-            className={inp}
-            placeholder="e.g. Next.js Workshop"
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="text-xs text-textMuted mb-1.5 block">Date</label>
-            <input
-              type="date"
-              value={draft.date}
-              onChange={(e) => onDraftChange({ ...draft, date: e.target.value })}
-              className={inp}
-              style={{ colorScheme: 'light' }}
-            />
-          </div>
-          <div>
-            <label className="text-xs text-textMuted mb-1.5 block">Status</label>
-            <select
-              value={draft.status}
-              onChange={(e) => onDraftChange({ ...draft, status: e.target.value as AdminEvent['status'] })}
-              className={inp}
-            >
-              <option value="upcoming" style={{ background: '#0a0a0a' }}>Upcoming</option>
-              <option value="live"     style={{ background: '#0a0a0a' }}>Live</option>
-              <option value="past"     style={{ background: '#0a0a0a' }}>Past</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Description */}
-        <div>
-          <label className="text-xs text-textMuted mb-1.5 block">Description</label>
-          <textarea
-            value={draft.description}
-            onChange={(e) => onDraftChange({ ...draft, description: e.target.value })}
-            rows={3}
-            className={`${inp} resize-none`}
-            placeholder="Short event description…"
-          />
-        </div>
-
-        {/* ── Images section (ADMIN-only collapsible) ── */}
-        <div
-          className="rounded-xl overflow-hidden"
-          style={{ border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.015)' }}
-        >
+      {/* Tab Selector for existing event */}
+      {!isNew && (
+        <div className="flex border-b border-white/5 bg-black/20">
           <button
-            type="button"
-            onClick={() => setImagesOpen((v) => !v)}
-            className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold transition-colors hover:bg-white/[0.02]"
-            style={{ color: imagesOpen ? '#ff6a00' : 'rgba(255,255,255,0.55)' }}
+            onClick={() => { setActivePanel('details'); setScanning(false); }}
+            className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-all border-b-2 ${
+              activePanel === 'details'
+                ? 'text-primary border-primary bg-primary/5'
+                : 'text-textMuted border-transparent hover:text-white hover:bg-white/[0.02]'
+            }`}
           >
-            <span className="flex items-center gap-2.5">
-              <Images size={14} style={{ opacity: 0.7 }} />
-              Event Images
-              <span
-                className="text-[10px] font-medium px-1.5 py-0.5 rounded-md"
-                style={{ background: 'rgba(255,255,255,0.07)', color: '#666' }}
-              >
-                {draft.images.length} {draft.images.length === 1 ? 'image' : 'images'} · Admin only
-              </span>
-            </span>
-            {imagesOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            Details & Form Builder
           </button>
+          <button
+            onClick={() => setActivePanel('registrations')}
+            className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-all border-b-2 ${
+              activePanel === 'registrations'
+                ? 'text-primary border-primary bg-primary/5'
+                : 'text-textMuted border-transparent hover:text-white hover:bg-white/[0.02]'
+            }`}
+          >
+            Registrations & Scanner ({participants.filter(p => p.eventId === draft.id).length})
+          </button>
+        </div>
+      )}
 
-          {imagesOpen && (
-            <div
-              className="px-4 pb-4"
-              style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}
-            >
-              <div className="pt-4">
-                <ImageGalleryPicker
-                  images={draft.images}
-                  onChange={(imgs) => onDraftChange({ ...draft, images: imgs })}
-                  label="Event Gallery"
-                  hint="First image is used as the event banner. JPG, PNG, WebP — max 5 MB each."
+      {(activePanel === 'details' || isNew) ? (
+        <>
+          <div className="px-6 py-5 space-y-5">
+            {/* Title */}
+            <div>
+              <label className="text-xs text-textMuted mb-1.5 block">Event Title *</label>
+              <input
+                value={draft.title}
+                onChange={(e) => onDraftChange({ ...draft, title: e.target.value })}
+                className={inp}
+                placeholder="e.g. Next.js Workshop"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs text-textMuted mb-1.5 block">Date</label>
+                <input
+                  type="date"
+                  value={draft.date}
+                  onChange={(e) => onDraftChange({ ...draft, date: e.target.value })}
+                  className={inp}
+                  style={{ colorScheme: 'light' }}
                 />
               </div>
+              <div>
+                <label className="text-xs text-textMuted mb-1.5 block">Status</label>
+                <select
+                  value={draft.status}
+                  onChange={(e) => onDraftChange({ ...draft, status: e.target.value as AdminEvent['status'] })}
+                  className={inp}
+                >
+                  <option value="upcoming" style={{ background: '#0a0a0a' }}>Upcoming</option>
+                  <option value="live"     style={{ background: '#0a0a0a' }}>Live</option>
+                  <option value="past"     style={{ background: '#0a0a0a' }}>Past</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="text-xs text-textMuted mb-1.5 block">Description</label>
+              <textarea
+                value={draft.description}
+                onChange={(e) => onDraftChange({ ...draft, description: e.target.value })}
+                rows={3}
+                className={`${inp} resize-none`}
+                placeholder="Short event description…"
+              />
+            </div>
+
+            {/* ── Images section (ADMIN-only collapsible) ── */}
+            <div
+              className="rounded-xl overflow-hidden"
+              style={{ border: '1px solid rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.015)' }}
+            >
+              <button
+                type="button"
+                onClick={() => setImagesOpen((v) => !v)}
+                className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold transition-colors hover:bg-white/[0.02]"
+                style={{ color: imagesOpen ? '#ff6a00' : 'rgba(255,255,255,0.55)' }}
+              >
+                <span className="flex items-center gap-2.5">
+                  <Images size={14} style={{ opacity: 0.7 }} />
+                  Event Images
+                  <span
+                    className="text-[10px] font-medium px-1.5 py-0.5 rounded-md"
+                    style={{ background: 'rgba(255,255,255,0.07)', color: '#666' }}
+                  >
+                    {draft.images.length} {draft.images.length === 1 ? 'image' : 'images'} · Admin only
+                  </span>
+                </span>
+                {imagesOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              </button>
+
+              {imagesOpen && (
+                <div
+                  className="px-4 pb-4"
+                  style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}
+                >
+                  <div className="pt-4">
+                    <ImageGalleryPicker
+                      images={draft.images}
+                      onChange={(imgs) => onDraftChange({ ...draft, images: imgs })}
+                      label="Event Gallery"
+                      hint="First image is used as the event banner. JPG, PNG, WebP — max 5 MB each."
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Published toggle */}
+            <div
+              className="flex items-center justify-between px-4 py-3 rounded-xl"
+              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
+            >
+              <div>
+                <p className="text-sm font-medium text-white">Published</p>
+                <p className="text-xs text-textMuted">Visible to the public</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => onDraftChange({ ...draft, isPublished: !draft.isPublished })}
+                className="relative w-11 h-6 rounded-full shrink-0 focus:outline-none"
+                style={{
+                  background: draft.isPublished ? '#ff6a00' : 'rgba(255,255,255,0.12)',
+                  transition: 'background 0.2s ease',
+                }}
+                role="switch"
+                aria-checked={draft.isPublished}
+              >
+                <span
+                  className="absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow-sm"
+                  style={{ transition: 'transform 0.2s ease', transform: draft.isPublished ? 'translateX(20px)' : 'translateX(0px)' }}
+                />
+              </button>
+            </div>
+
+            {/* Save button */}
+            <button
+              onClick={onSave}
+              disabled={!draft.title.trim()}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{
+                background: savedFlash ? 'rgba(34,197,94,0.15)' : 'linear-gradient(135deg, #ff6a00, #ff9a00)',
+                color: savedFlash ? '#4ade80' : '#000',
+                boxShadow: savedFlash ? 'none' : '0 0 20px rgba(255,106,0,0.25)',
+                border: savedFlash ? '1px solid rgba(34,197,94,0.30)' : 'none',
+              }}
+            >
+              {savedFlash ? <><Check size={15} /> Saved!</> : <><Save size={14} /> {isNew ? 'Create Event' : 'Save Changes'}</>}
+            </button>
+          </div>
+
+          {/* ── Registration Form Builder collapsible ── */}
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+            <button
+              onClick={() => setFormBuilderOpen((v) => !v)}
+              className="w-full flex items-center justify-between px-6 py-4 text-sm font-semibold transition-colors hover:bg-white/[0.02]"
+              style={{ color: formBuilderOpen ? '#ff6a00' : 'rgba(255,255,255,0.60)' }}
+            >
+              <span className="flex items-center gap-2.5">
+                <span style={{ opacity: 0.7 }}>📋</span>
+                Registration Form Builder
+                <span
+                  className="text-[10px] font-medium px-1.5 py-0.5 rounded-md"
+                  style={{ background: 'rgba(255,255,255,0.07)', color: '#666' }}
+                >
+                  {draft.formFields.length} {draft.formFields.length === 1 ? 'field' : 'fields'}
+                </span>
+              </span>
+              {formBuilderOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+            </button>
+
+            {formBuilderOpen && (
+              <div className="px-6 pb-6">
+                <FormBuilderInline
+                  fields={draft.formFields}
+                  eventStatus={draft.status}
+                  onChange={(fields) => onDraftChange({ ...draft, formFields: fields })}
+                />
+              </div>
+            )}
+          </div>
+        </>
+      ) : (
+        <div className="px-6 py-5 space-y-6">
+          {/* TOP CONTROLS: SCANNER & EXPORT */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Live Scanner Trigger Card */}
+            <div className="bg-surface border border-surfaceLight rounded-2xl p-5 flex flex-col justify-between space-y-4">
+              <div>
+                <h4 className="font-bold text-sm text-white flex items-center gap-2">
+                  <QrCode size={16} className="text-primary" /> Camera QR Scanner
+                </h4>
+                <p className="text-[11px] text-textMuted mt-1">Use camera scanner for fast real-time check-in</p>
+              </div>
+
+              <button
+                onClick={() => setScanning(!scanning)}
+                className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${
+                  scanning 
+                    ? 'bg-red-500/10 text-red-400 border border-red-500/20' 
+                    : 'bg-primary text-black hover:bg-secondary hover:shadow-[0_0_15px_rgba(255,106,0,0.2)]'
+                }`}
+              >
+                {scanning ? 'Stop Scanning' : 'Start Camera Scanner'}
+              </button>
+            </div>
+
+            {/* Manual Entry Ticket Pass Card */}
+            <div className="bg-surface border border-surfaceLight rounded-2xl p-5 flex flex-col justify-between space-y-4">
+              <div>
+                <h4 className="font-bold text-sm text-white flex items-center gap-2">
+                  <Plus size={16} className="text-primary" /> Manual Ticket Check-in
+                </h4>
+                <p className="text-[11px] text-textMuted mt-1">Type in a ticket ID to manually check-in candidate</p>
+              </div>
+              
+              <div className="flex gap-2">
+                <input
+                  value={manualId}
+                  onChange={e => setManualId(e.target.value)}
+                  placeholder="e.g. reg_xyz..."
+                  className="flex-1 bg-bgDark border border-surfaceLight rounded-xl px-3 py-2 text-xs focus:border-primary focus:outline-none text-white font-sans"
+                />
+                <button
+                  onClick={() => {
+                    if (manualId.trim()) {
+                      handleCheckIn(manualId.trim());
+                      setManualId('');
+                    }
+                  }}
+                  className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:border-primary hover:text-primary transition-all text-xs font-bold text-white uppercase"
+                >
+                  Check In
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* SCANNER CONTAINER */}
+          {scanning && (
+            <div className="bg-[#050505] border border-primary/20 rounded-2xl p-4 overflow-hidden flex flex-col items-center justify-center space-y-3 relative">
+              <div className="absolute top-3 right-3 z-10">
+                <button 
+                  onClick={() => setScanning(false)}
+                  className="p-1.5 bg-black/40 hover:bg-black/80 rounded-lg text-textMuted hover:text-white transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+              
+              <div 
+                id="qr-scanner-element" 
+                className="w-full max-w-sm aspect-square overflow-hidden rounded-xl bg-black border border-white/5"
+                style={{ minHeight: 250 }}
+              />
+              
+              <span className="text-[10px] text-primary/70 uppercase tracking-widest font-mono animate-pulse">
+                [ CAMERA FEED ACTIVE ]
+              </span>
             </div>
           )}
-        </div>
 
-        {/* Published toggle */}
-        <div
-          className="flex items-center justify-between px-4 py-3 rounded-xl"
-          style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
-        >
-          <div>
-            <p className="text-sm font-medium text-white">Published</p>
-            <p className="text-xs text-textMuted">Visible to the public</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => onDraftChange({ ...draft, isPublished: !draft.isPublished })}
-            className="relative w-11 h-6 rounded-full shrink-0 focus:outline-none"
-            style={{
-              background: draft.isPublished ? '#ff6a00' : 'rgba(255,255,255,0.12)',
-              transition: 'background 0.2s ease',
-            }}
-            role="switch"
-            aria-checked={draft.isPublished}
-          >
-            <span
-              className="absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow-sm"
-              style={{ transition: 'transform 0.2s ease', transform: draft.isPublished ? 'translateX(20px)' : 'translateX(0px)' }}
-            />
-          </button>
-        </div>
-
-        {/* Save button */}
-        <button
-          onClick={onSave}
-          disabled={!draft.title.trim()}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{
-            background: savedFlash ? 'rgba(34,197,94,0.15)' : 'linear-gradient(135deg, #ff6a00, #ff9a00)',
-            color: savedFlash ? '#4ade80' : '#000',
-            boxShadow: savedFlash ? 'none' : '0 0 20px rgba(255,106,0,0.25)',
-            border: savedFlash ? '1px solid rgba(34,197,94,0.30)' : 'none',
-          }}
-        >
-          {savedFlash ? <><Check size={15} /> Saved!</> : <><Save size={14} /> {isNew ? 'Create Event' : 'Save Changes'}</>}
-        </button>
-      </div>
-
-      {/* ── Registration Form Builder collapsible ── */}
-      <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-        <button
-          onClick={() => setFormBuilderOpen((v) => !v)}
-          className="w-full flex items-center justify-between px-6 py-4 text-sm font-semibold transition-colors hover:bg-white/[0.02]"
-          style={{ color: formBuilderOpen ? '#ff6a00' : 'rgba(255,255,255,0.60)' }}
-        >
-          <span className="flex items-center gap-2.5">
-            <span style={{ opacity: 0.7 }}>📋</span>
-            Registration Form Builder
-            <span
-              className="text-[10px] font-medium px-1.5 py-0.5 rounded-md"
-              style={{ background: 'rgba(255,255,255,0.07)', color: '#666' }}
+          {/* SCAN RESULTS PANEL */}
+          {scanResult && (
+            <div 
+              className={`p-4 rounded-xl border flex items-center gap-3 animate-in fade-in duration-300 ${
+                scanResult.success 
+                  ? 'bg-green-500/10 border-green-500/20 text-green-400' 
+                  : 'bg-red-500/10 border-red-500/20 text-red-400'
+              }`}
             >
-              {draft.formFields.length} {draft.formFields.length === 1 ? 'field' : 'fields'}
-            </span>
-          </span>
-          {formBuilderOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-        </button>
+              {scanResult.success 
+                ? <CheckCircle2 size={18} className="shrink-0" />
+                : <XCircle size={18} className="shrink-0" />
+              }
+              <span className="text-xs font-bold tracking-tight">{scanResult.message}</span>
+              <button 
+                onClick={() => setScanResult(null)}
+                className="ml-auto text-[10px] hover:underline"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
 
-        {formBuilderOpen && (
-          <div className="px-6 pb-6">
-            <FormBuilderInline
-              fields={draft.formFields}
-              eventStatus={draft.status}
-              onChange={(fields) => onDraftChange({ ...draft, formFields: fields })}
-            />
+          {/* SEARCH & EXPORT */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+            <div className="relative flex-1 max-w-xs">
+              <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-textMuted" />
+              <input
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                placeholder="Search registrants..."
+                className="w-full bg-bgDark border border-surfaceLight rounded-xl pl-9 pr-4 py-2.5 text-xs text-white focus:border-primary focus:outline-none"
+              />
+            </div>
+
+            <button
+              onClick={exportToCSV}
+              className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-surface border border-surfaceLight hover:border-primary/40 hover:bg-black transition-all uppercase tracking-wider"
+            >
+              <Download size={14} className="text-primary" /> Export to Excel
+            </button>
           </div>
-        )}
-      </div>
+
+          {/* LIST OF CANDIDATES */}
+          <div className="border border-surfaceLight rounded-2xl overflow-hidden bg-surface/50">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-surfaceLight bg-black/20 text-[10px] font-bold text-textMuted uppercase tracking-widest">
+                    <th className="px-5 py-3.5 font-bold">Candidate</th>
+                    <th className="px-5 py-3.5 font-bold">Details</th>
+                    <th className="px-5 py-3.5 font-bold">Attendance</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-surfaceLight/50 text-xs">
+                  {(() => {
+                    const eventRegs = participants.filter(p => p.eventId === draft.id);
+                    const filteredRegs = eventRegs.filter(p => 
+                      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                      p.id.toLowerCase().includes(searchTerm.toLowerCase())
+                    );
+
+                    if (filteredRegs.length === 0) {
+                      return (
+                        <tr>
+                          <td colSpan={3} className="text-center py-12 text-textMuted/40 italic">
+                            {searchTerm ? 'No search results found' : 'No registrations recorded yet'}
+                          </td>
+                        </tr>
+                      );
+                    }
+
+                    return filteredRegs.map(reg => (
+                      <tr key={reg.id} className="hover:bg-white/[0.01] transition-colors">
+                        <td className="px-5 py-4">
+                          <p className="font-bold text-white leading-snug">{reg.name}</p>
+                          <p className="text-[10px] text-textMuted mt-0.5">{reg.email}</p>
+                        </td>
+                        <td className="px-5 py-4">
+                          <p className="text-[10px] text-white/60">Registered: {reg.registeredAt}</p>
+                          <p className="text-[9px] font-mono text-primary/70 mt-0.5 truncate max-w-[120px]" title={reg.id}>#{reg.id.split('_')[1] || reg.id}</p>
+                        </td>
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => checkInParticipant(reg.id, reg.status === 'attended' ? 'registered' : 'attended')}
+                              className={`px-3 py-1.5 rounded-lg font-bold text-[10px] uppercase tracking-wider transition-all border ${
+                                reg.status === 'attended'
+                                  ? 'bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20'
+                                  : 'bg-orange-500/10 text-orange-400 border-orange-500/20 hover:bg-orange-500/20'
+                              }`}
+                            >
+                              {reg.status === 'attended' ? 'Attended' : 'Mark Attended'}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ));
+                  })()}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

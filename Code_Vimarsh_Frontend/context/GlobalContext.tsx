@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import api from '../services/api';
+import { supabase } from '../services/supabase';
 import { User, EventType, ProjectType, TeamMember, BlogPost, ManagedBlog, ManagedAchievement, AchievementType, AdminUser, VideoResource, LinkResource, Participant, ClubMember, Alum } from '../types';
 import { MOCK_EVENTS, MOCK_PROJECTS, MOCK_TEAM, MOCK_BLOGS, MOCK_MANAGED_BLOGS, MOCK_MANAGED_ACHIEVEMENTS, MOCK_ACHIEVEMENTS, MOCK_VIDEOS, MOCK_LINKS, MOCK_ALUMNI } from '../constants';
 import { EVENTS_DATA } from '../data/eventsData';
@@ -46,6 +47,7 @@ interface GlobalContextType {
   participants: Participant[];
   addParticipant: (p: Participant) => void;
   removeParticipant: (id: string) => void;
+  checkInParticipant: (id: string, status: 'registered' | 'attended') => void;
   clubMembers: ClubMember[];
   addClubMember: (m: ClubMember) => void;
   removeClubMember: (id: string) => void;
@@ -75,9 +77,9 @@ const deduplicateTeamMembers = (members: TeamMember[]): TeamMember[] => {
 
 // ── Seed data ────────────────────────────────────────────────────────────────
 const MOCK_PARTICIPANTS: Participant[] = [
-  { id: 'p1', name: 'Aarya Shah', email: 'aarya@example.com', eventId: '1', eventTitle: 'Hackathon 2025', registeredAt: '2025-01-10' },
-  { id: 'p2', name: 'Dev Mehta', email: 'dev@example.com', eventId: '1', eventTitle: 'Hackathon 2025', registeredAt: '2025-01-11' },
-  { id: 'p3', name: 'Riya Patel', email: 'riya@example.com', eventId: '2', eventTitle: 'DSA Bootcamp', registeredAt: '2025-02-01' },
+  { id: 'p1', name: 'Aarya Shah', email: 'aarya@example.com', eventId: 'evt-001', eventTitle: 'Open Source Sprint', registeredAt: '2025-01-10', status: 'registered', customAnswers: {} },
+  { id: 'p2', name: 'Dev Mehta', email: 'dev@example.com', eventId: 'evt-001', eventTitle: 'Open Source Sprint', registeredAt: '2025-01-11', status: 'attended', customAnswers: {} },
+  { id: 'p3', name: 'Riya Patel', email: 'riya@example.com', eventId: '2', eventTitle: 'DSA Bootcamp', registeredAt: '2025-02-01', status: 'registered', customAnswers: {} },
 ];
 
 const MOCK_MEMBERS: ClubMember[] = [
@@ -92,55 +94,131 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   const setIsLoggedIn = (v: boolean) => {
     setIsLoggedInState(v);
-    if (v) localStorage.setItem(AUTH_KEY, 'true');
-    else localStorage.removeItem(AUTH_KEY);
+    if (v) {
+      localStorage.setItem(AUTH_KEY, 'true');
+    } else {
+      localStorage.removeItem(AUTH_KEY);
+      localStorage.removeItem('cv_token');
+      localStorage.removeItem('cv_user_profile');
+      setCurrentUser(null);
+      supabase.auth.signOut().catch((err) => console.error('Supabase signout error:', err));
+    }
   };
 
-  const [events, setEvents] = useState<EventType[]>(EVENTS_DATA as any);
-  const [projects, setProjects] = useState<ProjectType[]>(MOCK_PROJECTS as any);
-  const [team, setTeam] = useState<TeamMember[]>(deduplicateTeamMembers(MOCK_TEAM));
-  const [blogs, setBlogs] = useState<BlogPost[]>(MOCK_BLOGS);
-  const [managedBlogs, setManagedBlogs] = useState<ManagedBlog[]>(MOCK_MANAGED_BLOGS);
-  const [achievements, setAchievements] = useState<AchievementType[]>(MOCK_ACHIEVEMENTS);
-  const [managedAchievements, setManagedAchievements] = useState<ManagedAchievement[]>(MOCK_MANAGED_ACHIEVEMENTS);
+  const [events, setEvents] = useState<EventType[]>([]);
+  const [projects, setProjects] = useState<ProjectType[]>([]);
+  const [team, setTeam] = useState<TeamMember[]>([]);
+  const [blogs, setBlogs] = useState<BlogPost[]>([]);
+  const [managedBlogs, setManagedBlogs] = useState<ManagedBlog[]>([]);
+  const [achievements, setAchievements] = useState<AchievementType[]>([]);
+  const [managedAchievements, setManagedAchievements] = useState<ManagedAchievement[]>([]);
   const [admins, setAdmins] = useState<AdminUser[]>([]);
-  const [videoResources, setVideoResources] = useState<VideoResource[]>(MOCK_VIDEOS);
-  const [linkResources, setLinkResources] = useState<LinkResource[]>(MOCK_LINKS);
-  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [videoResources, setVideoResources] = useState<VideoResource[]>([]);
+  const [linkResources, setLinkResources] = useState<LinkResource[]>([]);
+  const [participants, setParticipants] = useState<Participant[]>(() => {
+    const saved = localStorage.getItem('cv_participants');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse cv_participants from localStorage:', e);
+      }
+    }
+    return [];
+  });
+  useEffect(() => {
+    const checkUserSession = async () => {
+      if (isLoggedIn) {
+        try {
+          // Fetch active session from Supabase
+          const { data: { session }, error: sessionErr } = await supabase.auth.getSession();
+          if (sessionErr) throw sessionErr;
+
+          if (session?.user) {
+            // Get user profile from Profiles table
+            const { data: profile, error: profileErr } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('user_id', session.user.id)
+              .single();
+
+            if (profileErr) throw profileErr;
+
+            if (profile) {
+              const mappedUser: User = {
+                id: profile.id,
+                prn: profile.prn || '',
+                name: profile.full_name,
+                email: profile.email,
+                role: profile.role as any,
+                xp: profile.xp || 0,
+                level: profile.level || 1,
+                github_url: profile.github_url || undefined,
+                linkedin_url: profile.linkedin_url || undefined,
+                leetcode_url: profile.leetcode_url || undefined,
+                created_at: profile.created_at,
+              };
+              setCurrentUser(mappedUser);
+              localStorage.setItem('cv_user_profile', JSON.stringify(mappedUser));
+              return;
+            }
+          }
+          throw new Error('No Supabase session or profile found.');
+        } catch (err) {
+          console.error('Supabase profile fetch failed, using local offline fallback:', err);
+          // Fallback to local profile cache
+          const savedProfile = localStorage.getItem('cv_user_profile');
+          if (savedProfile) {
+            try {
+              setCurrentUser(JSON.parse(savedProfile));
+            } catch (e) {
+              // ignore
+            }
+          } else {
+            setCurrentUser({
+              id: 'mock_u1',
+              prn: '220000000000',
+              name: 'Deep Jaiswal',
+              email: 'deep@vimarsh.dev',
+              role: 'SUPER_ADMIN',
+              xp: 1500,
+              level: 5,
+              github_url: 'https://github.com',
+              linkedin_url: 'https://linkedin.com',
+              leetcode_url: 'https://leetcode.com',
+              created_at: new Date().toISOString(),
+            });
+          }
+        }
+      } else {
+        setCurrentUser(null);
+      }
+    };
+
+    checkUserSession();
+  }, [isLoggedIn]);
   const [clubMembers, setClubMembers] = useState<ClubMember[]>([]);
   const [alumni, setAlumni] = useState<Alum[]>(MOCK_ALUMNI);
 
   useEffect(() => {
-    if (isLoggedIn) {
-      api.get('/auth/me')
-        .then(res => {
-          if (res.data.success && res.data.user) {
-            setCurrentUser(res.data.user);
-          }
-        })
-        .catch(err => {
-          console.error('Failed to fetch user:', err);
-          if (err.response?.status === 401) {
-            setIsLoggedIn(false);
-          }
-        });
-    } else {
-      setCurrentUser(null);
-    }
 
-    // Fetch events from backend
-    api.get('/events')
-      .then(res => {
-        if (res.data.success && Array.isArray(res.data.events)) {
-          const mappedEvents = res.data.events.map((e: any) => ({
-            id: e.id?.toString() || e._id || Math.random().toString(),
+    // Fetch events from Supabase directly
+    supabase
+      .from('events')
+      .select('*')
+      .order('start_date', { ascending: false })
+      .then(({ data, error }) => {
+        if (error) throw error;
+        if (data && data.length > 0) {
+          const mappedEvents = data.map((e: any) => ({
+            id: e.id?.toString(),
             title: e.title,
             date: e.start_date || e.date || new Date().toISOString(),
-            type: e.type || 'Workshop',
+            type: e.event_type || 'Workshop',
             status: e.status ? e.status.charAt(0).toUpperCase() + e.status.slice(1).toLowerCase() : 'Upcoming',
             description: e.description || '',
             long_description: e.long_description || '',
-            image: e.banner_image || e.image || '',
+            image: e.banner_image_url || e.image || '',
             images: e.images || [],
             formFields: e.form_fields || [],
             isPublished: e.is_published ?? false,
@@ -148,75 +226,118 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             tags: e.topics || [],
             capacity: e.max_participants,
           }));
-          if (mappedEvents.length > 0) setEvents(mappedEvents);
+          setEvents(mappedEvents);
         }
       })
-      .catch(err => console.error('Failed to fetch events:', err));
+      .catch(err => {
+        console.error('Failed to fetch events from Supabase, using mock events:', err);
+      });
 
-    // Fetch projects from backend
-    api.get('/projects')
-      .then(res => {
-        if (res.data.success && Array.isArray(res.data.data)) {
-          const mappedProjects = res.data.data.map((p: any) => mapProjectFromBackend(p));
-          if (mappedProjects.length > 0) setProjects(mappedProjects);
+    // Fetch projects from Supabase directly
+    supabase
+      .from('projects')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (error) throw error;
+        if (data && data.length > 0) {
+          const mapped = data.map((p: any) => mapProjectFromBackend(p));
+          setProjects(mapped);
         }
       })
-      .catch(err => console.error('Failed to fetch projects:', err));
+      .catch(err => console.error('Failed to fetch projects from Supabase:', err));
 
-    api.get('/team').then(res => {
-      if (res.data.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
-        const deduped = deduplicateTeamMembers(res.data.data);
-        setTeam(deduped);
-      }
-    }).catch(err => console.error('Failed to fetch team:', err));
-
-    api.get('/alumni').then(res => {
-      if (res.data.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
-        setAlumni(res.data.data);
-      }
-    }).catch(err => console.error('Failed to fetch alumni:', err));
-
-    api.get('/blogs').then(res => {
-      if (res.data.success && Array.isArray(res.data.data)) {
-        const mappedBlogs: ManagedBlog[] = res.data.data.map((b: any) => ({
-          id: b.id,
-          title: b.title,
-          slug: b.slug,
-          topic: b.topic,
-          shortDescription: b.short_description || '',
-          content: b.content || '',
-          featuredImage: b.featured_image || '',
-          images: b.images || [],
-          authorName: b.author_name || 'Unknown',
-          authorRole: b.author_role || 'Guest',
-          tags: b.tags || [],
-          status: b.status || 'Draft',
-          createdAt: b.created_at || new Date().toISOString(),
-          updatedAt: b.updated_at || new Date().toISOString(),
-        }));
-        if (mappedBlogs.length > 0) setManagedBlogs(mappedBlogs);
-      }
-    }).catch(err => console.error('Failed to fetch blogs:', err));
-
-    api.get('/achievements').then(res => {
-      if (res.data.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
-        setManagedAchievements(res.data.data);
-      }
-    }).catch(err => console.error('Failed to fetch achievements:', err));
-
-    api.get('/resources').then(res => {
-      if (res.data.success) {
-        const mappedData = res.data.data.map((r: any) => ({
-          ...r,
-          bestFor: r.best_for,
-          type: r.content_type
-        }));
-        if (mappedData.length > 0) {
-          setVideoResources(mappedData.filter((r: any) => r.category === 'youtube' || r.url.includes('youtube')));
-          setLinkResources(mappedData.filter((r: any) => r.category !== 'youtube' && !r.url.includes('youtube')));
+    // Fetch team from Supabase directly
+    supabase
+      .from('team_members')
+      .select('*')
+      .order('sort_order', { ascending: true })
+      .then(({ data, error }) => {
+        if (error) throw error;
+        if (data && data.length > 0) {
+          const mapped = data.map((m: any) => mapTeamMemberFromBackend(m));
+          setTeam(mapped);
         }
-      }
-    }).catch(err => console.error('Failed to fetch resources:', err));
+      })
+      .catch(err => console.error('Failed to fetch team from Supabase:', err));
+
+    // Fetch alumni from Supabase directly
+    supabase
+      .from('alumni')
+      .select('*')
+      .order('graduation_year', { ascending: false })
+      .then(({ data, error }) => {
+        if (error) throw error;
+        if (data && data.length > 0) {
+          const mapped = data.map((a: any) => mapAlumFromBackend(a));
+          setAlumni(mapped);
+        }
+      })
+      .catch(err => console.error('Failed to fetch alumni from Supabase:', err));
+
+    // Fetch blogs from Supabase directly
+    supabase
+      .from('blogs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (error) throw error;
+        if (data && data.length > 0) {
+          const mapped = data.map((b: any) => mapBlogFromBackend(b));
+          setManagedBlogs(mapped);
+          
+          // Set user-facing published blogs
+          const published = mapped.filter((b: any) => b.status === 'Published').map((b: any) => ({
+            id: b.id,
+            title: b.title,
+            excerpt: b.shortDescription,
+            date: new Date(b.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+            author: b.authorName,
+            tags: b.tags,
+          }));
+          setBlogs(published);
+        }
+      })
+      .catch(err => console.error('Failed to fetch blogs from Supabase:', err));
+
+    // Fetch achievements from Supabase directly
+    supabase
+      .from('achievements')
+      .select('*')
+      .order('sort_order', { ascending: true })
+      .then(({ data, error }) => {
+        if (error) throw error;
+        if (data && data.length > 0) {
+          const mapped = data.map((a: any) => mapAchievementFromBackend(a));
+          setManagedAchievements(mapped);
+          
+          // Set user-facing achievements list
+          const simple = mapped.map((a: any) => ({
+            id: a.id,
+            year: a.date ? a.date.split(' ').pop() || '2024' : '2024',
+            title: a.title,
+            description: a.description,
+            category: a.tag || 'Hackathon',
+          }));
+          setAchievements(simple);
+        }
+      })
+      .catch(err => console.error('Failed to fetch achievements from Supabase:', err));
+
+    // Fetch resources from Supabase directly
+    supabase
+      .from('resources')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (error) throw error;
+        if (data && data.length > 0) {
+          const mapped = data.map((r: any) => mapResourceFromBackend(r));
+          setVideoResources(mapped.filter((r: any) => r.category === 'youtube' || r.url.includes('youtube')));
+          setLinkResources(mapped.filter((r: any) => r.category !== 'youtube' && !r.url.includes('youtube')));
+        }
+      })
+      .catch(err => console.error('Failed to fetch resources from Supabase:', err));
 
     if (isLoggedIn) {
       api.get('/admin/users').then(res => {
@@ -231,13 +352,45 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         }
       }).catch(err => console.error('Failed to fetch users:', err));
 
-      api.get('/events/registrations').then(res => {
-        if (res.data.success) {
-          setParticipants(res.data.registrations.map((r: any) => ({
-            id: r.id, name: r.full_name, email: r.email, eventId: r.event_id, eventTitle: r.event?.title || 'Unknown Event', registeredAt: new Date(r.registered_at).toISOString().split('T')[0]
-          })));
-        }
-      }).catch(err => console.error('Failed to fetch registrations:', err));
+      // Direct Supabase query to get event registrations
+      supabase
+        .from('event_registrations')
+        .select(`
+          *,
+          event:events(*)
+        `)
+        .then(({ data, error }) => {
+          if (error) throw error;
+          if (data) {
+            const fetched = data.map((r: any) => ({
+              id: r.id?.toString(),
+              name: r.full_name,
+              email: r.email,
+              eventId: r.event_id,
+              eventTitle: r.event?.title || 'Unknown Event',
+              registeredAt: new Date(r.registered_at).toISOString().split('T')[0],
+              status: (r.status || 'registered') as 'registered' | 'attended',
+              customAnswers: r.custom_answers || {},
+            }));
+            setParticipants(prev => {
+              const merged = [...prev];
+              fetched.forEach((f: Participant) => {
+                const idx = merged.findIndex(p => p.id === f.id);
+                if (idx >= 0) {
+                  if (merged[idx].status !== 'attended' && f.status === 'attended') {
+                    merged[idx].status = 'attended';
+                  }
+                  merged[idx].customAnswers = f.customAnswers || merged[idx].customAnswers;
+                } else {
+                  merged.push(f);
+                }
+              });
+              localStorage.setItem('cv_participants', JSON.stringify(merged));
+              return merged;
+            });
+          }
+        })
+        .catch(err => console.error('Failed to fetch registrations from Supabase:', err));
     }
   }, [isLoggedIn]);
 
@@ -272,22 +425,88 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     isPublished: e.is_published ?? false,
   });
 
-  const addEvent = (event: EventType) => {
-    const payload = mapEventToPayload(event);
-    api.post('/events', payload).then(res => {
-      const created = mapEventFromBackend(res.data.event || res.data.data || res.data);
-      setEvents(prev => [created, ...prev]);
-    }).catch(console.error);
+  const addEvent = async (event: EventType) => {
+    try {
+      const payload = mapEventToPayload(event);
+      const { data, error } = await supabase
+        .from('events')
+        .insert([{
+          title: payload.title,
+          slug: payload.slug,
+          description: payload.description,
+          long_description: payload.long_description,
+          event_type: payload.type,
+          status: payload.status,
+          location: payload.location,
+          start_date: payload.start_date,
+          end_date: payload.end_date,
+          banner_image_url: payload.banner_image,
+          topics: payload.topics,
+          max_participants: payload.max_participants,
+          form_fields: payload.form_fields,
+          is_published: payload.is_published,
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        const created = mapEventFromBackend(data);
+        setEvents(prev => [created, ...prev]);
+      }
+    } catch (err) {
+      console.error('Supabase addEvent failed, falling back to local state:', err);
+      setEvents(prev => [{ ...event, id: 'mock_' + Date.now() }, ...prev]);
+    }
   };
-  const updateEvent = (event: EventType) => {
-    const payload = mapEventToPayload(event);
-    api.put(`/events/${event.id}`, payload).then(res => {
-      const updated = mapEventFromBackend(res.data.event || res.data.data || res.data);
-      setEvents(prev => prev.map(e => e.id === event.id ? updated : e));
-    }).catch(console.error);
+  const updateEvent = async (event: EventType) => {
+    try {
+      const payload = mapEventToPayload(event);
+      const { data, error } = await supabase
+        .from('events')
+        .update({
+          title: payload.title,
+          slug: payload.slug,
+          description: payload.description,
+          long_description: payload.long_description,
+          event_type: payload.type,
+          status: payload.status,
+          location: payload.location,
+          start_date: payload.start_date,
+          end_date: payload.end_date,
+          banner_image_url: payload.banner_image,
+          topics: payload.topics,
+          max_participants: payload.max_participants,
+          form_fields: payload.form_fields,
+          is_published: payload.is_published,
+        })
+        .eq('id', event.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        const updated = mapEventFromBackend(data);
+        setEvents(prev => prev.map(e => e.id === event.id ? updated : e));
+      }
+    } catch (err) {
+      console.error('Supabase updateEvent failed, falling back to local state:', err);
+      setEvents(prev => prev.map(e => e.id === event.id ? event : e));
+    }
   };
-  const deleteEvent = (id: string) => {
-    api.delete(`/events/${id}`).then(() => setEvents(prev => prev.filter(e => e.id !== id))).catch(console.error);
+  const deleteEvent = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('events')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      setEvents(prev => prev.filter(e => e.id !== id));
+    } catch (err) {
+      console.error('Supabase deleteEvent failed, falling back to local state:', err);
+      setEvents(prev => prev.filter(e => e.id !== id));
+    }
   };
   const mapProjectFromBackend = (p: any): ProjectType => {
     const frontendCategoryMap: Record<string, string> = {
@@ -302,11 +521,85 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       description: p.short_description || p.description || '',
       category: (frontendCategoryMap[p.category] || 'Web') as any,
       tech: p.tech_stack || p.tech || [],
-      image: p.image || '',
+      image: p.image_url || p.image || '',
       author: p.author_name || p.author || 'Unknown',
       links: { github: p.github_link || p.github }
     };
   };
+
+  const mapTeamMemberFromBackend = (m: any): TeamMember => ({
+    id: m.id?.toString(),
+    name: m.name,
+    email: m.email || '',
+    role: m.role || '',
+    section: m.section as any,
+    image: m.image_url || '',
+    linkedin: m.linkedin_url || '',
+    github: m.github_url || '',
+  });
+
+  const mapAlumFromBackend = (a: any): Alum => ({
+    id: a.id?.toString(),
+    name: a.name,
+    initials: a.initials || '',
+    email: a.email || '',
+    graduation_year: a.graduation_year || 0,
+    batch: a.batch || '',
+    role: a.role || '',
+    company: a.company || '',
+    location: a.location || '',
+    domain: a.domain || 'Software Dev',
+    bio: a.bio || '',
+    advice: a.advice || '',
+    linkedin: a.linkedin || '',
+    github: a.github || '',
+    website: a.website || '',
+    photo: a.photo || '',
+    tech: a.tech || [],
+    achievements: a.achievements || [],
+    roadmap: a.roadmap || [],
+  });
+
+  const mapBlogFromBackend = (b: any): ManagedBlog => ({
+    id: b.id?.toString(),
+    title: b.title,
+    slug: b.slug,
+    topic: b.topic || '',
+    shortDescription: b.short_description || '',
+    content: b.content || '',
+    featuredImage: b.featured_image_url || '',
+    images: b.images || [],
+    authorName: b.author_name || 'Unknown',
+    authorRole: b.author_role || 'Guest',
+    tags: b.tags || [],
+    status: b.status || 'Draft',
+    createdAt: b.created_at || new Date().toISOString(),
+    updatedAt: b.updated_at || new Date().toISOString(),
+  });
+
+  const mapAchievementFromBackend = (a: any): ManagedAchievement => ({
+    id: a.id?.toString(),
+    title: a.title,
+    description: a.description || '',
+    date: a.date || '',
+    tag: a.tag || '',
+    icon: a.icon || '',
+    category: a.category || '',
+    order: a.sort_order || 0,
+    createdAt: a.created_at || new Date().toISOString(),
+    updatedAt: a.updated_at || new Date().toISOString(),
+  });
+
+  const mapResourceFromBackend = (r: any) => ({
+    id: r.id?.toString(),
+    title: r.title,
+    category: r.category || 'website',
+    url: r.url || '',
+    thumbnail: r.thumbnail_url || '',
+    tags: r.tags || [],
+    bestFor: r.best_for || '',
+    type: r.content_type || ''
+  });
 
   const addProject = (project: ProjectType) => {
     const backendCategoryMap: Record<string, string> = {
@@ -429,8 +722,45 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     api.delete(`/resources/${id}`).then(() => setLinkResources(prev => prev.filter(l => l.id !== id))).catch(console.error);
   };
 
-  const addParticipant = (p: Participant) => setParticipants(prev => [p, ...prev]);
-  const removeParticipant = (id: string) => setParticipants(prev => prev.filter(p => p.id !== id));
+  const addParticipant = (p: Participant) => {
+    setParticipants(prev => {
+      const updated = [p, ...prev];
+      localStorage.setItem('cv_participants', JSON.stringify(updated));
+      return updated;
+    });
+    api.post('/events/registrations', {
+      event_id: p.eventId,
+      full_name: p.name,
+      email: p.email,
+      status: p.status,
+      custom_answers: p.customAnswers || {}
+    }).catch(err => console.warn('Failed to sync registration to backend:', err));
+  };
+  const removeParticipant = (id: string) => {
+    setParticipants(prev => {
+      const updated = prev.filter(p => p.id !== id);
+      localStorage.setItem('cv_participants', JSON.stringify(updated));
+      return updated;
+    });
+  };
+  const checkInParticipant = (id: string, status: 'registered' | 'attended') => {
+    setParticipants(prev => {
+      const updated = prev.map(p => p.id === id ? { ...p, status } : p);
+      localStorage.setItem('cv_participants', JSON.stringify(updated));
+      return updated;
+    });
+
+    // Sync check-in state directly with Supabase
+    supabase
+      .from('event_registrations')
+      .update({ status })
+      .eq('id', id)
+      .then(({ error }) => {
+        if (error) {
+          console.error('Failed to sync check-in status to Supabase:', error);
+        }
+      });
+  };
 
   const addTeamMember = (member: TeamMember) => {
     api.post('/team', member).then(res => setTeam(prev => [...prev, res.data.data])).catch(console.error);
@@ -467,7 +797,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       admins, addAdmin, deleteAdmin,
       videoResources, addVideoResource, updateVideoResource, deleteVideoResource,
       linkResources, addLinkResource, updateLinkResource, deleteLinkResource,
-      participants, addParticipant, removeParticipant,
+      participants, addParticipant, removeParticipant, checkInParticipant,
       clubMembers, addClubMember, removeClubMember,
       alumni, addAlum, updateAlum, deleteAlum,
       currentUser, setCurrentUser,

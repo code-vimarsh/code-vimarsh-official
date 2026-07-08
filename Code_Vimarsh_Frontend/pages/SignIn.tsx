@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../services/api';
+import { supabase } from '../services/supabase';
 
 import { AuthCard } from '../components/Auth';
 import { ForgotPasswordModal, SignInFormFields } from '../components/SignIn';
@@ -70,20 +71,36 @@ const SignIn: React.FC = () => {
     setAuthError('');
 
     try {
-      const response = await api.post('/auth/login', {
-        prn: form.prn,
+      // Direct Supabase Authentication
+      // 1. Fetch user's email via their PRN from the profiles table
+      const { data: profileData, error: profileErr } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('prn', form.prn)
+        .single();
+
+      if (profileErr || !profileData?.email) {
+        throw new Error('No registered account was found with this PRN.');
+      }
+
+      // 2. Sign in using email & password
+      const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({
+        email: profileData.email,
         password: form.password,
       });
 
-      if (response.data.success && response.data.token) {
-        localStorage.setItem('cv_token', response.data.token);
+      if (authErr) {
+        throw authErr;
+      }
+
+      if (authData?.session) {
+        localStorage.setItem('cv_token', authData.session.access_token);
         setIsLoggedIn(true);
         navigate('/dashboard');
-      } else {
-        throw new Error(response.data.message || 'Login failed');
       }
     } catch (err: any) {
-      setAuthError(err.response?.data?.message || err.message || 'Failed to sign in. Check your credentials.');
+      console.error('Supabase authentication failed:', err);
+      setAuthError(err.message || 'Failed to sign in. Please verify your PRN and password.');
     } finally {
       setIsLoading(false);
     }

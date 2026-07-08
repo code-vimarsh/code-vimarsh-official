@@ -6,3 +6,4 @@ export { default as PasswordMatchBadge } from './PasswordMatchBadge';
 export { default as Step1Identity }      from './Step1Identity';
 export { default as Step2Password }      from './Step2Password';
 export { default as SuccessScreen }      from './SuccessScreen';
+export { Step3OTP }                      from './Step3OTP';

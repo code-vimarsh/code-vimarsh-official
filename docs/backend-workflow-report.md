@@ -89,12 +89,33 @@ flowchart LR
 - **GET /events/registrations**
   - **Response**: `{ success: boolean, registrations: Participant[] }` - Admins only
   - **Response Mapping**:
+    - DB `id` -> JSON `id` (UUID Ticket ID)
     - DB `full_name` -> JSON `name`
+    - DB `email` -> JSON `email`
     - DB `event_id` -> JSON `eventId`
     - DB `registered_at` -> JSON `registeredAt`
+    - DB `status` -> JSON `status` ('registered' | 'attended')
+    - DB `custom_answers` -> JSON `customAnswers`
+    - DB `ticket_qr_url` -> JSON `ticketQrUrl` (optional)
+    - DB `email_sent_at` -> JSON `emailSentAt` (optional)
 - **POST /events/:id/register** (ADDED)
   - **Request Body**: `{ answers: Record<string, any> }`
-  - **Note**: Frontend sends dynamic form field responses under `answers`. The backend should inspect the event's `form_fields` configuration, extract the values matching "Full Name", "Email Address", and "WhatsApp Number" to populate first-class columns (`full_name`, `email`, `phone` respectively), and store the complete key-value dictionary in the `custom_answers` JSONB column.
+  - **Response**: `{ success: boolean, registration: Participant }`
+  - **Note**: Frontend sends dynamic form field responses under `answers`. The backend should perform the following workflow:
+    1. Inspect the event's `form_fields` configuration, extract values matching "Full Name", "Email Address", and "WhatsApp Number" to populate database columns (`full_name`, `email`, `phone`), and store the full payload in the `custom_answers` JSONB column.
+    2. Generate a unique registration UUID `id` (this acts as the Ticket ID).
+    3. Generate a **QR Code image** containing this UUID string, upload the image to media storage (e.g. Supabase Storage / Cloudinary), and save the public link to the `ticket_qr_url` column.
+    4. Dispatch a confirmation email to the candidate via **SMTP (Code Vimarsh)** attaching/embedding the generated QR code image and event ticket pass.
+    5. Record the timestamp of successful dispatch in the `email_sent_at` column.
+    6. Return the created `Participant` object including `id`, `ticketQrUrl`, and `emailSentAt`.
+- **PATCH /events/registrations/:id/check-in** (NEW)
+  - **Request Body**: `{ status: 'registered' | 'attended' }`
+  - **Response**: `{ success: boolean, registration: Participant }`
+  - **Note**: Allows manual checking in or undoing checking in of a registrant from the Admin registration list.
+- **POST /events/check-in** (NEW)
+  - **Request Body**: `{ registration_id: string }`
+  - **Response**: `{ success: boolean, message: string, registration: Participant }`
+  - **Note**: Decodes scanned QR code payloads (which contain the registration ID) and updates the matching registration's status from `'registered'` to `'attended'`.
 
 ### Projects
 - **GET /projects**
@@ -207,6 +228,10 @@ flowchart LR
 | `Resource.type` | `resources.content_type` | Rename in API serializer |
 | `Resource.thumbnail` | `resources.thumbnail_url` | Rename in API serializer |
 | `Alum` | `alumni` properties | 1:1 Direct mapping (Aligned in Database) |
+| `Participant.status` | `event_registrations.status` | 1:1 Direct mapping |
+| `Participant.customAnswers` | `event_registrations.custom_answers` | Rename/Direct mapping in API serializer |
+| `Participant.ticketQrUrl` | `event_registrations.ticket_qr_url` | Rename in API serializer |
+| `Participant.emailSentAt` | `event_registrations.email_sent_at` | Rename/Timestamp mapping in API serializer |
 
 ## 6. Cloudinary Strategy
 - Save images via the Cloudinary SDK on the backend.

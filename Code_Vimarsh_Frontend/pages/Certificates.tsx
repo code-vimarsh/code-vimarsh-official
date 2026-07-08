@@ -102,12 +102,15 @@ const Certificates: React.FC = () => {
         }
     };
 
-    const bulkParticipants = participants.filter(p => p.eventId === bulkEventId);
+    const bulkParticipants = participants.filter(p => p.eventId === bulkEventId && p.status === 'attended');
 
     const handleBulkGenerate = async () => {
         if (!bulkParticipants.length) return;
         setBulkStatus('generating');
         setBulkProgress({ done: 0, total: bulkParticipants.length });
+
+        const { default: JSZip } = await import('jszip');
+        const zip = new JSZip();
 
         for (let i = 0; i < bulkParticipants.length; i++) {
             const p = bulkParticipants[i];
@@ -128,13 +131,42 @@ const Certificates: React.FC = () => {
 
             const el = wrapper.querySelector<HTMLElement>(':scope > div');
             if (el) {
-                await captureElement(el, `CV_${form.certType}_${p.name.replace(/\s+/g, '_')}.png`);
+                const canvas = await html2canvas(el, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: null,
+                    logging: false,
+                    width: 900,
+                    height: 636,
+                    scrollX: 0,
+                    scrollY: 0,
+                });
+                const blob = await new Promise<Blob | null>(r => canvas.toBlob(r, 'image/png'));
+                if (blob) {
+                    zip.file(`CV_${form.certType}_${p.name.replace(/\s+/g, '_')}.png`, blob);
+                }
             }
 
             root.unmount();
             document.body.removeChild(wrapper);
             setBulkProgress({ done: i + 1, total: bulkParticipants.length });
             await new Promise(r => setTimeout(r, 200));
+        }
+
+        try {
+            const zipBlob = await zip.generateAsync({ type: 'blob' });
+            const blobUrl = URL.createObjectURL(zipBlob);
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            const eventTitle = events.find(e => e.id === bulkEventId)?.title || 'Event';
+            link.download = `CV_Certificates_${eventTitle.replace(/\s+/g, '_')}.zip`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(blobUrl);
+        } catch (err) {
+            console.error('ZIP generation failed:', err);
         }
 
         setBulkStatus('done');
@@ -343,7 +375,7 @@ const Certificates: React.FC = () => {
                                 <option value="">Select event…</option>
                                 {events.map(ev => (
                                     <option key={ev.id} value={ev.id}>
-                                        {ev.title} ({participants.filter(p => p.eventId === ev.id).length})
+                                        {ev.title} ({participants.filter(p => p.eventId === ev.id && p.status === 'attended').length} attended)
                                     </option>
                                 ))}
                             </select>

@@ -1,0 +1,397 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────
+//  Enums
+// ─────────────────────────────────────────────
+
+enum UserRole {
+  USER
+  MODERATOR
+  CONTENT_ADMIN
+  SUPER_ADMIN
+}
+
+enum EventType {
+  Workshop
+  Hackathon
+  Meetup
+}
+
+enum EventStatus {
+  Upcoming
+  Live
+  Past
+}
+
+enum ExperienceLevel {
+  Beginner
+  Intermediate
+  Advanced
+}
+
+enum RegistrationStatus {
+  Registered
+  Attended
+  Cancelled
+}
+
+enum ProjectStatus {
+  Pending
+  Approved
+  Rejected
+}
+
+enum ProjectCategory {
+  Web
+  Mobile
+  DesktopApp
+  DataScience
+  MachineLearning
+  DevOps
+  Blockchain
+  GameDev
+  Other
+}
+
+enum ContactStatus {
+  Open
+  Resolved
+}
+
+// ─────────────────────────────────────────────
+//  Core User
+// ─────────────────────────────────────────────
+
+model User {
+  id          String   @id @default(cuid())
+  prn         String   @unique
+  name        String
+  email       String   @unique
+  password    String
+  role        UserRole @default(USER)
+  avatar      String?
+  xp          Int      @default(0)
+  level       Int      @default(1)
+  circuit     Int      @default(0)
+  global_rank  Int?
+  github_url   String?
+  linkedin_url String?
+  leetcode_url String?
+  is_verified  Boolean  @default(false)
+  created_at  DateTime @default(now())
+
+  admin                     Admin?
+  event_registrations       EventRegistration[]
+  created_projects          Project[]                @relation("ProjectCreator")
+  project_memberships       ProjectMember[]
+  certificates              Certificate[]
+  contact_messages          ContactMessage[]
+  email_verification_tokens EmailVerificationToken[]
+  password_reset_tokens     PasswordResetToken[]
+
+  @@map("users")
+}
+
+// ─────────────────────────────────────────────
+//  Admin (granular permission flags per role)
+// ─────────────────────────────────────────────
+
+model Admin {
+  id                      String  @id @default(cuid())
+  user_id                 String  @unique
+  can_manage_events       Boolean @default(false)
+  can_manage_projects     Boolean @default(false)
+  can_manage_blogs        Boolean @default(false)
+  can_manage_resources    Boolean @default(false)
+  can_manage_users        Boolean @default(false)
+  can_manage_achievements Boolean @default(false)
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("admins")
+}
+
+// ─────────────────────────────────────────────
+//  Email & Password Tokens
+// ─────────────────────────────────────────────
+
+model EmailVerificationToken {
+  id         String   @id @default(cuid())
+  user_id    String
+  token      String   @unique
+  expires_at DateTime
+  is_used    Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("email_verification_tokens")
+}
+
+model PasswordResetToken {
+  id         String   @id @default(cuid())
+  user_id    String
+  token      String   @unique
+  expires_at DateTime
+  is_used    Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("password_reset_tokens")
+}
+
+// ─────────────────────────────────────────────
+//  Events
+// ─────────────────────────────────────────────
+
+model Event {
+  id               String      @id @default(cuid())
+  title            String
+  description      String?     // Short description / subtitle
+  long_description String?     // Rich/detailed event description
+  type             EventType
+  status           EventStatus @default(Upcoming)
+  location         String?
+  start_date       DateTime
+  end_date         DateTime?
+  max_participants Int?
+  banner_image     String?
+  images           String[]
+  topics           String[]    // Tags/topics as an array of strings
+  form_fields      Json?
+  is_published     Boolean     @default(false)
+  created_by       String
+  created_at       DateTime    @default(now())
+  event_speaker_id String?
+
+  speakers      EventSpeaker[]
+  registrations EventRegistration[]
+  certificates  Certificate[]
+
+  @@map("events")
+}
+
+model EventSpeaker {
+  id          String  @id @default(cuid())
+  event_id    String
+  name        String
+  designation String?
+  avatar      String?
+  bio         String?
+
+  event Event @relation(fields: [event_id], references: [id], onDelete: Cascade)
+
+  @@map("event_speakers")
+}
+
+model EventRegistration {
+  id                     String             @id @default(cuid())
+  user_id                String
+  event_id               String
+  status                 RegistrationStatus @default(Registered)
+  // Registration form fields
+  full_name              String
+  email                  String
+  whatsapp_number        String
+  github_username        String?
+  experience_level       ExperienceLevel
+  areas_of_interest      String[]           // Stored as an array of strings
+  reason_for_participation String?
+  registered_at          DateTime           @default(now())
+
+  user  User  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [event_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, event_id])
+  @@map("event_registrations")
+}
+
+// ─────────────────────────────────────────────
+//  Projects
+// ─────────────────────────────────────────────
+
+model Project {
+  id                String          @id @default(cuid())
+  title             String
+  short_description String?         // Brief summary shown in cards/listings
+  category          ProjectCategory @default(Web)
+  about             String?         // Lengthy description of the project
+  key_features      String[]        // List of key features
+  tech_stack        String[]        // Technologies used
+  github_link       String?
+  image             String?
+  author_name       String          // Display name of the author
+  status            ProjectStatus   @default(Pending)
+  created_by        String
+  created_at        DateTime        @default(now())
+
+  creator User            @relation("ProjectCreator", fields: [created_by], references: [id])
+  members ProjectMember[]
+
+  @@map("projects")
+}
+
+model ProjectMember {
+  id         String @id @default(cuid())
+  project_id String
+  user_id    String
+
+  project Project @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([project_id, user_id])
+  @@map("project_members")
+}
+
+// ─────────────────────────────────────────────
+//  Certificates
+// ─────────────────────────────────────────────
+
+model Certificate {
+  id              String   @id @default(cuid())
+  user_id         String
+  event_id        String
+  certificate_url String
+  issued_at       DateTime @default(now())
+
+  user  User  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [event_id], references: [id], onDelete: Cascade)
+
+  @@map("certificates")
+}
+
+// ─────────────────────────────────────────────
+//  Contact Messages
+// ─────────────────────────────────────────────
+
+model ContactMessage {
+  id         String        @id @default(cuid())
+  name       String
+  email      String
+  subject    String
+  message    String
+  status     ContactStatus @default(Open)
+  user_id    String?
+  created_at DateTime      @default(now())
+
+  user User? @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@map("contact_messages")
+}
+
+// ─────────────────────────────────────────────
+//  Team Members
+// ─────────────────────────────────────────────
+
+model TeamMember {
+  id       String  @id @default(cuid())
+  name     String
+  role     String
+  section  String
+  image    String?
+  email    String  @unique
+  github   String?
+  linkedin String?
+
+  created_at DateTime @default(now())
+
+  @@map("team_members")
+}
+
+// ─────────────────────────────────────────────
+//  Alumni
+// ─────────────────────────────────────────────
+
+model Alum {
+  id           String   @id @default(cuid())
+  name         String
+  initials     String?
+  photo        String?
+  role         String
+  company      String
+  batch        String
+  location     String
+  domain       String
+  bio          String?  @db.Text
+  advice       String?  @db.Text
+  tech         String[]
+  linkedin     String?
+  github       String?
+  website      String?
+  achievements String[]
+  roadmap      Json?
+
+  created_at DateTime @default(now())
+
+  @@map("alumni")
+}
+
+// ─────────────────────────────────────────────
+//  Blogs
+// ─────────────────────────────────────────────
+
+model Blog {
+  id               String   @id @default(cuid())
+  title            String
+  slug             String   @unique
+  topic            String
+  short_description String? @db.Text
+  content          String   @db.Text
+  featured_image   String?
+  images           String[]
+  author_name      String
+  author_role      String
+  tags             String[]
+  status           String   @default("Draft")
+  
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  @@map("blogs")
+}
+
+// ─────────────────────────────────────────────
+//  Achievements
+// ─────────────────────────────────────────────
+
+model Achievement {
+  id          String   @id @default(cuid())
+  title       String
+  description String?  @db.Text
+  date        String
+  tag         String?
+  icon        String?
+  category    String
+  order       Int      @default(1)
+
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@map("achievements")
+}
+
+// ─────────────────────────────────────────────
+//  Resources
+// ─────────────────────────────────────────────
+
+model Resource {
+  id           String   @id @default(cuid())
+  title        String
+  category     String   
+  url          String
+  thumbnail    String?
+  tags         String[]
+  best_for     String?
+  content_type String?
+
+  created_at   DateTime @default(now())
+
+  @@map("resources")
+}

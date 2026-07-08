@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGlobalState } from '../context/GlobalContext';
 import {
   LayoutDashboard, Calendar, FolderHeart, ShieldAlert, Users,
   ArrowLeft, BookOpen, Award, Newspaper, Trophy, Megaphone, Mail,
   Settings, LogOut, ChevronRight, Activity, Bell, Search, User, GraduationCap, Menu, X
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 // New Refactored Components
 import Certificates from './Certificates';
@@ -26,7 +26,14 @@ const Admin: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'events' | 'projects' | 'admins' | 'resources' | 'email' | 'certificates' | 'blogs' | 'achievements' | 'alumni' | 'team' | 'contact'>('overview');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  const { currentUser } = useGlobalState();
+  const navigate = useNavigate();
+  const { currentUser, setIsLoggedIn, isLoggedIn } = useGlobalState();
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      navigate('/signin');
+    }
+  }, [isLoggedIn, navigate]);
 
   const menuItems = [
     { id: 'overview', icon: <LayoutDashboard size={18} />, label: 'Overview', desc: 'System dashboard' },
@@ -117,7 +124,11 @@ const Admin: React.FC = () => {
               <p className="text-sm font-black text-white truncate leading-none">Admin Authority</p>
               <p className="text-[10px] text-textMuted font-bold uppercase tracking-widest mt-1 opacity-60">Super Access</p>
             </div>
-            <button className="text-textMuted hover:text-red-500 transition-colors p-2 rounded-xl hover:bg-red-500/10">
+            <button 
+              onClick={() => setIsLoggedIn(false)}
+              className="text-textMuted hover:text-red-500 transition-colors p-2 rounded-xl hover:bg-red-500/10"
+              title="Sign Out"
+            >
               <LogOut size={16} />
             </button>
           </div>

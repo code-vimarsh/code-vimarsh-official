@@ -186,6 +186,8 @@ export interface Participant {
   eventId: string;       // which event they registered for
   eventTitle: string;    // denormalized for display
   registeredAt: string;
+  status: 'registered' | 'attended';
+  customAnswers?: Record<string, any>;
 }
 
 export interface ClubMember {
