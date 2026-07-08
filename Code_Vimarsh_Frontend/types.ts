@@ -22,7 +22,7 @@ export interface EventType {
   title: string;
   date: string;
   type: 'Workshop' | 'Hackathon' | 'Webinar' | string;
-  status?: 'Upcoming' | 'Live' | 'Past';
+  status?: 'Upcoming' | 'Live' | 'Past' | 'upcoming' | 'live' | 'past';
   description: string;
   long_description?: string;
   image?: string;
@@ -30,6 +30,8 @@ export interface EventType {
   images?: string[];
   formFields?: any[]; // Replaces AdminEvent.formFields
   isPublished?: boolean;
+  location?: string;
+  tags?: string[];
 }
 
 export interface ProjectType {

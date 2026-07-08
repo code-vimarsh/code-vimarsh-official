@@ -81,13 +81,20 @@ const EventNotFound: React.FC<{ id?: string }> = ({ id }) => {
  * To integrate backend: swap the useEffect body with a fetch/useQuery call.
  */
 const EventDetails: React.FC = () => {
-  const { events } = useGlobalState();
+  const { events, participants, currentUser } = useGlobalState();
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
   const [event, setEvent] = useState<Event | null | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const registrationRef = useRef<HTMLDivElement>(null);
+
+  const isAlreadyRegistered = !!(
+    currentUser &&
+    participants.some(
+      (p) => p.eventId === id && p.email?.toLowerCase() === currentUser.email?.toLowerCase()
+    )
+  );
 
   // ── Scroll to top on every navigation to this page ───────────────────────
   useEffect(() => {
@@ -318,15 +325,40 @@ const EventDetails: React.FC = () => {
                 backdropFilter: 'blur(14px)',
               }}
             >
-              {/* Top orange rim */}
+              {/* Top rim */}
               <div
                 className="absolute top-0 left-8 right-8 h-px rounded-full pointer-events-none"
-                style={{ background: 'linear-gradient(90deg, transparent, rgba(255,106,0,0.50), transparent)' }}
+                style={{
+                  background: isAlreadyRegistered
+                    ? 'linear-gradient(90deg, transparent, rgba(34,197,94,0.50), transparent)'
+                    : 'linear-gradient(90deg, transparent, rgba(255,106,0,0.50), transparent)'
+                }}
                 aria-hidden="true"
               />
 
               {/* ── Registration CTA ── */}
-              {event?.status === 'live' ? (
+              {isAlreadyRegistered ? (
+                <div className="space-y-3">
+                  <div
+                    className="w-full py-3.5 rounded-xl font-bold text-center text-sm flex items-center justify-center gap-2"
+                    style={{
+                      background: 'rgba(34, 197, 94, 0.08)',
+                      border: '1px solid rgba(34, 197, 94, 0.25)',
+                      color: '#4ade80',
+                    }}
+                  >
+                    ✓ Already Registered
+                  </div>
+                  <button
+                    onClick={() => {
+                      registrationRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
+                    className="w-full text-center text-xs text-textMuted hover:text-white transition-colors underline underline-offset-4"
+                  >
+                    View your pass below
+                  </button>
+                </div>
+              ) : event?.status === 'live' ? (
                 <div className="space-y-3">
                   <motion.button
                     onClick={openRegistration}
@@ -435,9 +467,9 @@ const EventDetails: React.FC = () => {
           </aside>
         </div>
 
-        {/* ── Inline registration form ─────────────────────────────────── */}
+        {/* ── Inline registration form / Pass ── */}
         <AnimatePresence>
-          {isRegisterOpen && event.status === 'live' && (
+          {((isRegisterOpen && event.status === 'live') || isAlreadyRegistered) && (
             <motion.div
               id="registration-section"
               ref={registrationRef}
@@ -453,9 +485,12 @@ const EventDetails: React.FC = () => {
                 <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
                 <span
                   className="text-[10px] uppercase tracking-widest font-semibold px-3 py-1 rounded-full"
-                  style={{ background: 'rgba(255,106,0,0.10)', color: '#ff6a00' }}
+                  style={{
+                    background: isAlreadyRegistered ? 'rgba(34,197,94,0.10)' : 'rgba(255,106,0,0.10)',
+                    color: isAlreadyRegistered ? '#4ade80' : '#ff6a00'
+                  }}
                 >
-                  Registration Form
+                  {isAlreadyRegistered ? 'Your Entry Pass' : 'Registration Form'}
                 </span>
                 <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
               </div>
@@ -465,39 +500,44 @@ const EventDetails: React.FC = () => {
                 className="relative rounded-2xl overflow-hidden"
                 style={{
                   background: 'rgba(14,14,14,0.95)',
-                  border: '1px solid rgba(255,106,0,0.14)',
-                  boxShadow: '0 0 60px rgba(255,106,0,0.06)',
+                  border: isAlreadyRegistered ? '1px solid rgba(34,197,94,0.18)' : '1px solid rgba(255,106,0,0.14)',
+                  boxShadow: isAlreadyRegistered ? '0 0 60px rgba(34,197,94,0.05)' : '0 0 60px rgba(255,106,0,0.06)',
                 }}
               >
                 {/* Glow rim at top */}
                 <div
                   className="absolute top-0 left-0 right-0 h-px"
                   style={{
-                    background:
-                      'linear-gradient(90deg, transparent 0%, rgba(255,106,0,0.5) 40%, rgba(255,154,0,0.5) 60%, transparent 100%)',
+                    background: isAlreadyRegistered
+                      ? 'linear-gradient(90deg, transparent 0%, rgba(34,197,94,0.5) 40%, rgba(74,222,128,0.5) 60%, transparent 100%)'
+                      : 'linear-gradient(90deg, transparent 0%, rgba(255,106,0,0.5) 40%, rgba(255,154,0,0.5) 60%, transparent 100%)',
                   }}
                   aria-hidden="true"
                 />
 
-                {/* Close button */}
+                {/* Close button / Title */}
                 <div className="flex items-center justify-between px-7 pt-6 pb-4">
                   <div>
-                    <h3 className="font-display font-bold text-lg text-white">Complete your Registration</h3>
+                    <h3 className="font-display font-bold text-lg text-white">
+                      {isAlreadyRegistered ? 'Your Event Ticket' : 'Complete your Registration'}
+                    </h3>
                     <p className="text-xs text-textMuted mt-0.5">{event.title}</p>
                   </div>
-                  <button
-                    onClick={closeRegistration}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all hover:scale-105"
-                    style={{
-                      background: 'rgba(255,255,255,0.05)',
-                      border: '1px solid rgba(255,255,255,0.09)',
-                      color: '#888',
-                    }}
-                    aria-label="Close registration form"
-                  >
-                    <X size={13} />
-                    Close
-                  </button>
+                  {!isAlreadyRegistered && (
+                    <button
+                      onClick={closeRegistration}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all hover:scale-105"
+                      style={{
+                        background: 'rgba(255,255,255,0.05)',
+                        border: '1px solid rgba(255,255,255,0.09)',
+                        color: '#888',
+                      }}
+                      aria-label="Close registration form"
+                    >
+                      <X size={13} />
+                      Close
+                    </button>
+                  )}
                 </div>
 
                 <div
@@ -507,7 +547,7 @@ const EventDetails: React.FC = () => {
                 />
 
                 {/* Form body */}
-                <div className="px-7 py-7 max-w-2xl">
+                <div className="px-7 py-7 max-w-2xl mx-auto w-full">
                   <EventRegistrationRenderer
                     eventId={event.id}
                     eventTitle={event.title}
