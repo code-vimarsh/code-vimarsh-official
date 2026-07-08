@@ -4,10 +4,10 @@ import { Github, Linkedin, Terminal, Edit3, Save, X, MapPin, Mail, Briefcase, Ch
 import { useGlobalState } from '../context/GlobalContext';
 import { Toast, useToast } from '../components/Projects';
 import api from '../services/api';
-import html2canvas from 'html2canvas';
+import { downloadBoardingPass } from '../utils/downloadBoardingPass';
 
 const Dashboard: React.FC = () => {
-  const { currentUser, setCurrentUser, isLoggedIn, setIsLoggedIn, participants } = useGlobalState();
+  const { currentUser, setCurrentUser, isLoggedIn, setIsLoggedIn, participants, events } = useGlobalState();
   const navigate = useNavigate();
   const { toast, showToast, hideToast } = useToast();
   
@@ -381,103 +381,155 @@ const Dashboard: React.FC = () => {
               </button>
             </div>
             
-            <div 
-              id="dashboard-ticket-card"
-              className="relative w-full max-w-sm rounded-[2rem] bg-gradient-to-b from-[#161616] to-[#0a0a0a] border border-white/10 p-8 shadow-2xl text-left overflow-hidden select-none"
-            >
-              <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-primary via-orange-500 to-primary" />
-              <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-              
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-2">
-                  <Shield className="text-primary" size={16} />
-                  <span className="text-[10px] font-bold text-white uppercase tracking-[0.2em]">CODE VIMARSH NEXUS</span>
+            {(() => {
+              const event = events?.find(e => e.title === selectedTicket?.eventTitle);
+              const typeAcronym = (() => {
+                const t = event?.type?.toLowerCase() || '';
+                if (t.includes('hack')) return 'HCK';
+                if (t.includes('meet')) return 'MTP';
+                return 'WKS';
+              })();
+
+              return (
+                <div className="container-cards-ticket select-none">
+                  <div
+                    id="dashboard-ticket-card"
+                    className="card-ticket"
+                  >
+                    {/* Left QR Code Container */}
+                    <div className="qr-left-container">
+                      <div className="qr-code-wrapper-left">
+                        {dashboardQrUrl ? (
+                          <img src={dashboardQrUrl} alt="QR Code Ticket" className="qr-code-img-left" />
+                        ) : (
+                          <div className="w-[80px] h-[80px] flex items-center justify-center border border-dashed border-neutral-300 rounded-md animate-pulse">
+                            <Loader2 className="animate-spin text-neutral-400" size={16} />
+                          </div>
+                        )}
+                      </div>
+                      <p className="qr-scan-text-left">SCAN TO CHECK-IN</p>
+                    </div>
+
+                    {/* Separator 1 */}
+                    <div className="ticket-separator">
+                      <span className="line"></span>
+                    </div>
+
+                    {/* Main content body */}
+                    <div className="content-ticket">
+                      <div className="content-data">
+                        {/* Destination line (Organizer -> Event Type) */}
+                        <div className="destination">
+                          <div className="dest start">
+                            <p className="country">Organizer</p>
+                            <p className="acronym">CVM</p>
+                            <p className="hour">Code Vimarsh</p>
+                          </div>
+                          <svg
+                            style={{ flexShrink: 0 }}
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              fill="none"
+                              stroke="#a0aec0"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="1.5"
+                              d="m18 8l4 4l-4 4M2 12h20"
+                            />
+                          </svg>
+                          <div className="dest end">
+                            <p className="country">Event Type</p>
+                            <p className="acronym">{typeAcronym}</p>
+                            <p className="hour">{event?.type || 'Workshop'}</p>
+                          </div>
+                        </div>
+
+                        {/* Sub-divider */}
+                        <div style={{ borderBottom: '2px solid #edf2f7', margin: '2px 0' }} />
+
+                        {/* Info Grid */}
+                        <div className="ticket-data-grid">
+                          <div className="ticket-data-row">
+                            <div className="ticket-data-item">
+                              <p className="title">Passenger / Candidate</p>
+                              <p className="subtitle">{selectedTicket.name}</p>
+                            </div>
+                            <div className="ticket-data-item" style={{ textAlign: 'right' }}>
+                              <p className="title">Ticket ID</p>
+                              <p className="subtitle">#{selectedTicket.ticketCode || selectedTicket.id?.split('_')[1]?.slice(0, 4) || selectedTicket.id?.slice(0, 4)}</p>
+                            </div>
+                          </div>
+
+                          <div className="ticket-data-row">
+                            <div className="ticket-data-item">
+                              <p className="title">Date</p>
+                              <p className="subtitle">{selectedTicket.registeredAt}</p>
+                            </div>
+                            <div className="ticket-data-item" style={{ textAlign: 'right' }}>
+                              <p className="title">Venue</p>
+                              <p className="subtitle" style={{ maxWidth: '140px' }}>{event?.location || 'MSU Baroda'}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Separator 2 */}
+                      <div className="ticket-separator">
+                        <span className="line"></span>
+                      </div>
+
+                      {/* Right Brand Strip */}
+                      <div className="brand-strip-container">
+                        <div className="strip-icon">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="text-white"
+                          >
+                            <polyline points="16 18 22 12 16 6" />
+                            <polyline points="8 6 2 12 8 18" />
+                          </svg>
+                        </div>
+                        <div className="strip-logo-wrapper">
+                          <span className="strip-logo-text">CV</span>
+                          <div className="strip-logo-underline"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <span className="text-[9px] font-mono text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">
-                  ENTRY PASS
-                </span>
-              </div>
-
-              <div className="space-y-4 mb-6">
-                <div>
-                  <span className="text-[9px] text-textMuted uppercase tracking-widest block mb-1">EVENT TITLE</span>
-                  <h3 className="text-xl font-display font-black text-white leading-tight tracking-tight uppercase italic truncate">
-                    {selectedTicket.eventTitle}
-                  </h3>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <span className="text-[9px] text-textMuted uppercase tracking-widest block mb-1">CANDIDATE</span>
-                    <p className="text-sm font-bold text-white truncate">{selectedTicket.name}</p>
-                  </div>
-                  <div>
-                    <span className="text-[9px] text-textMuted uppercase tracking-widest block mb-1">TICKET ID</span>
-                    <p className="text-xs font-mono text-primary font-bold truncate">#{selectedTicket.ticketCode || selectedTicket.id?.split('_')[1]?.slice(0, 4) || selectedTicket.id?.slice(0, 4)}</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <span className="text-[9px] text-textMuted uppercase tracking-widest block mb-1">DATE</span>
-                    <p className="text-xs text-white/80 font-semibold">{selectedTicket.registeredAt}</p>
-                  </div>
-                  <div>
-                    <span className="text-[9px] text-textMuted uppercase tracking-widest block mb-1">STATUS</span>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border ${
-                      selectedTicket.status === 'attended' 
-                        ? 'text-green-400 bg-green-500/10 border-green-500/20' 
-                        : 'text-orange-400 bg-orange-500/10 border-orange-500/20'
-                    }`}>
-                      {selectedTicket.status === 'attended' ? 'Attended' : 'Confirmed'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="relative my-6 flex items-center justify-between">
-                <div className="absolute left-0 -ml-10 w-4 h-8 bg-[#0a0a0a] rounded-r-full border-r border-y border-white/10" />
-                <div className="w-full border-t border-dashed border-white/10 mx-2" />
-                <div className="absolute right-0 -mr-10 w-4 h-8 bg-[#0a0a0a] rounded-l-full border-l border-y border-white/10" />
-              </div>
-
-              <div className="flex flex-col items-center justify-center p-6 bg-black/40 border border-white/5 rounded-2xl relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 via-transparent to-transparent pointer-events-none" />
-                
-                {dashboardQrUrl ? (
-                  <div className="relative p-2 bg-white rounded-xl shadow-xl shadow-primary/5">
-                    <img src={dashboardQrUrl} alt="QR Code Ticket" className="w-40 h-40 object-contain block" />
-                  </div>
-                ) : (
-                  <div className="w-40 h-40 flex items-center justify-center border border-dashed border-white/20 rounded-xl animate-pulse">
-                    <Loader2 className="animate-spin text-primary" size={24} />
-                  </div>
-                )}
-                
-                <p className="text-[9px] text-textMuted font-mono uppercase tracking-[0.15em] mt-4 text-center">
-                  SCAN AT THE ENTRANCE FOR CHECK-IN
-                </p>
-              </div>
-            </div>
+              );
+            })()}
 
             <button
               onClick={async () => {
-                const el = document.getElementById('dashboard-ticket-card');
-                if (!el) return;
+                if (!dashboardQrUrl || !selectedTicket) return;
+                const event = events?.find(e => e.title === selectedTicket.eventTitle);
+                const t = event?.type?.toLowerCase() || '';
+                const typeAcronym = t.includes('hack') ? 'HCK' : t.includes('meet') ? 'MTP' : 'WKS';
                 try {
-                  const canvas = await html2canvas(el, {
-                    scale: 2,
-                    useCORS: true,
-                    backgroundColor: '#0a0a0a'
+                  await downloadBoardingPass({
+                    participantName: selectedTicket.name || '',
+                    ticketCode: selectedTicket.ticketCode || selectedTicket.id?.split('_')[1]?.slice(0, 4) || selectedTicket.id?.slice(0, 4) || '',
+                    registeredAt: selectedTicket.registeredAt || '',
+                    venue: event?.location || 'MSU Baroda',
+                    eventType: event?.type || 'Workshop',
+                    typeAcronym,
+                    qrCodeDataUrl: dashboardQrUrl,
                   });
-                  const link = document.createElement('a');
-                  link.download = `CV_Ticket_${selectedTicket.name.replace(/\s+/g, '_')}.png`;
-                  link.href = canvas.toDataURL('image/png');
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
                 } catch (err) {
-                  console.error('Failed to capture ticket:', err);
+                  console.error('Failed to download ticket:', err);
                 }
               }}
               className="flex items-center gap-2 px-8 py-3.5 rounded-xl text-xs font-bold text-black bg-primary hover:bg-secondary hover:shadow-[0_0_20px_rgba(255,106,0,0.4)] transition-all transform hover:-translate-y-0.5"
