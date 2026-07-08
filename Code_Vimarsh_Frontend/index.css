@@ -372,4 +372,22 @@ img, svg, video, canvas {
   }
 }
 
+/* ── Camera Scanner Styles ─────────────────────────────────────────── */
+#modal-qr-scanner-element {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+#modal-qr-scanner-element video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 0.75rem;
+}
+
+
 

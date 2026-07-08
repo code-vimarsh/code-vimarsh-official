@@ -16,6 +16,7 @@ interface GlobalContextType {
   deleteEvent: (id: string) => void;
   projects: ProjectType[];
   addProject: (project: ProjectType) => void;
+  updateProject: (project: ProjectType) => void;
   deleteProject: (id: string) => void;
   team: TeamMember[];
   addTeamMember: (member: TeamMember) => void;
@@ -101,7 +102,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       localStorage.removeItem('cv_token');
       localStorage.removeItem('cv_user_profile');
       setCurrentUser(null);
-      supabase.auth.signOut().catch((err) => console.error('Supabase signout error:', err));
+      (supabase.auth.signOut() as any).catch((err) => console.error('Supabase signout error:', err));
     }
   };
 
@@ -179,8 +180,6 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
               name: 'Deep Jaiswal',
               email: 'deep@vimarsh.dev',
               role: 'SUPER_ADMIN',
-              xp: 1500,
-              level: 5,
               github_url: 'https://github.com',
               linkedin_url: 'https://linkedin.com',
               leetcode_url: 'https://leetcode.com',
@@ -201,8 +200,8 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   useEffect(() => {
 
     // Fetch events from Supabase directly
-    supabase
-      .from('events')
+    (supabase
+      .from('events') as any)
       .select('*')
       .order('start_date', { ascending: false })
       .then(({ data, error }) => {
@@ -232,8 +231,8 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       });
 
     // Fetch projects from Supabase directly
-    supabase
-      .from('projects')
+    (supabase
+      .from('projects') as any)
       .select('*')
       .order('created_at', { ascending: false })
       .then(({ data, error }) => {
@@ -246,8 +245,8 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       .catch(err => console.error('Failed to fetch projects from Supabase:', err));
 
     // Fetch team from Supabase directly
-    supabase
-      .from('team_members')
+    (supabase
+      .from('team_members') as any)
       .select('*')
       .order('sort_order', { ascending: true })
       .then(({ data, error }) => {
@@ -260,8 +259,8 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       .catch(err => console.error('Failed to fetch team from Supabase:', err));
 
     // Fetch alumni from Supabase directly
-    supabase
-      .from('alumni')
+    (supabase
+      .from('alumni') as any)
       .select('*')
       .order('graduation_year', { ascending: false })
       .then(({ data, error }) => {
@@ -274,8 +273,8 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       .catch(err => console.error('Failed to fetch alumni from Supabase:', err));
 
     // Fetch blogs from Supabase directly
-    supabase
-      .from('blogs')
+    (supabase
+      .from('blogs') as any)
       .select('*')
       .order('created_at', { ascending: false })
       .then(({ data, error }) => {
@@ -299,8 +298,8 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       .catch(err => console.error('Failed to fetch blogs from Supabase:', err));
 
     // Fetch achievements from Supabase directly
-    supabase
-      .from('achievements')
+    (supabase
+      .from('achievements') as any)
       .select('*')
       .order('sort_order', { ascending: true })
       .then(({ data, error }) => {
@@ -323,8 +322,8 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       .catch(err => console.error('Failed to fetch achievements from Supabase:', err));
 
     // Fetch resources from Supabase directly
-    supabase
-      .from('resources')
+    (supabase
+      .from('resources') as any)
       .select('*')
       .order('created_at', { ascending: false })
       .then(({ data, error }) => {
@@ -351,8 +350,8 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       }).catch(err => console.error('Failed to fetch users:', err));
 
       // Direct Supabase query to get event registrations
-      supabase
-        .from('event_registrations')
+      (supabase
+        .from('event_registrations') as any)
         .select(`
           *,
           event:events(*)
@@ -393,22 +392,26 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
   }, [isLoggedIn]);
 
-  const mapEventToPayload = (event: EventType) => ({
-    title: event.title,
-    description: event.description,
-    long_description: event.long_description,
-    type: event.type || 'Workshop',
-    status: event.status || 'Upcoming',
-    location: (event as any).location || '',
-    start_date: event.date ? new Date(event.date).toISOString() : new Date().toISOString(),
-    end_date: event.date ? new Date(event.date).toISOString() : new Date().toISOString(),
-    banner_image: event.image || '',
-    images: event.images || [],
-    topics: (event as any).tags || [],
-    max_participants: (event as any).capacity,
-    form_fields: event.formFields || [],
-    is_published: event.isPublished ?? false,
-  });
+  const mapEventToPayload = (event: EventType) => {
+    const slug = event.title.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+    return {
+      title: event.title,
+      slug,
+      description: event.description,
+      long_description: event.long_description,
+      type: event.type || 'Workshop',
+      status: event.status || 'Upcoming',
+      location: (event as any).location || '',
+      start_date: event.date ? new Date(event.date).toISOString() : new Date().toISOString(),
+      end_date: event.date ? new Date(event.date).toISOString() : new Date().toISOString(),
+      banner_image: event.image || '',
+      images: event.images || [],
+      topics: (event as any).tags || [],
+      max_participants: (event as any).capacity,
+      form_fields: event.formFields || [],
+      is_published: event.isPublished ?? false,
+    };
+  };
 
   const mapEventFromBackend = (e: any): EventType => ({
     id: e.id?.toString(),
@@ -619,6 +622,28 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     };
     api.post('/projects', payload).then(res => setProjects(prev => [mapProjectFromBackend(res.data.data), ...prev])).catch(console.error);
   };
+  const updateProject = (project: ProjectType) => {
+    const backendCategoryMap: Record<string, string> = {
+      'Web': 'Web',
+      'Mobile': 'App',
+      'AI / ML': 'AI',
+      'Systems': 'Other',
+      'Open Source': 'Other'
+    };
+    const payload = {
+      title: project.title,
+      short_description: project.description,
+      category: backendCategoryMap[project.category] || 'Other',
+      tech_stack: project.tech,
+      github_link: project.links?.github,
+      image: project.image,
+      author_name: project.author
+    };
+    api.put(`/projects/${project.id}`, payload).then(res => {
+      const updated = mapProjectFromBackend(res.data.data);
+      setProjects(prev => prev.map(p => p.id === project.id ? updated : p));
+    }).catch(console.error);
+  };
   const deleteProject = (id: string) => {
     api.delete(`/projects/${id}`).then(() => setProjects(prev => prev.filter(p => p.id !== id))).catch(console.error);
   };
@@ -788,7 +813,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     <GlobalContext.Provider value={{
       isLoggedIn, setIsLoggedIn,
       events, addEvent, updateEvent, deleteEvent,
-      projects, addProject, deleteProject,
+      projects, addProject, updateProject, deleteProject,
       team, addTeamMember, updateTeamMember, deleteTeamMember,
       blogs, achievements,
       managedBlogs, addManagedBlog, updateManagedBlog, deleteManagedBlog, toggleBlogStatus,

@@ -703,18 +703,42 @@ const ScannerModal: React.FC<ScannerModalProps> = ({ eventId, eventTitle, formFi
   const [scanResult, setScanResult] = useState<{ success: boolean; message: string } | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
+  const playBeep = (isSuccess: boolean) => {
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(isSuccess ? 880 : 330, audioCtx.currentTime); // High beep for success, low beep for error/already registered
+      gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.15);
+    } catch (err) {
+      console.error('AudioContext beep failed:', err);
+    }
+  };
+
   const handleCheckIn = (id: string) => {
     const part = participants.find(p => p.id === id && p.eventId === eventId);
     if (!part) {
+      playBeep(false);
       setScanResult({ success: false, message: `Invalid ticket ID: ${id}` });
       return;
     }
     
     if (part.status === 'attended') {
+      playBeep(false);
       setScanResult({ success: true, message: `${part.name} is already checked in!` });
       return;
     }
 
+    playBeep(true);
     checkInParticipant(id, 'attended');
     setScanResult({ success: true, message: `Welcome, ${part.name}! Checked in successfully.` });
     
