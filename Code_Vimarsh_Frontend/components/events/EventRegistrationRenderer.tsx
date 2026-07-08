@@ -337,29 +337,26 @@ const EventRegistrationRenderer: React.FC<EventRegistrationRendererProps> = ({
             <div className="content-ticket">
               <div className="content-data">
                 {/* Destination line (Organizer -> Event Type) */}
-                <div className="destination">
+                <div className="destination items-center">
                   <div className="dest start">
                     <p className="country">Organizer</p>
-                    <p className="acronym">CVM</p>
+                    <p className="acronym">CV</p>
                     <p className="hour">Code Vimarsh</p>
                   </div>
-                  <svg
-                    style={{ flexShrink: 0 }}
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      fill="none"
-                      stroke="#a0aec0"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="1.5"
-                      d="m18 8l4 4l-4 4M2 12h20"
+                  <div className="flex items-center gap-1 flex-1 px-4 relative">
+                    <div className="flex-1 border-b border-dashed border-neutral-300 relative flex items-center justify-end">
+                      <div className="absolute right-0 w-1.5 h-1.5 border-t border-r border-neutral-400 transform rotate-45" style={{ marginRight: '-1px' }} />
+                    </div>
+                    <img
+                      src="/CV LOGO.webp"
+                      alt="CV Logo"
+                      className="w-9 h-9 object-contain rounded-md flex-shrink-0"
                     />
-                  </svg>
-                  <div className="dest end">
+                    <div className="flex-1 border-b border-dashed border-neutral-300 relative flex items-center justify-end">
+                      <div className="absolute right-0 w-1.5 h-1.5 border-t border-r border-neutral-400 transform rotate-45" style={{ marginRight: '-1px' }} />
+                    </div>
+                  </div>
+                  <div className="dest end text-right">
                     <p className="country">Event Type</p>
                     <p className="acronym">{typeAcronym}</p>
                     <p className="hour">{event?.type || 'Workshop'}</p>

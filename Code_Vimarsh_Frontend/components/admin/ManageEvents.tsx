@@ -188,7 +188,8 @@ const FieldEditorInline: React.FC<FieldEditorInlineProps> = ({ field, onChange }
 
   const addOption = () => {
     if (!field.options) return;
-    const newOpt: FieldOption = { id: generateOptionId(), label: `Option ${field.options.length + 1}` };
+    const label = `Option ${field.options.length + 1}`;
+    const newOpt: FieldOption = { id: generateOptionId(), label, value: label };
     onChange({ ...field, options: [...field.options, newOpt] });
   };
 
@@ -490,185 +491,10 @@ interface EventEditorProps {
 const EventEditor: React.FC<EventEditorProps> = ({
   draft, isNew, savedFlash, onDraftChange, onSave, onDiscard,
 }) => {
-  const { participants, checkInParticipant } = useGlobalState();
-  const [activePanel, setActivePanel] = useState<'details' | 'registrations'>('details');
-  const [scanning, setScanning] = useState(false);
-  const [manualId, setManualId] = useState('');
-  const [scanResult, setScanResult] = useState<{ success: boolean; message: string } | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-
   const [formBuilderOpen,  setFormBuilderOpen]  = useState(false);
   const [imagesOpen,       setImagesOpen]        = useState(false);
 
   const inp = INPUT;
-
-  const handleCheckIn = (id: string) => {
-    const part = participants.find(p => p.id === id && p.eventId === draft.id);
-    if (!part) {
-      setScanResult({ success: false, message: `Invalid ticket ID: ${id}` });
-      return;
-    }
-    
-    if (part.status === 'attended') {
-      setScanResult({ success: true, message: `${part.name} is already checked in!` });
-      return;
-    }
-
-    checkInParticipant(id, 'attended');
-    setScanResult({ success: true, message: `Welcome, ${part.name}! Checked in successfully.` });
-    
-    setTimeout(() => {
-      setScanResult(null);
-    }, 5000);
-  };
-
-  const exportToExcel = () => {
-    const eventRegs = participants.filter(p => p.eventId === draft.id);
-    if (eventRegs.length === 0) {
-      alert("No registrations to export.");
-      return;
-    }
-
-    const customFields = draft.formFields || [];
-    const headers = ["Ticket ID", "Full Name", "Email", "Registration Date", "Status"];
-    customFields.forEach(f => {
-      headers.push(f.label || "Field");
-    });
-
-    const totalCount = eventRegs.length;
-    const attendedCount = eventRegs.filter(r => r.status === 'attended').length;
-    const attendanceRate = totalCount > 0 ? Math.round((attendedCount / totalCount) * 100) : 0;
-    const reportDate = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-    const colSpan = headers.length;
-
-    // Headers HTML
-    const headersHtml = headers.map(h => `<th style="background-color: #2b2d42; color: #ffffff; font-size: 12px; font-weight: bold; height: 35px; border: 1px solid #4a4e69; text-align: left; padding: 5px 10px; font-family: Arial, sans-serif;">${h}</th>`).join("");
-
-    // Rows HTML
-    const rowsHtml = eventRegs.map((r, idx) => {
-      const rowClass = idx % 2 === 0 ? "background-color: #ffffff;" : "background-color: #f9fafb;";
-      
-      const statusStyle = r.status === 'attended' 
-        ? 'background-color: #d1fae5; color: #065f46; font-weight: bold; text-align: center;' 
-        : 'background-color: #dbeafe; color: #1e40af; font-weight: bold; text-align: center;';
-      const statusLabel = r.status === 'attended' ? 'ATTENDED' : 'REGISTERED';
-
-      const rowCells = [
-        `<td style="font-size: 11px; border: 1px solid #e5e7eb; padding: 8px 10px; font-family: monospace;">${r.id}</td>`,
-        `<td style="font-size: 11px; border: 1px solid #e5e7eb; padding: 8px 10px; font-weight: 500; font-family: Arial, sans-serif;">${r.name}</td>`,
-        `<td style="font-size: 11px; border: 1px solid #e5e7eb; padding: 8px 10px; font-family: Arial, sans-serif;">${r.email}</td>`,
-        `<td style="font-size: 11px; border: 1px solid #e5e7eb; padding: 8px 10px; font-family: Arial, sans-serif;">${r.registeredAt}</td>`,
-        `<td style="font-size: 10px; border: 1px solid #e5e7eb; padding: 8px 10px; font-family: Arial, sans-serif; ${statusStyle}">${statusLabel}</td>`
-      ];
-
-      customFields.forEach(f => {
-        const val = r.customAnswers ? r.customAnswers[f.id] : '';
-        const displayVal = typeof val === 'object' ? JSON.stringify(val) : String(val || '');
-        rowCells.push(`<td style="font-size: 11px; border: 1px solid #e5e7eb; padding: 8px 10px; font-family: Arial, sans-serif;">${displayVal}</td>`);
-      });
-
-      return `<tr style="${rowClass}">${rowCells.join("")}</tr>`;
-    }).join("");
-
-    const template = `
-<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-<head>
-<meta http-equiv="content-type" content="text/html; charset=UTF-8">
-<!--[if gte mso 9]>
-<xml>
- <x:ExcelWorkbook>
-  <x:ExcelWorksheets>
-   <x:ExcelWorksheet>
-    <x:Name>Event Report</x:Name>
-    <x:WorksheetOptions>
-     <x:DisplayGridlines/>
-    </x:WorksheetOptions>
-   </x:ExcelWorksheet>
-  </x:ExcelWorksheets>
- </x:ExcelWorkbook>
-</xml>
-<![endif]-->
-</head>
-<body style="font-family: Arial, sans-serif; margin: 0; padding: 20px;">
-  <table>
-    <tr>
-      <td colspan="${colSpan}" style="background-color: #ff6a00; color: #ffffff; font-size: 20px; font-weight: bold; text-align: center; height: 50px; vertical-align: middle; font-family: Arial, sans-serif;">CODE VIMARSH NEXUS</td>
-    </tr>
-    <tr>
-      <td colspan="${colSpan}" style="background-color: #1a1a1a; color: #ff9a00; font-size: 14px; font-weight: bold; text-align: center; height: 35px; vertical-align: middle; font-family: Arial, sans-serif;">OFFICIAL REPORT: ${draft.title.toUpperCase()}</td>
-    </tr>
-    <tr>
-      <td colspan="${colSpan}" style="background-color: #f3f4f6; color: #374151; font-size: 11px; text-align: center; height: 30px; vertical-align: middle; border: 1px solid #d1d5db; font-family: Arial, sans-serif;">
-        Total Registrations: <b>${totalCount}</b> &nbsp;|&nbsp; 
-        Attended Check-ins: <b>${attendedCount}</b> &nbsp;|&nbsp; 
-        Attendance Rate: <b>${attendanceRate}%</b> &nbsp;|&nbsp;
-        Generated At: <b>${reportDate}</b>
-      </td>
-    </tr>
-    <tr style="height: 20px;">
-      <td colspan="${colSpan}" style="border: none; background-color: #ffffff;"></td>
-    </tr>
-    <thead>
-      <tr>
-        ${headersHtml}
-      </tr>
-    </thead>
-    <tbody>
-      ${rowsHtml}
-    </tbody>
-  </table>
-</body>
-</html>
-    `;
-
-    const blob = new Blob([template], { type: 'application/vnd.ms-excel;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `${draft.title.replace(/\s+/g, '_')}_Registrations.xls`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  useEffect(() => {
-    let html5Qrcode: Html5Qrcode | null = null;
-    if (scanning && activePanel === 'registrations') {
-      html5Qrcode = new Html5Qrcode("qr-scanner-element");
-      html5Qrcode.start(
-        { facingMode: "environment" },
-        {
-          fps: 10,
-          qrbox: (width, height) => {
-            const size = Math.min(width, height) * 0.7;
-            return { width: size, height: size };
-          }
-        },
-        (decodedText) => {
-          handleCheckIn(decodedText);
-        },
-        () => {
-          // ignore scan feed errors
-        }
-      ).catch(err => {
-        console.error("Scanner failed to start:", err);
-        setScanning(false);
-      });
-    }
-    return () => {
-      if (html5Qrcode) {
-        if (html5Qrcode.isScanning) {
-          html5Qrcode.stop().catch(err => console.error("Scanner stop error:", err));
-        }
-      }
-    };
-  }, [scanning, activePanel]);
-
-  useEffect(() => {
-    setActivePanel('details');
-    setScanning(false);
-    setScanResult(null);
-  }, [draft.id]);
 
   return (
     <div
@@ -696,35 +522,7 @@ const EventEditor: React.FC<EventEditorProps> = ({
         )}
       </div>
 
-      {/* Tab Selector for existing event */}
-      {!isNew && (
-        <div className="flex border-b border-white/5 bg-black/20">
-          <button
-            onClick={() => { setActivePanel('details'); setScanning(false); }}
-            className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-all border-b-2 ${
-              activePanel === 'details'
-                ? 'text-primary border-primary bg-primary/5'
-                : 'text-textMuted border-transparent hover:text-white hover:bg-white/[0.02]'
-            }`}
-          >
-            Details & Form Builder
-          </button>
-          <button
-            onClick={() => setActivePanel('registrations')}
-            className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-all border-b-2 ${
-              activePanel === 'registrations'
-                ? 'text-primary border-primary bg-primary/5'
-                : 'text-textMuted border-transparent hover:text-white hover:bg-white/[0.02]'
-            }`}
-          >
-            Registrations & Scanner ({participants.filter(p => p.eventId === draft.id).length})
-          </button>
-        </div>
-      )}
-
-      {(activePanel === 'details' || isNew) ? (
-        <>
-          <div className="px-6 py-5 space-y-5">
+      <div className="px-6 py-5 space-y-5">
             {/* Title */}
             <div>
               <label className="text-xs text-textMuted mb-1.5 block">Event Title *</label>
@@ -886,12 +684,182 @@ const EventEditor: React.FC<EventEditorProps> = ({
               </div>
             )}
           </div>
-        </>
-      ) : (
-        <div className="px-6 py-5 space-y-6">
-          {/* TOP CONTROLS: SCANNER & EXPORT */}
+    </div>
+  );
+};
+
+
+interface ScannerModalProps {
+  eventId: string;
+  eventTitle: string;
+  formFields: any[];
+  onClose: () => void;
+}
+
+const ScannerModal: React.FC<ScannerModalProps> = ({ eventId, eventTitle, formFields, onClose }) => {
+  const { participants, checkInParticipant } = useGlobalState();
+  const [scanning, setScanning] = useState(false);
+  const [manualId, setManualId] = useState('');
+  const [scanResult, setScanResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const handleCheckIn = (id: string) => {
+    const part = participants.find(p => p.id === id && p.eventId === eventId);
+    if (!part) {
+      setScanResult({ success: false, message: `Invalid ticket ID: ${id}` });
+      return;
+    }
+    
+    if (part.status === 'attended') {
+      setScanResult({ success: true, message: `${part.name} is already checked in!` });
+      return;
+    }
+
+    checkInParticipant(id, 'attended');
+    setScanResult({ success: true, message: `Welcome, ${part.name}! Checked in successfully.` });
+    
+    setTimeout(() => {
+      setScanResult(null);
+    }, 5000);
+  };
+
+  const exportToExcel = () => {
+    const eventRegs = participants.filter(p => p.eventId === eventId);
+    if (eventRegs.length === 0) {
+      alert("No registrations to export.");
+      return;
+    }
+
+    const customFields = formFields || [];
+    const headers = ["Ticket ID", "Full Name", "Email", "Registration Date", "Status"];
+    customFields.forEach(f => {
+      headers.push(f.label || "Field");
+    });
+
+    const totalCount = eventRegs.length;
+    const attendedCount = eventRegs.filter(r => r.status === 'attended').length;
+    const attendanceRate = totalCount > 0 ? Math.round((attendedCount / totalCount) * 100) : 0;
+    const reportDate = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const colSpan = headers.length;
+
+    const headersHtml = headers.map(h => `<th style="background-color: #2b2d42; color: #ffffff; font-size: 12px; font-weight: bold; height: 35px; border: 1px solid #4a4e69; text-align: left; padding: 5px 10px; font-family: Arial, sans-serif;">${h}</th>`).join("");
+
+    const rowsHtml = eventRegs.map((r, idx) => {
+      const rowClass = idx % 2 === 0 ? "background-color: #ffffff;" : "background-color: #f9fafb;";
+      const statusStyle = r.status === 'attended' 
+        ? 'background-color: #d1fae5; color: #065f46; font-weight: bold; text-align: center;' 
+        : 'background-color: #dbeafe; color: #1e40af; font-weight: bold; text-align: center;';
+      const statusLabel = r.status === 'attended' ? 'ATTENDED' : 'REGISTERED';
+
+      const rowCells = [
+        `<td style="font-size: 11px; border: 1px solid #e5e7eb; padding: 8px 10px; font-family: monospace;">${r.id}</td>`,
+        `<td style="font-size: 11px; border: 1px solid #e5e7eb; padding: 8px 10px; font-weight: 500; font-family: Arial, sans-serif;">${r.name}</td>`,
+        `<td style="font-size: 11px; border: 1px solid #e5e7eb; padding: 8px 10px; font-family: Arial, sans-serif;">${r.email}</td>`,
+        `<td style="font-size: 11px; border: 1px solid #e5e7eb; padding: 8px 10px; font-family: Arial, sans-serif;">${r.registeredAt}</td>`,
+        `<td style="font-size: 10px; border: 1px solid #e5e7eb; padding: 8px 10px; font-family: Arial, sans-serif; ${statusStyle}">${statusLabel}</td>`
+      ];
+
+      customFields.forEach(f => {
+        const val = r.customAnswers ? r.customAnswers[f.id] : '';
+        const displayVal = typeof val === 'object' ? JSON.stringify(val) : String(val || '');
+        rowCells.push(`<td style="font-size: 11px; border: 1px solid #e5e7eb; padding: 8px 10px; font-family: Arial, sans-serif;">${displayVal}</td>`);
+      });
+
+      return `<tr style="${rowClass}">${rowCells.join("")}</tr>`;
+    }).join("");
+
+    const template = `
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+</head>
+<body style="font-family: Arial, sans-serif; margin: 0; padding: 20px;">
+  <table>
+    <tr>
+      <td colspan="${colSpan}" style="background-color: #ff6a00; color: #ffffff; font-size: 20px; font-weight: bold; text-align: center; height: 50px; vertical-align: middle;">CODE VIMARSH NEXUS</td>
+    </tr>
+    <tr>
+      <td colspan="${colSpan}" style="background-color: #1a1a1a; color: #ff9a00; font-size: 14px; font-weight: bold; text-align: center; height: 35px; vertical-align: middle;">OFFICIAL REPORT: ${eventTitle.toUpperCase()}</td>
+    </tr>
+    <tr>
+      <td colspan="${colSpan}" style="background-color: #f3f4f6; color: #374151; font-size: 11px; text-align: center; height: 30px; border: 1px solid #d1d5db;">
+        Total Registrations: <b>${totalCount}</b> &nbsp;|&nbsp; 
+        Attended Check-ins: <b>${attendedCount}</b> &nbsp;|&nbsp; 
+        Attendance Rate: <b>${attendanceRate}%</b> &nbsp;|&nbsp;
+        Generated At: <b>${reportDate}</b>
+      </td>
+    </tr>
+    <tr style="height: 20px;"><td colspan="${colSpan}"></td></tr>
+    <thead><tr>${headersHtml}</tr></thead>
+    <tbody>${rowsHtml}</tbody>
+  </table>
+</body>
+</html>`;
+
+    const blob = new Blob([template], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${eventTitle.replace(/\s+/g, '_')}_Registrations.xls`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  useEffect(() => {
+    let html5Qrcode: Html5Qrcode | null = null;
+    if (scanning) {
+      html5Qrcode = new Html5Qrcode("modal-qr-scanner-element");
+      html5Qrcode.start(
+        { facingMode: "environment" },
+        {
+          fps: 10,
+          qrbox: (width, height) => {
+            const size = Math.min(width, height) * 0.7;
+            return { width: size, height: size };
+          }
+        },
+        (decodedText) => {
+          handleCheckIn(decodedText);
+        },
+        () => {}
+      ).catch(err => {
+        console.error("Scanner failed to start:", err);
+        setScanning(false);
+      });
+    }
+    return () => {
+      if (html5Qrcode) {
+        if (html5Qrcode.isScanning) {
+          html5Qrcode.stop().catch(err => console.error("Scanner stop error:", err));
+        }
+      }
+    };
+  }, [scanning]);
+
+  return (
+    <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/85 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className="bg-[#0c0c0c] border border-white/10 w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between bg-black/20">
+          <div>
+            <h3 className="font-bold text-base text-white flex items-center gap-2">
+              <QrCode size={16} className="text-primary" /> Registrations & Scanner
+            </h3>
+            <p className="text-xs text-textMuted mt-0.5">{eventTitle}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 hover:bg-white/5 rounded-lg text-textMuted hover:text-white transition-colors"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="p-6 overflow-y-auto space-y-6 flex-1">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Live Scanner Trigger Card */}
+            {/* Live Scanner Card */}
             <div className="bg-surface border border-surfaceLight rounded-2xl p-5 flex flex-col justify-between space-y-4">
               <div>
                 <h4 className="font-bold text-sm text-white flex items-center gap-2">
@@ -905,14 +873,14 @@ const EventEditor: React.FC<EventEditorProps> = ({
                 className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${
                   scanning 
                     ? 'bg-red-500/10 text-red-400 border border-red-500/20' 
-                    : 'bg-primary text-black hover:bg-secondary hover:shadow-[0_0_15px_rgba(255,106,0,0.2)]'
+                    : 'bg-primary text-black hover:bg-secondary hover:shadow-[0_0_15px_rgba(255,106,0,0.25)]'
                 }`}
               >
                 {scanning ? 'Stop Scanning' : 'Start Camera Scanner'}
               </button>
             </div>
 
-            {/* Manual Entry Ticket Pass Card */}
+            {/* Manual check-in Card */}
             <div className="bg-surface border border-surfaceLight rounded-2xl p-5 flex flex-col justify-between space-y-4">
               <div>
                 <h4 className="font-bold text-sm text-white flex items-center gap-2">
@@ -943,7 +911,7 @@ const EventEditor: React.FC<EventEditorProps> = ({
             </div>
           </div>
 
-          {/* SCANNER CONTAINER */}
+          {/* Scanner view */}
           {scanning && (
             <div className="bg-[#050505] border border-primary/20 rounded-2xl p-4 overflow-hidden flex flex-col items-center justify-center space-y-3 relative">
               <div className="absolute top-3 right-3 z-10">
@@ -956,7 +924,7 @@ const EventEditor: React.FC<EventEditorProps> = ({
               </div>
               
               <div 
-                id="qr-scanner-element" 
+                id="modal-qr-scanner-element" 
                 className="w-full max-w-sm aspect-square overflow-hidden rounded-xl bg-black border border-white/5"
                 style={{ minHeight: 250 }}
               />
@@ -967,7 +935,7 @@ const EventEditor: React.FC<EventEditorProps> = ({
             </div>
           )}
 
-          {/* SCAN RESULTS PANEL */}
+          {/* Scan result banner */}
           {scanResult && (
             <div 
               className={`p-4 rounded-xl border flex items-center gap-3 animate-in fade-in duration-300 ${
@@ -990,7 +958,7 @@ const EventEditor: React.FC<EventEditorProps> = ({
             </div>
           )}
 
-          {/* SEARCH & EXPORT */}
+          {/* Search and export */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
             <div className="relative flex-1 max-w-xs">
               <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-textMuted" />
@@ -1010,7 +978,7 @@ const EventEditor: React.FC<EventEditorProps> = ({
             </button>
           </div>
 
-          {/* LIST OF CANDIDATES */}
+          {/* Table */}
           <div className="border border-surfaceLight rounded-2xl overflow-hidden bg-surface/50">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
@@ -1023,7 +991,7 @@ const EventEditor: React.FC<EventEditorProps> = ({
                 </thead>
                 <tbody className="divide-y divide-surfaceLight/50 text-xs">
                   {(() => {
-                    const eventRegs = participants.filter(p => p.eventId === draft.id);
+                    const eventRegs = participants.filter(p => p.eventId === eventId);
                     const filteredRegs = eventRegs.filter(p => 
                       p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                       p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1072,7 +1040,7 @@ const EventEditor: React.FC<EventEditorProps> = ({
             </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };
@@ -1084,6 +1052,7 @@ const ManageEvents: React.FC = () => {
   const [draft, setDraft] = useState<AdminEvent | null>(null);
   const [savedFlash, setSavedFlash] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [selectedScannerEventId, setSelectedScannerEventId] = useState<string | null>(null);
 
   const adminEvents = events as AdminEvent[];
 
@@ -1200,6 +1169,15 @@ const ManageEvents: React.FC = () => {
                       {evt.isPublished ? 'Unpublish' : 'Publish'}
                     </button>
                     <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedScannerEventId(evt.id);
+                      }}
+                      className="text-xs px-3 py-1.5 rounded-lg bg-orange-600/15 border border-orange-500/30 text-orange-400 hover:text-white hover:bg-orange-600 transition-all font-bold flex items-center gap-1.5"
+                    >
+                      <QrCode size={13} /> Scanner
+                    </button>
+                    <button
                       onClick={() => startEdit(evt)}
                       className="p-1.5 text-textMuted hover:text-primary transition-colors"
                       title="Edit event"
@@ -1241,6 +1219,19 @@ const ManageEvents: React.FC = () => {
           </div>
         )}
       </div>
+
+      {selectedScannerEventId && (() => {
+        const evt = adminEvents.find(e => e.id === selectedScannerEventId);
+        if (!evt) return null;
+        return (
+          <ScannerModal
+            eventId={evt.id}
+            eventTitle={evt.title}
+            formFields={evt.formFields || []}
+            onClose={() => setSelectedScannerEventId(null)}
+          />
+        );
+      })()}
     </div>
   );
 };
