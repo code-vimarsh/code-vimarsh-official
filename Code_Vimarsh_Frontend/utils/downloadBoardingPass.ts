@@ -39,6 +39,14 @@ export async function downloadBoardingPass(data: BoardingPassData): Promise<void
   const CH = H + PAD * 2;
   const R = 20 * SCALE; // border-radius
 
+  // Load Logo
+  let logoImg: HTMLImageElement | null = null;
+  try {
+    logoImg = await loadImage('/CV LOGO.webp');
+  } catch (err) {
+    console.error('Failed to load CV logo:', err);
+  }
+
   // Sections
   const QR_W = 135 * SCALE;
   const SEP_W = 16 * SCALE;
@@ -68,31 +76,35 @@ export async function downloadBoardingPass(data: BoardingPassData): Promise<void
 
   // QR code image
   if (data.qrCodeDataUrl) {
-    const qrImg = await loadImage(data.qrCodeDataUrl);
-    const qrSize = 80 * SCALE;
-    const qrBorder = 2 * SCALE;
-    const qrPad = 4 * SCALE;
-    const qrX = qrSectionX + (QR_W - qrSize - qrBorder * 2 - qrPad * 2) / 2;
-    const qrY = PAD + (H - qrSize - qrBorder * 2 - qrPad * 2 - 20 * SCALE) / 2;
+    try {
+      const qrImg = await loadImage(data.qrCodeDataUrl);
+      const qrSize = 80 * SCALE;
+      const qrBorder = 2 * SCALE;
+      const qrPad = 4 * SCALE;
+      const qrX = qrSectionX + (QR_W - qrSize - qrBorder * 2 - qrPad * 2) / 2;
+      const qrY = PAD + (H - qrSize - qrBorder * 2 - qrPad * 2 - 20 * SCALE) / 2;
 
-    // Orange border
-    ctx.fillStyle = '#ff6a00';
-    roundRect(ctx, qrX, qrY, qrSize + qrBorder * 2 + qrPad * 2, qrSize + qrBorder * 2 + qrPad * 2, 8 * SCALE);
-    ctx.fill();
+      // Orange border
+      ctx.fillStyle = '#ff6a00';
+      roundRect(ctx, qrX, qrY, qrSize + qrBorder * 2 + qrPad * 2, qrSize + qrBorder * 2 + qrPad * 2, 8 * SCALE);
+      ctx.fill();
 
-    // White inner
-    ctx.fillStyle = '#ffffff';
-    roundRect(ctx, qrX + qrBorder, qrY + qrBorder, qrSize + qrPad * 2, qrSize + qrPad * 2, 6 * SCALE);
-    ctx.fill();
+      // White inner
+      ctx.fillStyle = '#ffffff';
+      roundRect(ctx, qrX + qrBorder, qrY + qrBorder, qrSize + qrPad * 2, qrSize + qrPad * 2, 6 * SCALE);
+      ctx.fill();
 
-    // QR image
-    ctx.drawImage(qrImg, qrX + qrBorder + qrPad, qrY + qrBorder + qrPad, qrSize, qrSize);
+      // QR image
+      ctx.drawImage(qrImg, qrX + qrBorder + qrPad, qrY + qrBorder + qrPad, qrSize, qrSize);
 
-    // "SCAN TO CHECK-IN" text
-    ctx.fillStyle = '#718096';
-    ctx.font = `bold ${7 * SCALE}px system-ui, -apple-system, sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.fillText('SCAN TO CHECK-IN', qrSectionX + QR_W / 2, qrY + qrSize + qrBorder * 2 + qrPad * 2 + 14 * SCALE);
+      // "SCAN TO CHECK-IN" text
+      ctx.fillStyle = '#718096';
+      ctx.font = `bold ${7 * SCALE}px system-ui, -apple-system, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText('SCAN TO CHECK-IN', qrSectionX + QR_W / 2, qrY + qrSize + qrBorder * 2 + qrPad * 2 + 14 * SCALE);
+    } catch (err) {
+      console.error('Failed to load QR code image for canvas rendering:', err);
+    }
   }
 
   // ── 2. Separator 1 ──
@@ -118,6 +130,7 @@ export async function downloadBoardingPass(data: BoardingPassData): Promise<void
   const cPadX = 16 * SCALE;
   const cPadY = 14 * SCALE;
   const cx = contentX + cPadX;
+  const rightX = contentX + CONTENT_W - cPadX;
   let cy = PAD + cPadY;
 
   ctx.textAlign = 'left';
@@ -128,30 +141,68 @@ export async function downloadBoardingPass(data: BoardingPassData): Promise<void
   ctx.font = `600 ${8 * SCALE}px system-ui, sans-serif`;
   ctx.fillText('ORGANIZER', cx, cy + 8 * SCALE);
 
-  // "CVM"
+  // "CV"
   ctx.fillStyle = '#1a202c';
   ctx.font = `800 ${16 * SCALE}px system-ui, sans-serif`;
-  ctx.fillText('CVM', cx, cy + 26 * SCALE);
+  ctx.fillText('CV', cx, cy + 26 * SCALE);
 
   // "Code Vimarsh"
   ctx.fillStyle = '#4a5568';
   ctx.font = `500 ${9 * SCALE}px system-ui, sans-serif`;
   ctx.fillText('Code Vimarsh', cx, cy + 37 * SCALE);
 
-  // Arrow →
-  const arrowX = cx + CONTENT_W / 2 - cPadX;
+  // Draw Logo in middle with dashed lines and arrow heads
+  const logoSize = 24 * SCALE;
+  const arrowX = cx + (CONTENT_W - cPadX * 2) / 2;
+
+  // Left dashed line
   ctx.strokeStyle = '#a0aec0';
   ctx.lineWidth = 1.5 * SCALE;
+  ctx.setLineDash([4 * SCALE, 2 * SCALE]);
   ctx.beginPath();
-  ctx.moveTo(arrowX - 10 * SCALE, cy + 22 * SCALE);
-  ctx.lineTo(arrowX + 10 * SCALE, cy + 22 * SCALE);
-  ctx.moveTo(arrowX + 5 * SCALE, cy + 17 * SCALE);
-  ctx.lineTo(arrowX + 10 * SCALE, cy + 22 * SCALE);
-  ctx.lineTo(arrowX + 5 * SCALE, cy + 27 * SCALE);
+  ctx.moveTo(cx + 30 * SCALE, cy + 22 * SCALE);
+  const tip1X = arrowX - (logoSize / 2 + 4 * SCALE);
+  const tip1Y = cy + 22 * SCALE;
+  ctx.lineTo(tip1X, tip1Y);
+  ctx.stroke();
+
+  // Draw left arrowhead
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(tip1X - 6 * SCALE, tip1Y - 4 * SCALE);
+  ctx.lineTo(tip1X, tip1Y);
+  ctx.lineTo(tip1X - 6 * SCALE, tip1Y + 4 * SCALE);
+  ctx.stroke();
+
+  // Logo image
+  if (logoImg) {
+    ctx.drawImage(
+      logoImg,
+      arrowX - logoSize / 2,
+      cy + 22 * SCALE - logoSize / 2,
+      logoSize,
+      logoSize
+    );
+  }
+
+  // Right dashed line
+  ctx.setLineDash([4 * SCALE, 2 * SCALE]);
+  ctx.beginPath();
+  ctx.moveTo(arrowX + (logoSize / 2 + 4 * SCALE), cy + 22 * SCALE);
+  const tip2X = rightX - 30 * SCALE;
+  const tip2Y = cy + 22 * SCALE;
+  ctx.lineTo(tip2X, tip2Y);
+  ctx.stroke();
+
+  // Draw right arrowhead
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(tip2X - 6 * SCALE, tip2Y - 4 * SCALE);
+  ctx.lineTo(tip2X, tip2Y);
+  ctx.lineTo(tip2X - 6 * SCALE, tip2Y + 4 * SCALE);
   ctx.stroke();
 
   // "EVENT TYPE" (right-aligned within content area)
-  const rightX = contentX + CONTENT_W - cPadX;
   ctx.textAlign = 'right';
   ctx.fillStyle = '#718096';
   ctx.font = `600 ${8 * SCALE}px system-ui, sans-serif`;
@@ -304,9 +355,12 @@ function drawNotch(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: num
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    // Only set crossOrigin if it is a remote absolute URL (not same-origin or data URL)
+    if (src.startsWith('http') && !src.includes(window.location.host)) {
+      img.crossOrigin = 'anonymous';
+    }
     img.onload = () => resolve(img);
-    img.onerror = reject;
+    img.onerror = (e) => reject(new Error(`Failed to load image: ${src}`));
     img.src = src;
   });
 }
