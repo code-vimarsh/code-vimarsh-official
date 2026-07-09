@@ -5,6 +5,33 @@ import { Mail, Send, CheckCircle, Copy, ExternalLink, Megaphone, Info, AlertCirc
 const CLUB_EMAIL = 'codingclub-cse@msubaroda.ac.in';
 const BCC_CHUNK_SIZE = 40;
 
+const TEMPLATES: Record<string, { subject: string; body: string }> = {
+    'Announcement': {
+        subject: 'Exciting News: Join the Code Vimarsh Core Team Inductions for 2026!',
+        body: `We are thrilled to announce that the registrations for Code Vimarsh Core Team Inductions are now officially open!\n\nIf you are passionate about software engineering, web development, UI/UX design, or managing events and want to contribute to the CSE coding ecosystem of MSU Baroda, this is your chance.\n\nKey Responsibilities:\n• Collaborate on real-world projects.\n• Organise workshops, hackathons, and guest lectures.\n• Manage student resources and coordinate club activities.\n\nDeadline to register: 15th July, 2026.\nClick on the link below or visit our website to apply now!`,
+    },
+    'Event Details': {
+        subject: 'Upcoming Workshop: Deep Dive into Git & Open Source Contribution',
+        body: `Get ready for our next hands-on session!\n\nWe are hosting an exclusive workshop to help you understand the power of Git, GitHub, and how to start making your very first contributions to open-source software.\n\nEvent Details:\n📅 Date: 12th July, 2026\n⏰ Time: 10:00 AM IST\n📍 Venue: Lab 3, CSE Department, MSU Baroda\n\nPrerequisites: Bring your laptop with Git installed and a GitHub account ready.\n\nSeats are limited. Make sure to download your ticket pass from your profile dashboard before entering. See you there!`,
+    },
+    'Certificate': {
+        subject: 'Congratulations! Your Event Certificate is Now Available',
+        body: `Congratulations on successfully attending and completing the recent Code Vimarsh event!\n\nWe highly appreciate your active participation and enthusiasm throughout the session. Your official certificate has been successfully generated and issued.\n\nTo view or download your certificate:\n1. Log in to the Code Vimarsh platform.\n2. Navigate to your dashboard.\n3. Go to the "Certificates" tab to download the PDF.\n\nKeep learning, keep coding!`,
+    },
+    'Feedback': {
+        subject: 'We want to hear from you! Event Feedback Request',
+        body: `Thank you for attending our recent workshop on Open Source Contribution!\n\nTo help us improve and curate better developer sessions in the future, we would love to get your honest feedback. It will only take 2 minutes of your time.\n\nPlease share your thoughts about the content, hands-on pace, and venue coordination by clicking the feedback link on our portal.\n\nWe look forward to seeing you at our next event!`,
+    },
+    'Newsletter': {
+        subject: 'Code Vimarsh Newsletter - July 2026 Edition',
+        body: `Here is a recap of what has been happening in the Code Vimarsh community this month:\n\n🚀 What's New:\n• Launched our brand new online platform with self-contained certificate generation.\n• Successfully concluded the "Open Source Sprint" with over 80+ active participants.\n• Initiated mentorship programs for upcoming summer internships.\n\n💡 Code Tip of the Month:\n"Clean code always looks like it was written by someone who cares." — Michael Feathers. Focus on writing readable, well-commented modular code!\n\nStay tuned for our upcoming announcements!`,
+    },
+    'Custom': {
+        subject: 'A Message from Code Vimarsh',
+        body: `This is a custom broadcast message from the Code Vimarsh team.\n\nIf you have any questions or require support regarding any club activities, events, or resources, please reach out to us by replying directly or via the contact section of our official website.\n\nBest regards,\nCode Vimarsh Core Team`,
+    },
+};
+
 const EmailBlast: React.FC = () => {
     const { participants, events, team } = useGlobalState();
 
@@ -37,7 +64,7 @@ const EmailBlast: React.FC = () => {
     const buildHtmlEmail = (name: string, message: string, type: string, subject: string): string => {
         const cfg = typeConfig[type] || typeConfig['Custom'];
         const formattedMessage = message.replace(/\n/g, '<br>');
-        const logoUrl = 'https://raw.githubusercontent.com/Aryanbuha89/Code_Vimarsh_Frontend/main/public/CV%20LOGO.webp';
+        const logoUrl = 'https://raw.githubusercontent.com/code-vimarsh/code-vimarsh-official/main/Code_Vimarsh_Frontend/public/CV%20LOGO.webp';
         return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${subject}</title></head>
@@ -45,13 +72,17 @@ const EmailBlast: React.FC = () => {
     <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;box-shadow:0 4px 6px rgba(0,0,0,0.05);">
         <div style="height:4px;background:${cfg.accent};"></div>
         <div style="padding:30px;">
-            <div style="display:flex;align-items:center;">
-                <img src="${logoUrl}" width="40" height="40" style="border-radius:8px;margin-right:12px;" />
-                <div>
-                    <div style="font-weight:bold;color:#1e293b;font-size:18px;">Code Vimarsh</div>
-                    <div style="font-size:10px;color:#64748b;letter-spacing:1px;text-transform:uppercase;">CSE Coding Club • MSU Baroda</div>
-                </div>
-            </div>
+            <table cellpadding="0" cellspacing="0" border="0" style="width:100%;">
+                <tr>
+                    <td style="width:48px;vertical-align:middle;">
+                        <img src="${logoUrl}" width="40" height="40" style="border-radius:8px;display:block;" />
+                    </td>
+                    <td style="padding-left:12px;vertical-align:middle;">
+                        <div style="font-weight:bold;color:#1e293b;font-size:18px;line-height:1.2;">Code Vimarsh</div>
+                        <div style="font-size:10px;color:#64748b;letter-spacing:1px;text-transform:uppercase;line-height:1.2;">CSE Coding Club • MSU Baroda</div>
+                    </td>
+                </tr>
+            </table>
             <div style="margin-top:25px;font-size:24px;font-weight:bold;color:#0f172a;line-height:1.2;">${subject}</div>
             <div style="margin-top:5px;font-size:12px;color:${cfg.accent};font-weight:bold;">${cfg.tagline}</div>
             <div style="margin-top:25px;font-size:16px;color:#475569;line-height:1.6;">
@@ -62,8 +93,22 @@ const EmailBlast: React.FC = () => {
                 <div style="color:#64748b;font-size:12px;">CSE Dept, MSU Baroda</div>
             </div>
         </div>
-        <div style="background:#f8fafc;padding:20px;text-align:center;font-size:11px;color:#94a3b8;border-top:1px solid #f1f5f9;">
-            © 2024 Code Vimarsh • Vadodara, Gujarat<br>Sent from the official coding club platform.
+        <div style="background:#f8fafc;padding:25px 20px;text-align:center;font-size:11px;color:#94a3b8;border-top:1px solid #f1f5f9;">
+            <div style="margin-bottom:15px;text-align:center;">
+                <a href="https://www.instagram.com/code_vimarsh/" target="_blank" style="text-decoration:none;margin:0 10px;display:inline-block;">
+                    <img src="https://img.icons8.com/ios-glyphs/48/ff6a00/instagram-new.png" width="22" height="22" alt="Instagram" style="display:inline-block;border:0;vertical-align:middle;" />
+                </a>
+                <a href="https://linkedin.com/company/code-vimarsh" target="_blank" style="text-decoration:none;margin:0 10px;display:inline-block;">
+                    <img src="https://img.icons8.com/ios-glyphs/48/ff6a00/linkedin.png" width="22" height="22" alt="LinkedIn" style="display:inline-block;border:0;vertical-align:middle;" />
+                </a>
+                <a href="https://github.com/code-vimarsh" target="_blank" style="text-decoration:none;margin:0 10px;display:inline-block;">
+                    <img src="https://img.icons8.com/ios-glyphs/48/ff6a00/github.png" width="22" height="22" alt="GitHub" style="display:inline-block;border:0;vertical-align:middle;" />
+                </a>
+                <a href="https://codevimarsh.in" target="_blank" style="text-decoration:none;margin:0 10px;display:inline-block;">
+                    <img src="https://img.icons8.com/ios-glyphs/48/ff6a00/domain.png" width="22" height="22" alt="Website" style="display:inline-block;border:0;vertical-align:middle;" />
+                </a>
+            </div>
+            © ${new Date().getFullYear()} Code Vimarsh • Vadodara, Gujarat<br>Sent from the official coding club platform.
         </div>
     </div>
 </body></html>`;
@@ -87,10 +132,9 @@ const EmailBlast: React.FC = () => {
         }
     };
 
-    const openMailto = (href: string) => {
-        const a = document.createElement('a');
-        a.href = href; a.style.display = 'none';
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    const openGmailDraft = (to: string, bcc: string, subject: string, body: string) => {
+        const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&bcc=${encodeURIComponent(bcc)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        window.open(gmailUrl, '_blank');
     };
 
     const handleOpenBulkDrafts = () => {
@@ -102,9 +146,9 @@ const EmailBlast: React.FC = () => {
 
         chunks.forEach((chunk, idx) => {
             setTimeout(() => {
-                const body = `You have a new message from Code Vimarsh. Please check the formatted HTML message.`;
-                openMailto(`mailto:${CLUB_EMAIL}?bcc=${encodeURIComponent(chunk.join(','))}&subject=${encodeURIComponent(fullSubject)}&body=${encodeURIComponent(body)}`);
-            }, idx * 700);
+                const body = `[Paste the copied Rich HTML here by pressing Ctrl+V]`;
+                openGmailDraft(CLUB_EMAIL, chunk.join(','), fullSubject, body);
+            }, idx * 1000);
         });
 
         setEmailLog(prev => [{ label: sendMode === 'members' ? 'Club Members' : 'Event Participants', count: emails.length, subject: emailForm.subject, type: emailForm.email_type, sentAt: new Date().toLocaleTimeString(), batches: chunks.length }, ...prev]);
@@ -210,7 +254,18 @@ const EmailBlast: React.FC = () => {
                                 <div className="space-y-1.5">
                                     <div className="flex justify-between items-center px-1">
                                         <label className="text-[10px] font-black text-textMuted uppercase tracking-[0.2em]">Message Body</label>
-                                        <button onClick={() => setEmailForm({ ...emailForm, admin_message: 'Sample message content...' })} className="text-[9px] font-black text-primary hover:text-white uppercase tracking-widest transition-colors flex items-center gap-1">
+                                        <button 
+                                            onClick={() => {
+                                                const selectedType = emailForm.email_type;
+                                                const template = TEMPLATES[selectedType] || TEMPLATES['Custom'];
+                                                setEmailForm(prev => ({
+                                                    ...prev,
+                                                    subject: template.subject,
+                                                    admin_message: template.body
+                                                }));
+                                            }} 
+                                            className="text-[9px] font-black text-primary hover:text-white uppercase tracking-widest transition-colors flex items-center gap-1"
+                                        >
                                             <Megaphone size={10} /> Load Template
                                         </button>
                                     </div>
@@ -229,7 +284,7 @@ const EmailBlast: React.FC = () => {
                                     {htmlCopied ? 'Email Copied!' : '1. Copy Rich HTML'}
                                 </button>
                                 <button
-                                    onClick={() => sendMode === 'specific' ? openMailto(`mailto:${emailForm.to_email}?subject=${encodeURIComponent(emailForm.subject)}`) : handleOpenBulkDrafts()}
+                                    onClick={() => sendMode === 'specific' ? openGmailDraft(emailForm.to_email, '', `[Code Vimarsh | ${emailForm.email_type}] ${emailForm.subject}`, '[Paste the copied Rich HTML here by pressing Ctrl+V]') : handleOpenBulkDrafts()}
                                     disabled={!emailForm.subject || (sendMode === 'specific' ? !emailForm.to_email : bulkRecipients.length === 0)}
                                     className="p-4 bg-primary rounded-2xl text-black font-black text-xs uppercase tracking-[0.2em] hover:bg-secondary transition-all shadow-xl shadow-primary/20 flex flex-col items-center gap-2 disabled:opacity-30 disabled:grayscale"
                                 >
