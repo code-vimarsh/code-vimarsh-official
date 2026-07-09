@@ -378,20 +378,10 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
               customAnswers: r.custom_answers || {},
             }));
             setParticipants(prev => {
-              const merged = [...prev];
-              fetched.forEach((f: Participant) => {
-                const idx = merged.findIndex(p => p.id === f.id);
-                if (idx >= 0) {
-                  if (merged[idx].status !== 'attended' && f.status === 'attended') {
-                    merged[idx].status = 'attended';
-                  }
-                  merged[idx].customAnswers = f.customAnswers || merged[idx].customAnswers;
-                } else {
-                  merged.push(f);
-                }
-              });
-              localStorage.setItem('cv_participants', JSON.stringify(merged));
-              return merged;
+              const unsynced = prev.filter(p => p.id && p.id.startsWith('reg_'));
+              const updated = [...unsynced, ...fetched];
+              localStorage.setItem('cv_participants', JSON.stringify(updated));
+              return updated;
             });
           }
         })
