@@ -761,7 +761,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     topic: blog.topic,
     short_description: blog.shortDescription,
     content: blog.content,
-    featured_image: blog.featuredImage,
+    featured_image_url: blog.featuredImage,
     images: blog.images || [],
     author_name: blog.authorName,
     author_role: blog.authorRole,
