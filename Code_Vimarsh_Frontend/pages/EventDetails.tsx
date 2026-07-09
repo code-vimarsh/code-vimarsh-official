@@ -179,7 +179,7 @@ const EventDetails: React.FC = () => {
             location: e.location || 'TBA',
             venue: e.location || '',
             status: (e.status?.toLowerCase() || 'upcoming') as any,
-            image: e.banner_image || e.image || '',
+            image: e.banner_image_url || e.banner_image || e.image || '',
             images: e.images || [],
             tags: e.topics || [],
             speakers: e.event_speakers || [],
