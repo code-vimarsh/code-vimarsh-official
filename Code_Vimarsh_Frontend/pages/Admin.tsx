@@ -21,8 +21,16 @@ import ManageAlumni from '../components/admin/ManageAlumni';
 import ManageTeamMembers from '../components/admin/ManageTeamMembers';
 
 const Admin: React.FC = () => {
-  // Component is now fully modular; state is managed within sub-components via useGlobalState()
-  const [activeTab, setActiveTab] = useState<'overview' | 'events' | 'projects' | 'admins' | 'resources' | 'email' | 'certificates' | 'blogs' | 'achievements' | 'alumni' | 'team'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'events' | 'projects' | 'admins' | 'resources' | 'email' | 'certificates' | 'blogs' | 'achievements' | 'alumni' | 'team'>(() => {
+    if (typeof window !== 'undefined') {
+      const savedTab = localStorage.getItem('cv_admin_active_tab');
+      const validTabs = ['overview', 'events', 'projects', 'admins', 'resources', 'email', 'certificates', 'blogs', 'achievements', 'alumni', 'team'];
+      if (savedTab && validTabs.includes(savedTab)) {
+        return savedTab as any;
+      }
+    }
+    return 'overview';
+  });
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const navigate = useNavigate();
@@ -106,6 +114,7 @@ const Admin: React.FC = () => {
               key={tab.id}
               onClick={() => {
                 setActiveTab(tab.id as any);
+                localStorage.setItem('cv_admin_active_tab', tab.id);
                 setIsSidebarOpen(false);
               }}
               className={`group w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-bold transition-all duration-300 relative overflow-hidden ${activeTab === tab.id
