@@ -35,6 +35,7 @@ interface GlobalContextType {
   admins: AdminUser[];
   addAdmin: (admin: AdminUser) => void;
   deleteAdmin: (id: string) => void;
+  changeUserRole: (userId: string, newRole: 'USER' | 'CONTENT_ADMIN' | 'SUPER_ADMIN') => Promise<void>;
   videoResources: VideoResource[];
   addVideoResource: (video: VideoResource) => void;
   updateVideoResource: (video: VideoResource) => void;
@@ -717,15 +718,48 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
   };
   const addAdmin = (admin: AdminUser) => setAdmins(prev => [admin, ...prev]);
-  const deleteAdmin = async (id: string) => {
+  const changeUserRole = async (userId: string, newRole: 'USER' | 'CONTENT_ADMIN' | 'SUPER_ADMIN') => {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ role: 'USER' })
-        .eq('id', id);
+        .update({ role: newRole })
+        .eq('id', userId);
 
       if (error) throw error;
-      setAdmins(prev => prev.filter(a => a.id !== id));
+
+      // Update clubMembers role
+      setClubMembers(prev => prev.map(m => m.id === userId ? { ...m, role: newRole === 'USER' ? 'Member' : newRole } : m));
+
+      // Update admins list
+      if (newRole === 'USER') {
+        setAdmins(prev => prev.filter(a => a.id !== userId));
+      } else {
+        const member = clubMembers.find(m => m.id === userId);
+        const mappedRole = newRole === 'CONTENT_ADMIN' ? 'Content Admin' : 'Super Admin';
+        if (member) {
+          const existingAdmin = admins.find(a => a.id === userId);
+          if (existingAdmin) {
+            setAdmins(prev => prev.map(a => a.id === userId ? { ...a, role: mappedRole } : a));
+          } else {
+            setAdmins(prev => [{
+              id: userId,
+              name: member.name,
+              email: member.email,
+              role: mappedRole,
+              addedAt: new Date().toISOString().split('T')[0]
+            }, ...prev]);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Supabase changeUserRole failed:', err);
+      throw err;
+    }
+  };
+
+  const deleteAdmin = async (id: string) => {
+    try {
+      await changeUserRole(id, 'USER');
     } catch (err) {
       console.error('Supabase deleteAdmin failed:', err);
     }
@@ -1224,7 +1258,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       blogs, achievements,
       managedBlogs, addManagedBlog, updateManagedBlog, deleteManagedBlog, toggleBlogStatus,
       managedAchievements, addManagedAchievement, updateManagedAchievement, deleteManagedAchievement,
-      admins, addAdmin, deleteAdmin,
+      admins, addAdmin, deleteAdmin, changeUserRole,
       videoResources, addVideoResource, updateVideoResource, deleteVideoResource,
       linkResources, addLinkResource, updateLinkResource, deleteLinkResource,
       participants, addParticipant, removeParticipant, checkInParticipant,
