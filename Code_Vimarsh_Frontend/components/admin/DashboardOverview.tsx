@@ -16,7 +16,6 @@ const DashboardOverview: React.FC = () => {
         val: number;
         icon: React.ElementType;
         iconColor: string;
-        iconColor: string;
         color: string;
     }[] = [
             {

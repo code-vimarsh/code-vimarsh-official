@@ -531,11 +531,18 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       id: p.id?.toString() || p._id || Math.random().toString(),
       title: p.title,
       description: p.short_description || p.description || '',
+      fullDescription: p.full_description || '',
+      features: p.features || [],
       category: (frontendCategoryMap[p.category] || 'Web') as any,
       tech: p.tech_stack || p.tech || [],
       image: p.image_url || p.image || '',
+      images: p.images || [],
+      isPublished: p.is_published ?? true,
       author: p.author_name || p.author || 'Unknown',
-      links: { github: p.github_link || p.github }
+      links: {
+        github: p.github_link || p.github || '',
+        live: p.live_link || p.live || ''
+      }
     };
   };
 
@@ -623,21 +630,21 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       'Open Source': 'Other'
     };
     try {
-      // Get the current user id for created_by (required field)
-      const { data: { session } } = await supabase.auth.getSession();
-      const userId = session?.user?.id || currentUser?.id || 'unknown';
-
       const { data, error } = await supabase
         .from('projects')
         .insert([{
           title: project.title,
           short_description: project.description,
+          full_description: project.fullDescription || '',
+          features: project.features || [],
           category: backendCategoryMap[project.category] || 'Other',
           tech_stack: project.tech || [],
           github_link: project.links?.github || '',
-          image: project.image || '',
+          live_link: project.links?.live || '',
+          image_url: project.image || '',
+          images: project.images || [],
           author_name: project.author || 'Unknown',
-          created_by: userId,
+          is_published: project.isPublished ?? true,
         }])
         .select()
         .single();
@@ -659,19 +666,29 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       'Systems': 'Other',
       'Open Source': 'Other'
     };
+    
+    // Find existing project to preserve fields not sent by partial updates
+    const existingProject = projects.find(p => p.id === project.id);
+    const mergedProject = existingProject ? { ...existingProject, ...project } : project;
+
     try {
       const { data, error } = await supabase
         .from('projects')
         .update({
-          title: project.title,
-          short_description: project.description,
-          category: backendCategoryMap[project.category] || 'Other',
-          tech_stack: project.tech || [],
-          github_link: project.links?.github || '',
-          image: project.image || '',
-          author_name: project.author || 'Unknown',
+          title: mergedProject.title,
+          short_description: mergedProject.description,
+          full_description: mergedProject.fullDescription || '',
+          features: mergedProject.features || [],
+          category: backendCategoryMap[mergedProject.category] || 'Other',
+          tech_stack: mergedProject.tech || [],
+          github_link: mergedProject.links?.github || '',
+          live_link: mergedProject.links?.live || '',
+          image_url: mergedProject.image || '',
+          images: mergedProject.images || [],
+          author_name: mergedProject.author || 'Unknown',
+          is_published: mergedProject.isPublished ?? true,
         })
-        .eq('id', project.id)
+        .eq('id', mergedProject.id)
         .select()
         .single();
 
@@ -863,6 +880,16 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
   };
 
+  const getYoutubeThumbnail = (url: string): string => {
+    if (!url) return '';
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    if (match && match[2]) {
+      return `https://img.youtube.com/vi/${match[2]}/maxresdefault.jpg`;
+    }
+    return '';
+  };
+
   const addVideoResource = async (video: VideoResource) => {
     try {
       const { data, error } = await supabase
@@ -871,7 +898,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           title: video.title,
           category: 'youtube',
           url: video.url || '',
-          thumbnail: (video as any).thumbnail || '',
+          thumbnail_url: video.thumbnail || getYoutubeThumbnail(video.url || ''),
           tags: video.tags || [],
           best_for: video.bestFor || '',
           content_type: (video as any).contentType || (video as any).type || '',
@@ -896,7 +923,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           title: video.title,
           category: 'youtube',
           url: video.url || '',
-          thumbnail: (video as any).thumbnail || '',
+          thumbnail_url: video.thumbnail || getYoutubeThumbnail(video.url || ''),
           tags: video.tags || [],
           best_for: video.bestFor || '',
           content_type: (video as any).contentType || (video as any).type || '',
@@ -933,7 +960,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           title: link.title,
           category: link.category || 'website',
           url: link.url || '',
-          thumbnail: (link as any).thumbnail || '',
+          thumbnail_url: (link as any).thumbnail || '',
           tags: link.tags || [],
           best_for: link.bestFor || '',
           content_type: link.contentType || (link as any).type || '',
@@ -958,7 +985,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           title: link.title,
           category: link.category || 'website',
           url: link.url || '',
-          thumbnail: (link as any).thumbnail || '',
+          thumbnail_url: (link as any).thumbnail || '',
           tags: link.tags || [],
           best_for: link.bestFor || '',
           content_type: link.contentType || (link as any).type || '',

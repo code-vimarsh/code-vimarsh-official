@@ -149,7 +149,7 @@ export const Step3OTP: React.FC<Step3OTPProps> = ({
             onChange={(e) => handleChange(index, e.target.value)}
             onKeyDown={(e) => handleKeyDown(index, e)}
             onPaste={handlePaste}
-            ref={(el) => (inputsRef.current[index] = el)}
+            ref={(el) => { inputsRef.current[index] = el; }}
             className="flex-1 min-w-[28px] max-w-[36px] sm:max-w-[40px] aspect-[4/5] text-center text-lg sm:text-xl font-bold bg-[#15151b]/70 border border-white/10 rounded-lg text-white focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all shadow-lg"
           />
         ))}

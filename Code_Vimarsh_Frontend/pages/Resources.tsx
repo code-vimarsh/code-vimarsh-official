@@ -3,6 +3,7 @@ import { Youtube, BookOpen, ArrowRight, Play, Sparkles } from 'lucide-react';
 import { Resource } from '../types';
 import { motion } from 'framer-motion';
 import { EmbersBackground } from '../components/Achievements/GlowDots';
+import { useGlobalState } from '../context/GlobalContext';
 
 const YT_RESOURCES: Resource[] = [
   {
@@ -141,6 +142,11 @@ const SITE_RESOURCES: Resource[] = [
 ];
 
 const Resources: React.FC = () => {
+  const { videoResources, linkResources } = useGlobalState();
+
+  const displayYtResources = videoResources.length > 0 ? videoResources : YT_RESOURCES;
+  const displaySiteResources = linkResources.length > 0 ? linkResources : SITE_RESOURCES;
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const sheetsScrollRef = useRef<HTMLDivElement>(null);
 
@@ -322,7 +328,7 @@ const Resources: React.FC = () => {
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
                 <div className="flex gap-5 px-8" style={{ width: 'max-content' }}>
-                  {[...YT_RESOURCES, ...YT_RESOURCES, ...YT_RESOURCES].map((res, index) => (
+                  {[...displayYtResources, ...displayYtResources, ...displayYtResources].map((res, index) => (
                     <motion.a
                       key={`${res.id}-${index}`}
                       href={res.url}
@@ -403,7 +409,7 @@ const Resources: React.FC = () => {
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
                 <div className="flex gap-5 px-8" style={{ width: 'max-content' }}>
-                  {[...SITE_RESOURCES, ...SITE_RESOURCES].map((res, index) => {
+                  {[...displaySiteResources, ...displaySiteResources].map((res, index) => {
                     const domain = new URL(res.url).hostname;
                     const faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
 
