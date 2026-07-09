@@ -8,7 +8,7 @@ const ManageAccess: React.FC = () => {
     const { toast, showToast, hideToast } = useToast();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedRoleFilter, setSelectedRoleFilter] = useState<'ALL' | 'SUPER_ADMIN' | 'CONTENT_ADMIN' | 'USER'>('ALL');
-    const [newAdmin, setNewAdmin] = useState({ name: '', email: '', role: 'Moderator' });
+    const [newAdmin, setNewAdmin] = useState({ name: '', email: '', role: 'User' });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const getDisplayRole = (role: string) => {
@@ -23,7 +23,7 @@ const ManageAccess: React.FC = () => {
             name: user.name,
             email: user.email,
             role: user.role === 'SUPER_ADMIN' || user.role === 'Super Admin' ? 'Super Admin' :
-                  user.role === 'CONTENT_ADMIN' || user.role === 'Content Admin' ? 'Content Admin' : 'Moderator'
+                  user.role === 'CONTENT_ADMIN' || user.role === 'Content Admin' ? 'Content Admin' : 'User'
         });
     };
 
@@ -39,7 +39,7 @@ const ManageAccess: React.FC = () => {
         }
 
         const roleMap: Record<string, string> = {
-            'Moderator': 'CONTENT_ADMIN',
+            'User': 'USER',
             'Content Admin': 'CONTENT_ADMIN',
             'Super Admin': 'SUPER_ADMIN'
         };
@@ -48,7 +48,7 @@ const ManageAccess: React.FC = () => {
         try {
             await changeUserRole(targetUser.id, roleMap[newAdmin.role] as any);
             showToast("Permissions granted successfully!", "success");
-            setNewAdmin({ name: '', email: '', role: 'Moderator' });
+            setNewAdmin({ name: '', email: '', role: 'User' });
         } catch (err: any) {
             console.error("Failed to upgrade user:", err);
             showToast("Failed to grant permissions: " + err.message, "error");
@@ -85,7 +85,7 @@ const ManageAccess: React.FC = () => {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h2 className="text-3xl font-display font-bold text-white mb-2 leading-tight">Access <span className="text-secondary italic">Control</span></h2>
-                    <p className="text-textMuted max-w-lg">Manage system administrators, moderators, and content managers. Provision new users or revoke access instantly.</p>
+                    <p className="text-textMuted max-w-lg">Manage system administrators, users, and content managers. Provision new users or revoke access instantly.</p>
                 </div>
                 <div className="flex -space-x-3">
                     {admins.slice(0, 5).map((a, i) => (
@@ -130,7 +130,7 @@ const ManageAccess: React.FC = () => {
                                 <div className="relative">
                                     <ShieldAlert className="absolute left-4 top-1/2 -translate-y-1/2 text-textMuted opacity-50" size={16} />
                                     <select value={newAdmin.role} onChange={e => setNewAdmin({ ...newAdmin, role: e.target.value })} className="w-full bg-bgDark border border-surfaceLight rounded-xl px-12 py-3.5 text-sm focus:border-secondary focus:outline-none text-white appearance-none cursor-pointer">
-                                        <option>Moderator</option>
+                                        <option>User</option>
                                         <option>Content Admin</option>
                                         <option>Super Admin</option>
                                     </select>

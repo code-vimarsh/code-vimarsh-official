@@ -178,7 +178,7 @@ export interface AdminUser {
   id: string;
   name: string;
   email: string;
-  role: 'Super Admin' | 'Content Admin' | 'Moderator';
+  role: 'Super Admin' | 'Content Admin' | 'User';
   addedAt: string;
 }
 

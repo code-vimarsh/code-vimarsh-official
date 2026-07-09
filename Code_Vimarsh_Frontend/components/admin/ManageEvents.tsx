@@ -495,6 +495,14 @@ const EventEditor: React.FC<EventEditorProps> = ({
   const [formBuilderOpen,  setFormBuilderOpen]  = useState(false);
   const [imagesOpen,       setImagesOpen]        = useState(false);
 
+  const todayStr = (() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  })();
+
   const inp = INPUT;
 
   return (
@@ -540,6 +548,7 @@ const EventEditor: React.FC<EventEditorProps> = ({
                 <input
                   type="date"
                   value={draft.date}
+                  min={todayStr}
                   onChange={(e) => onDraftChange({ ...draft, date: e.target.value })}
                   className={inp}
                   style={{ colorScheme: 'light' }}
@@ -548,13 +557,13 @@ const EventEditor: React.FC<EventEditorProps> = ({
               <div>
                 <label className="text-xs text-textMuted mb-1.5 block">Status</label>
                 <select
-                  value={draft.status}
+                  value={draft.status ? draft.status.charAt(0).toUpperCase() + draft.status.slice(1).toLowerCase() : 'Upcoming'}
                   onChange={(e) => onDraftChange({ ...draft, status: e.target.value as AdminEvent['status'] })}
                   className={inp}
                 >
-                  <option value="upcoming" style={{ background: '#0a0a0a' }}>Upcoming</option>
-                  <option value="live"     style={{ background: '#0a0a0a' }}>Live</option>
-                  <option value="past"     style={{ background: '#0a0a0a' }}>Past</option>
+                  <option value="Upcoming" style={{ background: '#0a0a0a' }}>Upcoming</option>
+                  <option value="Live"     style={{ background: '#0a0a0a' }}>Live</option>
+                  <option value="Past"     style={{ background: '#0a0a0a' }}>Past</option>
                 </select>
               </div>
             </div>

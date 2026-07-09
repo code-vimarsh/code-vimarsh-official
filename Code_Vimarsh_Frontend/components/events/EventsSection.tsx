@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import type { FilterTab, Event } from './types';
@@ -77,25 +77,67 @@ const EventsSection: React.FC = () => {
   // Derived data
   const sorted   = useMemo(() => sortEvents(eventsData), [eventsData]);
   const filtered = useMemo(() => filterEvents(sorted, activeTab), [sorted, activeTab]);
-  const liveEvent = useMemo(() => sorted.find((e) => e.status === 'live'), [sorted]);
+  const liveEvents = useMemo(() => sorted.filter((e) => e.status === 'live'), [sorted]);
+
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  // Auto-slide live events carousel every 5 seconds
+  useEffect(() => {
+    if (liveEvents.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % liveEvents.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [liveEvents.length]);
+
+  // Reset index if liveEvents list changes or gets out of bounds
+  useEffect(() => {
+    if (currentIndex >= liveEvents.length) {
+      setCurrentIndex(0);
+    }
+  }, [liveEvents.length, currentIndex]);
 
   return (
     <SectionBackground>
       <section className="relative z-10 space-y-12" aria-label="Events">
       <EventsSectionHeader />
 
-      {/* Live hero — only when "All" or "Live" tab is active */}
-      <AnimatePresence>
-        {liveEvent && (activeTab === 'All' || activeTab === 'Live') && (
-          <motion.div
-            key="live-hero"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.35 }}
-          >
-            <LiveHeroBanner event={liveEvent} />
-          </motion.div>
+      {/* Live heroes carousel — only when "All" or "Live" tab is active */}
+      <AnimatePresence mode="wait">
+        {(activeTab === 'All' || activeTab === 'Live') && liveEvents.length > 0 && (
+          <div className="space-y-4">
+            <div className="relative overflow-hidden rounded-2xl">
+              <motion.div
+                key={liveEvents[currentIndex]?.id || currentIndex}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.35, ease: 'easeInOut' }}
+              >
+                {liveEvents[currentIndex] && (
+                  <LiveHeroBanner event={liveEvents[currentIndex]} />
+                )}
+              </motion.div>
+            </div>
+
+            {/* Slide indicators (dots) */}
+            {liveEvents.length > 1 && (
+              <div className="flex justify-center items-center gap-1.5">
+                {liveEvents.map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setCurrentIndex(idx)}
+                    className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+                      idx === currentIndex 
+                        ? 'bg-primary w-3.5' 
+                        : 'bg-white/20 hover:bg-white/40'
+                    }`}
+                    aria-label={`Go to slide ${idx + 1}`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         )}
       </AnimatePresence>
 
