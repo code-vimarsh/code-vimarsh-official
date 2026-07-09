@@ -703,6 +703,7 @@ const ScannerModal: React.FC<ScannerModalProps> = ({ eventId, eventTitle, formFi
   const [manualId, setManualId] = useState('');
   const [scanResult, setScanResult] = useState<{ success: boolean; message: string } | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const lastScannedRef = useRef<{ id: string; time: number } | null>(null);
 
   const playBeep = (isSuccess: boolean) => {
     try {
@@ -733,6 +734,14 @@ const ScannerModal: React.FC<ScannerModalProps> = ({ eventId, eventTitle, formFi
   };
 
   const handleCheckIn = (id: string) => {
+    if (scanResult !== null) return;
+
+    const now = Date.now();
+    if (lastScannedRef.current && lastScannedRef.current.id === id && now - lastScannedRef.current.time < 5000) {
+      return;
+    }
+    lastScannedRef.current = { id, time: now };
+
     const part = participants.find(p => (p.id === id || p.ticketCode === id) && p.eventId === eventId);
     if (!part) {
       playBeep(false);

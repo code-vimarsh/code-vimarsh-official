@@ -48,7 +48,7 @@ interface GlobalContextType {
   participants: Participant[];
   addParticipant: (p: Participant) => void;
   removeParticipant: (id: string) => void;
-  checkInParticipant: (id: string, status: 'registered' | 'attended') => void;
+  checkInParticipant: (id: string, status: 'registered' | 'attended') => Promise<void>;
   clubMembers: ClubMember[];
   addClubMember: (m: ClubMember) => void;
   removeClubMember: (id: string) => void;
@@ -1075,33 +1075,35 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       return updated;
     });
   };
-  const checkInParticipant = (id: string, status: 'registered' | 'attended') => {
+  const checkInParticipant = async (id: string, status: 'registered' | 'attended') => {
     setParticipants(prev => {
       const updated = prev.map(p => p.id === id ? { ...p, status } : p);
       localStorage.setItem('cv_participants', JSON.stringify(updated));
       return updated;
     });
 
-    // Sync check-in state directly with Supabase
-    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-    let query = supabase.from('event_registrations').update({ status });
-    
-    if (isUUID) {
-      query = query.eq('id', id);
-    } else {
-      const part = participants.find(p => p.id === id);
-      if (part) {
-        query = query.eq('event_id', part.eventId).eq('email', part.email);
+    try {
+      const cleanId = id.trim();
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanId);
+      let query = supabase.from('event_registrations').update({ status });
+      
+      if (isUUID) {
+        query = query.eq('id', cleanId);
       } else {
-        query = query.eq('id', id); // fallback
+        const part = participants.find(p => p.id === id);
+        if (part) {
+          query = query.eq('event_id', part.eventId).eq('email', part.email);
+        } else {
+          query = query.eq('id', cleanId); // fallback
+        }
       }
-    }
 
-    query.then(({ error }) => {
-      if (error) {
-        console.error('Failed to sync check-in status to Supabase:', error);
-      }
-    });
+      const { error } = await query;
+      if (error) throw error;
+      console.log(`Successfully synced check-in status (${status}) to Supabase for ID: ${cleanId}`);
+    } catch (err) {
+      console.error('Failed to sync check-in status to Supabase:', err);
+    }
   };
 
   const addTeamMember = async (member: TeamMember) => {
