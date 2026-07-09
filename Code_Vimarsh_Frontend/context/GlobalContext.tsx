@@ -304,7 +304,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     (supabase
       .from('achievements') as any)
       .select('*')
-      .order('order', { ascending: true })
+      .order('sort_order', { ascending: true })
       .then(({ data, error }) => {
         if (error) throw error;
         if (data && data.length > 0) {
@@ -851,7 +851,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           tag: a.tag,
           icon: a.icon,
           category: a.category,
-          order: a.order || 0,
+          sort_order: a.order || 0,
         }])
         .select()
         .single();
@@ -877,7 +877,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           tag: a.tag,
           icon: a.icon,
           category: a.category,
-          order: a.order || 0,
+          sort_order: a.order || 0,
         })
         .eq('id', a.id)
         .select()
