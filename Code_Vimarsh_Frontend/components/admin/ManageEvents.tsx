@@ -733,10 +733,10 @@ const ScannerModal: React.FC<ScannerModalProps> = ({ eventId, eventTitle, formFi
   };
 
   const handleCheckIn = (id: string) => {
-    const part = participants.find(p => p.id === id && p.eventId === eventId);
+    const part = participants.find(p => (p.id === id || p.ticketCode === id) && p.eventId === eventId);
     if (!part) {
       playBeep(false);
-      setScanResult({ success: false, message: `Invalid ticket ID: ${id}` });
+      setScanResult({ success: false, message: `Invalid ticket ID/Code: ${id}` });
       return;
     }
     
@@ -747,7 +747,7 @@ const ScannerModal: React.FC<ScannerModalProps> = ({ eventId, eventTitle, formFi
     }
 
     playBeep(true);
-    checkInParticipant(id, 'attended');
+    checkInParticipant(part.id, 'attended');
     setScanResult({ success: true, message: `Welcome, ${part.name}! Checked in successfully.` });
     
     setTimeout(() => {
@@ -890,6 +890,29 @@ const ScannerModal: React.FC<ScannerModalProps> = ({ eventId, eventTitle, formFi
 
         {/* Body */}
         <div className="p-4 sm:p-6 overflow-y-auto space-y-4 sm:space-y-6 flex-1">
+          {/* Scan result banner */}
+          {scanResult && (
+            <div 
+              className={`p-4 rounded-xl border flex items-center gap-3 animate-in fade-in duration-300 ${
+                scanResult.success 
+                  ? 'bg-green-500/10 border-green-500/20 text-green-400' 
+                  : 'bg-red-500/10 border-red-500/20 text-red-400'
+              }`}
+            >
+              {scanResult.success 
+                ? <CheckCircle2 size={18} className="shrink-0" />
+                : <XCircle size={18} className="shrink-0" />
+              }
+              <span className="text-xs font-bold tracking-tight">{scanResult.message}</span>
+              <button 
+                onClick={() => setScanResult(null)}
+                className="ml-auto text-[10px] hover:underline"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Live Scanner Card */}
             <div className="bg-surface border border-surfaceLight rounded-2xl p-5 flex flex-col justify-between space-y-4">
@@ -964,29 +987,6 @@ const ScannerModal: React.FC<ScannerModalProps> = ({ eventId, eventTitle, formFi
               <span className="text-[10px] text-primary/70 uppercase tracking-widest font-mono animate-pulse">
                 [ CAMERA FEED ACTIVE ]
               </span>
-            </div>
-          )}
-
-          {/* Scan result banner */}
-          {scanResult && (
-            <div 
-              className={`p-4 rounded-xl border flex items-center gap-3 animate-in fade-in duration-300 ${
-                scanResult.success 
-                  ? 'bg-green-500/10 border-green-500/20 text-green-400' 
-                  : 'bg-red-500/10 border-red-500/20 text-red-400'
-              }`}
-            >
-              {scanResult.success 
-                ? <CheckCircle2 size={18} className="shrink-0" />
-                : <XCircle size={18} className="shrink-0" />
-              }
-              <span className="text-xs font-bold tracking-tight">{scanResult.message}</span>
-              <button 
-                onClick={() => setScanResult(null)}
-                className="ml-auto text-[10px] hover:underline"
-              >
-                Dismiss
-              </button>
             </div>
           )}
 

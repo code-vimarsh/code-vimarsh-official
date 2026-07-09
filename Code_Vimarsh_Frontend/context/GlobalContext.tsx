@@ -134,34 +134,37 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           const { data: { session }, error: sessionErr } = await supabase.auth.getSession();
           if (sessionErr) throw sessionErr;
 
-          if (session?.user) {
-            // Get user profile from Profiles table
-            const { data: profile, error: profileErr } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('user_id', session.user.id)
-              .single();
-
-            if (profileErr) throw profileErr;
-
-            if (profile) {
-              const mappedUser: User = {
-                id: profile.id,
-                prn: profile.prn || '',
-                name: profile.full_name,
-                email: profile.email,
-                role: profile.role as any,
-                github_url: profile.github_url || undefined,
-                linkedin_url: profile.linkedin_url || undefined,
-                leetcode_url: profile.leetcode_url || undefined,
-                created_at: profile.created_at,
-              };
-              setCurrentUser(mappedUser);
-              localStorage.setItem('cv_user_profile', JSON.stringify(mappedUser));
-              return;
-            }
+          if (!session?.user) {
+            setIsLoggedIn(false);
+            setCurrentUser(null);
+            return;
           }
-          throw new Error('No Supabase session or profile found.');
+
+          // Get user profile from Profiles table
+          const { data: profile, error: profileErr } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .single();
+
+          if (profileErr) throw profileErr;
+
+          if (profile) {
+            const mappedUser: User = {
+              id: profile.id,
+              prn: profile.prn || '',
+              name: profile.full_name,
+              email: profile.email,
+              role: profile.role as any,
+              github_url: profile.github_url || undefined,
+              linkedin_url: profile.linkedin_url || undefined,
+              leetcode_url: profile.leetcode_url || undefined,
+              created_at: profile.created_at,
+            };
+            setCurrentUser(mappedUser);
+            localStorage.setItem('cv_user_profile', JSON.stringify(mappedUser));
+            return;
+          }
         } catch (err) {
           console.error('Supabase profile fetch failed, using local offline fallback:', err);
           // Fallback to local profile cache
@@ -1019,15 +1022,25 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     });
 
     // Sync check-in state directly with Supabase
-    supabase
-      .from('event_registrations')
-      .update({ status })
-      .eq('id', id)
-      .then(({ error }) => {
-        if (error) {
-          console.error('Failed to sync check-in status to Supabase:', error);
-        }
-      });
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    let query = supabase.from('event_registrations').update({ status });
+    
+    if (isUUID) {
+      query = query.eq('id', id);
+    } else {
+      const part = participants.find(p => p.id === id);
+      if (part) {
+        query = query.eq('event_id', part.eventId).eq('email', part.email);
+      } else {
+        query = query.eq('id', id); // fallback
+      }
+    }
+
+    query.then(({ error }) => {
+      if (error) {
+        console.error('Failed to sync check-in status to Supabase:', error);
+      }
+    });
   };
 
   const addTeamMember = async (member: TeamMember) => {
