@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Mail, MapPin, Send, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { EmbersBackground } from '../components/Achievements/GlowDots';
-import { supabase } from '../services/supabase';
+import emailjs from '@emailjs/browser';
 
 const inputBase =
   'w-full px-3.5 py-2.5 bg-bgDark border border-surfaceLight rounded-lg text-white text-sm placeholder-textMuted ' +
@@ -87,21 +87,26 @@ const Contact: React.FC = () => {
         message: formData.get('message') as string,
       };
       
-      const { data: { session } } = await supabase.auth.getSession();
-      const userId = session?.user?.id || null;
+      // Trigger EmailJS dispatch securely if env variables are configured
+      const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+      const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+      const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 
-      const { error } = await supabase
-        .from('contact_messages')
-        .insert([{
-          name: payload.name,
-          email: payload.email,
+      if (!serviceId || !templateId || !publicKey) {
+        throw new Error('Email sending service is not configured.');
+      }
+
+      await emailjs.send(
+        serviceId,
+        templateId,
+        {
+          from_name: payload.name,
+          from_email: payload.email,
           subject: payload.subject,
           message: payload.message,
-          user_id: userId,
-          status: 'Open'
-        }]);
-      
-      if (error) throw error;
+        },
+        publicKey
+      );
 
       setStatus('success');
       form.reset();
