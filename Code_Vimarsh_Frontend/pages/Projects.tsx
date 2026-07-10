@@ -12,7 +12,7 @@ import {
 import SectionBackground from '../components/shared/SectionBackground';
 
 const Projects: React.FC = () => {
-  const { projects, addProject, isLoggedIn } = useGlobalState();
+  const { projects, addProject, isLoggedIn, currentUser } = useGlobalState();
 
   const [searchTerm, setSearchTerm]   = useState('');
   const [formOpen, setFormOpen]       = useState(false);
@@ -39,13 +39,28 @@ const Projects: React.FC = () => {
 
   const handleProjectSubmit = useCallback(
     (newProject: ProjectType) => {
-      addProject(newProject);
-      showToast(
-        `"${newProject.title}" has been submitted successfully!`,
-        'success'
-      );
+      const isPrivileged = currentUser && (currentUser.role === 'CONTENT_ADMIN' || currentUser.role === 'SUPER_ADMIN');
+      
+      const projectToSubmit: ProjectType = {
+        ...newProject,
+        isPublished: !!isPrivileged,
+      };
+
+      addProject(projectToSubmit);
+      
+      if (isPrivileged) {
+        showToast(
+          `"${newProject.title}" has been published successfully!`,
+          'success'
+        );
+      } else {
+        showToast(
+          `Thank you! Your project has been submitted to the admin team. They will review and publish it soon!`,
+          'success'
+        );
+      }
     },
-    [addProject, showToast]
+    [addProject, showToast, currentUser]
   );
 
   return (
@@ -70,7 +85,8 @@ const Projects: React.FC = () => {
         open={formOpen}
         onClose={() => setFormOpen(false)}
         onSubmit={handleProjectSubmit}
-        defaultAuthor="Alex Developer" // Replace with auth user name when available
+        defaultAuthor={currentUser?.name || "Alex Developer"}
+        isAdmin={currentUser && (currentUser.role === 'CONTENT_ADMIN' || currentUser.role === 'SUPER_ADMIN')}
       />
 
       {/* Toast Notification */}

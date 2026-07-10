@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useGlobalState } from '../../context/GlobalContext';
-import { Plus, Trash2, Upload, X, Search, Filter, ExternalLink, Github, Code2, Layers, User, Pencil, Save } from 'lucide-react';
+import { Plus, Trash2, Upload, X, Search, Filter, ExternalLink, Github, Code2, Layers, User, Pencil, Save, Eye, EyeOff, Check } from 'lucide-react';
 
 const ManageProjects: React.FC = () => {
     const { projects, addProject, updateProject, deleteProject } = useGlobalState();
@@ -8,6 +8,7 @@ const ManageProjects: React.FC = () => {
     // Local State
     const [searchQuery, setSearchQuery] = useState('');
     const [filterCategory, setFilterCategory] = useState('All');
+    const [filterStatus, setFilterStatus] = useState('All');
     const [editingId, setEditingId] = useState<string | null>(null);
 
     const [newProject, setNewProject] = useState({
@@ -30,6 +31,7 @@ const ManageProjects: React.FC = () => {
         if (!newProject.title || !newProject.image) return;
 
         if (editingId) {
+            const orig = projects.find(p => p.id === editingId);
             updateProject({
                 id: editingId,
                 title: newProject.title,
@@ -38,6 +40,7 @@ const ManageProjects: React.FC = () => {
                 category: newProject.category,
                 tech: newProject.tech.split(',').map(t => t.trim()),
                 image: newProject.image,
+                isPublished: orig ? orig.isPublished : true,
                 links: { github: newProject.github }
             });
             setEditingId(null);
@@ -50,6 +53,7 @@ const ManageProjects: React.FC = () => {
                 category: newProject.category,
                 tech: newProject.tech.split(',').map(t => t.trim()),
                 image: newProject.image,
+                isPublished: true,
                 links: { github: newProject.github }
             });
         }
@@ -82,7 +86,19 @@ const ManageProjects: React.FC = () => {
         const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             p.author.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesCategory = filterCategory === 'All' || p.category === filterCategory;
-        return matchesSearch && matchesCategory;
+        const isProjectPublished = p.isPublished !== false;
+        const matchesStatus = filterStatus === 'All' ||
+            (filterStatus === 'Published' && isProjectPublished) ||
+            (filterStatus === 'Pending' && !isProjectPublished);
+        return matchesSearch && matchesCategory && matchesStatus;
+    });
+
+    const sortedProjects = [...filteredProjects].sort((a, b) => {
+        const aPub = a.isPublished !== false;
+        const bPub = b.isPublished !== false;
+        if (!aPub && bPub) return -1;
+        if (aPub && !bPub) return 1;
+        return 0;
     });
 
     return (
@@ -139,11 +155,11 @@ const ManageProjects: React.FC = () => {
                                 <div className="relative">
                                     <Layers className="absolute left-4 top-1/2 -translate-y-1/2 text-textMuted" size={16} />
                                     <select value={newProject.category} onChange={e => setNewProject({ ...newProject, category: e.target.value as any })} className="w-full bg-bgDark border border-surfaceLight rounded-xl px-12 py-3 text-sm focus:border-primary focus:outline-none text-white appearance-none cursor-pointer">
-                                        <option>Web</option>
-                                        <option>Mobile</option>
-                                        <option>AI / ML</option>
-                                        <option>Systems</option>
-                                        <option>Open Source</option>
+                                        <option style={{ backgroundColor: '#121212', color: '#ffffff' }}>Web</option>
+                                        <option style={{ backgroundColor: '#121212', color: '#ffffff' }}>Mobile</option>
+                                        <option style={{ backgroundColor: '#121212', color: '#ffffff' }}>AI / ML</option>
+                                        <option style={{ backgroundColor: '#121212', color: '#ffffff' }}>Systems</option>
+                                        <option style={{ backgroundColor: '#121212', color: '#ffffff' }}>Open Source</option>
                                     </select>
                                 </div>
                             </div>
@@ -210,30 +226,46 @@ const ManageProjects: React.FC = () => {
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-textMuted" size={18} />
                             <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search projects by title, author..." className="w-full bg-bgDark border border-surfaceLight rounded-2xl px-12 py-3 text-sm focus:border-primary focus:outline-none transition-all" />
                         </div>
-                        <div className="flex items-center gap-2 px-4 bg-bgDark border border-surfaceLight rounded-2xl">
-                            <Filter size={16} className="text-textMuted" />
-                            <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} className="bg-transparent text-sm text-white font-bold focus:outline-none py-3 cursor-pointer">
-                                <option value="All">All Categories</option>
-                                <option value="Web">Web</option>
-                                <option value="Mobile">Mobile</option>
-                                <option value="AI / ML">AI / ML</option>
-                                <option value="Systems">Systems</option>
-                                <option value="Open Source">Open Source</option>
-                            </select>
+                        <div className="flex gap-2">
+                            <div className="flex items-center gap-2 px-4 bg-bgDark border border-surfaceLight rounded-2xl">
+                                <Filter size={16} className="text-textMuted" />
+                                <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} className="bg-transparent text-sm text-white font-bold focus:outline-none py-3 cursor-pointer">
+                                    <option value="All" style={{ backgroundColor: '#121212', color: '#ffffff' }}>All Categories</option>
+                                    <option value="Web" style={{ backgroundColor: '#121212', color: '#ffffff' }}>Web</option>
+                                    <option value="Mobile" style={{ backgroundColor: '#121212', color: '#ffffff' }}>Mobile</option>
+                                    <option value="AI / ML" style={{ backgroundColor: '#121212', color: '#ffffff' }}>AI / ML</option>
+                                    <option value="Systems" style={{ backgroundColor: '#121212', color: '#ffffff' }}>Systems</option>
+                                    <option value="Open Source" style={{ backgroundColor: '#121212', color: '#ffffff' }}>Open Source</option>
+                                </select>
+                            </div>
+                            <div className="flex items-center gap-2 px-4 bg-bgDark border border-surfaceLight rounded-2xl">
+                                <Filter size={16} className="text-textMuted" />
+                                <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="bg-transparent text-sm text-white font-bold focus:outline-none py-3 cursor-pointer">
+                                    <option value="All" style={{ backgroundColor: '#121212', color: '#ffffff' }}>All Statuses</option>
+                                    <option value="Published" style={{ backgroundColor: '#121212', color: '#ffffff' }}>Published</option>
+                                    <option value="Pending" style={{ backgroundColor: '#121212', color: '#ffffff' }}>Pending Approval</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
                     {/* Table-like List */}
                     <div className="space-y-4 pr-1 overflow-y-auto custom-scrollbar" style={{ maxHeight: '800px' }}>
-                        {filteredProjects.length === 0 ? (
+                        {sortedProjects.length === 0 ? (
                             <div className="bg-surface border border-dashed border-surfaceLight p-20 rounded-3xl flex flex-col items-center justify-center text-center opacity-60">
                                 <Search size={48} className="text-textMuted mb-4" />
                                 <h4 className="text-xl font-bold text-white mb-2">No projects found</h4>
                                 <p className="text-sm text-textMuted">Try adjusting your search or category filter.</p>
                             </div>
                         ) : (
-                            filteredProjects.map((proj, idx) => (
-                                <div key={proj.id} className={`bg-surface border ${editingId === proj.id ? 'border-primary shadow-xl shadow-primary/10' : 'border-surfaceLight'} hover:border-primary/40 p-5 rounded-3xl flex flex-col sm:flex-row items-center gap-6 transition-all duration-300 group hover:shadow-xl hover:shadow-black/40`}>
+                            sortedProjects.map((proj, idx) => (
+                                <div key={proj.id} className={`bg-surface border ${
+                                    editingId === proj.id 
+                                        ? 'border-primary shadow-xl shadow-primary/10' 
+                                        : proj.isPublished === false 
+                                            ? 'border-yellow-500/40 bg-yellow-500/5' 
+                                            : 'border-surfaceLight'
+                                } hover:border-primary/40 p-5 rounded-3xl flex flex-col sm:flex-row items-center gap-6 transition-all duration-300 group hover:shadow-xl hover:shadow-black/40`}>
                                     {/* Thumbnail */}
                                     <div className="w-full sm:w-48 h-28 rounded-2xl overflow-hidden border border-surfaceLight shrink-0 relative group-hover:border-primary/20 transition-colors">
                                         <img src={proj.image} alt={proj.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
@@ -242,7 +274,20 @@ const ManageProjects: React.FC = () => {
 
                                     {/* Content */}
                                     <div className="flex-1 min-w-0 text-center sm:text-left">
-                                        <h4 className="font-bold text-xl text-white group-hover:text-primary transition-colors truncate">{proj.title}</h4>
+                                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
+                                            <h4 className="font-bold text-xl text-white group-hover:text-primary transition-colors truncate">{proj.title}</h4>
+                                            <div>
+                                                {proj.isPublished === false ? (
+                                                    <span className="text-[9px] font-bold text-yellow-500 bg-yellow-500/10 border border-yellow-500/20 px-2.5 py-0.5 rounded-md uppercase tracking-wider inline-block">
+                                                        Unpublished
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-[9px] font-bold text-green-500 bg-green-500/10 border border-green-500/20 px-2.5 py-0.5 rounded-md uppercase tracking-wider inline-block">
+                                                        Published
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
                                         <div className="flex flex-wrap justify-center sm:justify-start gap-4 mt-1">
                                             <span className="text-xs text-textMuted font-mono flex items-center gap-1.5"><User size={12} className="text-primary opacity-60" /> {proj.author}</span>
                                             <span className="text-xs text-textMuted font-mono bg-bgDark px-2 py-0.5 rounded-lg border border-surfaceLight flex items-center gap-1.5 truncate max-w-[200px]"><Code2 size={12} className="text-blue-400 opacity-60" /> {proj.tech.join(', ')}</span>
@@ -251,6 +296,23 @@ const ManageProjects: React.FC = () => {
 
                                     {/* Actions */}
                                     <div className="flex items-center gap-2 shrink-0">
+                                        {proj.isPublished === false ? (
+                                            <button
+                                                onClick={() => updateProject({ ...proj, isPublished: true })}
+                                                className="p-3 bg-bgDark border border-primary/20 text-primary hover:text-black hover:bg-primary transition-all rounded-2xl"
+                                                title="Approve & Publish Project"
+                                            >
+                                                <Check size={18} />
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={() => updateProject({ ...proj, isPublished: false })}
+                                                className="p-3 bg-bgDark border border-surfaceLight text-textMuted hover:text-white hover:bg-surfaceLight transition-all rounded-2xl"
+                                                title="Unpublish Project"
+                                            >
+                                                <EyeOff size={18} />
+                                            </button>
+                                        )}
                                         {proj.links.github && (
                                             <a href={proj.links.github} target="_blank" rel="noopener noreferrer" className="p-3 bg-bgDark border border-surfaceLight text-textMuted hover:text-white hover:bg-surfaceLight transition-all rounded-2xl" title="Github Repository">
                                                 <Github size={18} />
