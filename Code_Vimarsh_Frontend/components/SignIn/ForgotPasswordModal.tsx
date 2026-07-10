@@ -3,24 +3,66 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, X } from 'lucide-react';
 
 import { FormInput, AuthButton } from '../Auth';
+import { supabase } from '../../services/supabase';
 
 // ─── Forgot Password Modal ─────────────────────────────────────────────────────
 
-const ForgotPasswordModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+const ForgotPasswordModal: React.FC<{ onClose: () => void; prn?: string }> = ({ onClose, prn }) => {
   const [email, setEmail]     = useState('');
   const [sent, setSent]       = useState(false);
   const [sending, setSending] = useState(false);
   const [err, setErr]         = useState('');
 
   const handleSend = async () => {
+    if (!prn || !prn.trim()) {
+      setErr('Please enter your PRN on the Sign In page first.');
+      return;
+    }
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) {
       setErr('Enter a valid email address.');
       return;
     }
     setSending(true);
-    await new Promise((res) => setTimeout(res, 1400));
-    setSending(false);
-    setSent(true);
+    setErr('');
+    try {
+      // 1. Verify if the PRN exists and retrieve its registered email address
+      const { data: profile, error: profileErr } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('prn', prn.trim())
+        .maybeSingle();
+
+      if (profileErr) {
+        throw profileErr;
+      }
+
+      if (!profile || !profile.email) {
+        setErr('No registered account was found with the PRN entered on the Sign In page.');
+        setSending(false);
+        return;
+      }
+
+      // 2. Verify that the entered email matches the email linked to the PRN
+      if (profile.email.toLowerCase() !== email.trim().toLowerCase()) {
+        setErr('The entered email does not match the email registered for your PRN.');
+        setSending(false);
+        return;
+      }
+
+      // 3. Dispatch password reset link via Supabase Auth
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/signin`,
+      });
+      if (error) {
+        throw error;
+      }
+      setSent(true);
+    } catch (err: any) {
+      console.error('Password reset failed:', err);
+      setErr(err.message || 'Failed to send reset link. Try again.');
+    } finally {
+      setSending(false);
+    }
   };
 
   return (

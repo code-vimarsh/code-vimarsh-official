@@ -1,9 +1,9 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../services/supabase';
 
-import { AuthCard } from '../components/Auth';
+import { AuthCard, PasswordInput, AuthButton } from '../components/Auth';
 import { ForgotPasswordModal, SignInFormFields } from '../components/SignIn';
 import type { SignInFormData, SignInErrors } from '../components/Auth/types';
 import { validateSignIn } from '../utils/authValidation';
@@ -31,6 +31,43 @@ const SignIn: React.FC = () => {
   const [isLoading, setIsLoading]   = useState(false);
   const [showForgot, setShowForgot] = useState(false);
   const [authError, setAuthError]   = useState('');
+
+  // Password Recovery / Reset States
+  const [isRecoveryMode, setIsRecoveryMode]   = useState(() => {
+    return typeof window !== 'undefined' && sessionStorage.getItem('cv_is_recovering') === 'true';
+  });
+  const [newPassword, setNewPassword]         = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [resetError, setResetError]           = useState('');
+  const [resetSuccess, setResetSuccess]       = useState(false);
+
+  useEffect(() => {
+    // Listen for PASSWORD_RECOVERY event
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsRecoveryMode(true);
+        sessionStorage.setItem('cv_is_recovering', 'true');
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  // Clean up trailing '#' from the URL address bar once recovery mode is active
+  useEffect(() => {
+    if (isRecoveryMode && typeof window !== 'undefined') {
+      const timer = setTimeout(() => {
+        window.history.replaceState(
+          null,
+          document.title,
+          window.location.pathname + window.location.search
+        );
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isRecoveryMode]);
 
   // ── Real-time field change ──
   const handleChange = useCallback(
@@ -105,37 +142,135 @@ const SignIn: React.FC = () => {
     }
   };
 
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPassword.trim()) {
+      setResetError('New password is required.');
+      return;
+    }
+    if (newPassword.length < 6) {
+      setResetError('Password must be at least 6 characters.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setResetError('Passwords do not match.');
+      return;
+    }
+
+    setIsLoading(true);
+    setResetError('');
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+
+      setResetSuccess(true);
+      sessionStorage.removeItem('cv_is_recovering');
+
+      // Auto login: retrieve session to save the access token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        localStorage.setItem('cv_token', session.access_token);
+        setIsLoggedIn(true);
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 1500);
+      } else {
+        setTimeout(() => {
+          setIsRecoveryMode(false);
+          setNewPassword('');
+          setConfirmPassword('');
+        }, 2000);
+      }
+    } catch (err: any) {
+      console.error('Password update failed:', err);
+      setResetError(err.message || 'Failed to update password.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <>
       <motion.div
-        key="signin-page"
+        key={isRecoveryMode ? 'recovery-page' : 'signin-page'}
         variants={PAGE_VARIANTS}
         initial="initial"
         animate="animate"
         exit="exit"
       >
-        <AuthCard
-          title="Welcome back"
-          subtitle="Sign in to your Code Vimarsh account"
-        >
-          <form onSubmit={handleSubmit} noValidate className="space-y-5">
-            <SignInFormFields
-              form={form}
-              errors={errors}
-              isLoading={isLoading}
-              authError={authError}
-              handleChange={handleChange}
-              handleBlur={handleBlur}
-              onForgotClick={() => setShowForgot(true)}
-            />
-          </form>
-        </AuthCard>
+        {isRecoveryMode ? (
+          <AuthCard
+            title="Update Password"
+            subtitle="Enter your new secure password below"
+          >
+            {resetSuccess ? (
+              <div className="flex flex-col items-center gap-3 py-4 text-center">
+                <div className="w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center">
+                  <span className="text-2xl text-emerald-400">✓</span>
+                </div>
+                <p className="text-white font-semibold">Password updated successfully!</p>
+                <p className="text-sm text-textMuted">Redirecting you to dashboard...</p>
+              </div>
+            ) : (
+              <form onSubmit={handleUpdatePassword} className="space-y-5">
+                <PasswordInput
+                  id="recovery-password"
+                  label="New Password"
+                  value={newPassword}
+                  onChange={(e) => { setNewPassword(e.target.value); setResetError(''); }}
+                />
+                <PasswordInput
+                  id="recovery-confirm-password"
+                  label="Confirm Password"
+                  value={confirmPassword}
+                  onChange={(e) => { setConfirmPassword(e.target.value); setResetError(''); }}
+                />
+                {resetError && (
+                  <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-xl text-center">
+                    {resetError}
+                  </div>
+                )}
+                <AuthButton type="submit" isLoading={isLoading}>
+                  {isLoading ? 'Updating...' : 'Update Password'}
+                </AuthButton>
+                
+                <button
+                  type="button"
+                  onClick={() => {
+                    sessionStorage.removeItem('cv_is_recovering');
+                    setIsRecoveryMode(false);
+                  }}
+                  className="w-full text-center text-xs text-textMuted hover:text-primary transition-colors pt-2"
+                >
+                  Back to Sign In
+                </button>
+              </form>
+            )}
+          </AuthCard>
+        ) : (
+          <AuthCard
+            title="Welcome back"
+            subtitle="Sign in to your Code Vimarsh account"
+          >
+            <form onSubmit={handleSubmit} noValidate className="space-y-5">
+              <SignInFormFields
+                form={form}
+                errors={errors}
+                isLoading={isLoading}
+                authError={authError}
+                handleChange={handleChange}
+                handleBlur={handleBlur}
+                onForgotClick={() => setShowForgot(true)}
+              />
+            </form>
+          </AuthCard>
+        )}
       </motion.div>
 
       {/* ── Forgot Password Modal ── */}
       <AnimatePresence>
         {showForgot && (
-          <ForgotPasswordModal onClose={() => setShowForgot(false)} />
+          <ForgotPasswordModal onClose={() => setShowForgot(false)} prn={form.prn} />
         )}
       </AnimatePresence>
     </>
