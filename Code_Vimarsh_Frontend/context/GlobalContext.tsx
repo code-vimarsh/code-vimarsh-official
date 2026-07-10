@@ -662,6 +662,10 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     const existingProject = projects.find(p => p.id === project.id);
     const mergedProject = existingProject ? { ...existingProject, ...project } : project;
 
+    // Optimistically update the state immediately for fast response
+    const previousProjects = [...projects];
+    setProjects(prev => prev.map(p => p.id === project.id ? mergedProject : p));
+
     try {
       const { data, error } = await supabase
         .from('projects')
@@ -689,8 +693,8 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         setProjects(prev => prev.map(p => p.id === project.id ? updated : p));
       }
     } catch (err) {
-      console.error('Supabase updateProject failed, falling back to local state:', err);
-      setProjects(prev => prev.map(p => p.id === project.id ? project : p));
+      console.error('Supabase updateProject failed, rolling back:', err);
+      setProjects(previousProjects);
     }
   };
   const deleteProject = async (id: string) => {

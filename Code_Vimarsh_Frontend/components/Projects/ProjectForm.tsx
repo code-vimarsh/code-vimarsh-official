@@ -122,6 +122,7 @@ interface ProjectFormProps {
   onClose: () => void;
   onSubmit: (project: ProjectType) => void;
   defaultAuthor?: string;
+  isAdmin?: boolean;
 }
 
 export const ProjectForm: React.FC<ProjectFormProps> = ({
@@ -129,8 +130,9 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
   onClose,
   onSubmit,
   defaultAuthor = '',
+  isAdmin = false,
 }) => {
-  const [form, setForm]             = useState<ProjectFormData>({ ...EMPTY_FORM, authorName: defaultAuthor });
+  const [form, setForm]             = useState<ProjectFormData>({ ...EMPTY_FORM, authorName: defaultAuthor, isPublished: !!isAdmin });
   const [errors, setErrors]         = useState<ProjectFormErrors>({});
   const [touched, setTouched]       = useState<Partial<Record<keyof ProjectFormData, boolean>>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -141,12 +143,12 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
   // Reset when modal opens
   useEffect(() => {
     if (open) {
-      setForm({ ...EMPTY_FORM, authorName: defaultAuthor });
+      setForm({ ...EMPTY_FORM, authorName: defaultAuthor, isPublished: !!isAdmin });
       setErrors({});
       setTouched({});
       setSubmitted(false);
     }
-  }, [open, defaultAuthor]);
+  }, [open, defaultAuthor, isAdmin]);
 
   // Lock body scroll
   useEffect(() => {
@@ -488,32 +490,34 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
                 </Field>
 
                 {/* Publish Toggle */}
-                <div className="flex items-center justify-between p-4 bg-surface rounded-xl border border-surfaceLight">
-                  <div>
-                    <p className="text-sm font-medium text-textMain">Publish Immediately</p>
-                    <p className="text-xs text-textMuted mt-0.5">
-                      Published projects appear in the public projects section.
-                    </p>
+                {isAdmin && (
+                  <div className="flex items-center justify-between p-4 bg-surface rounded-xl border border-surfaceLight">
+                    <div>
+                      <p className="text-sm font-medium text-textMain">Publish Immediately</p>
+                      <p className="text-xs text-textMuted mt-0.5">
+                        Published projects appear in the public projects section.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={form.isPublished}
+                      onClick={() => setForm((p) => ({ ...p, isPublished: !p.isPublished }))}
+                      className={`
+                        relative inline-flex h-6 w-11 shrink-0 rounded-full border-2
+                        transition-colors duration-200 focus-visible:outline-none
+                        focus-visible:ring-2 focus-visible:ring-primary/60
+                        ${form.isPublished ? 'bg-primary border-primary' : 'bg-bgDark border-surfaceLight'}
+                      `}
+                    >
+                      <motion.span
+                        animate={{ x: form.isPublished ? 20 : 2 }}
+                        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                        className="inline-block h-4 w-4 mt-0.5 rounded-full bg-white shadow"
+                      />
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={form.isPublished}
-                    onClick={() => setForm((p) => ({ ...p, isPublished: !p.isPublished }))}
-                    className={`
-                      relative inline-flex h-6 w-11 shrink-0 rounded-full border-2
-                      transition-colors duration-200 focus-visible:outline-none
-                      focus-visible:ring-2 focus-visible:ring-primary/60
-                      ${form.isPublished ? 'bg-primary border-primary' : 'bg-bgDark border-surfaceLight'}
-                    `}
-                  >
-                    <motion.span
-                      animate={{ x: form.isPublished ? 20 : 2 }}
-                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                      className="inline-block h-4 w-4 mt-0.5 rounded-full bg-white shadow"
-                    />
-                  </button>
-                </div>
+                )}
 
               </div>
 
