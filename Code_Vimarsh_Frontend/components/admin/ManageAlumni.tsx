@@ -3,6 +3,7 @@ import { useGlobalState } from '../../context/GlobalContext';
 import { Alum, Domain } from '../../types';
 import { Plus, Edit2, Trash2, X, Save, Image as ImageIcon, Briefcase, MapPin, ExternalLink, Link as LinkIcon, Star, Map } from 'lucide-react';
 import { Toast, useToast } from '../Projects'; // Using existing Toast
+import { motion, AnimatePresence } from 'framer-motion';
 
 const DOMAINS: Domain[] = ['Software Dev', 'Machine Learning', 'Backend / DevOps', 'Cybersecurity', 'UI/UX Design', 'Data Engineering', 'Frontend / Web'];
 
@@ -12,6 +13,7 @@ const ManageAlumni: React.FC = () => {
   
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<Alum | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Alum | null>(null);
 
   const resetForm = () => {
     setIsEditing(false);
@@ -46,10 +48,15 @@ const ManageAlumni: React.FC = () => {
     setIsEditing(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (window.confirm('Are you sure you want to remove this alumni record?')) {
-      deleteAlum(id);
+  const handleDeleteClick = (alum: Alum) => {
+    setDeleteTarget(alum);
+  };
+
+  const confirmDelete = () => {
+    if (deleteTarget) {
+      deleteAlum(deleteTarget.id);
       showToast('Alumni removed successfully', 'success');
+      setDeleteTarget(null);
     }
   };
 
@@ -209,7 +216,7 @@ const ManageAlumni: React.FC = () => {
                   <Edit2 size={14} /> Edit
                 </button>
                 <button
-                  onClick={() => handleDelete(alum.id)}
+                  onClick={() => handleDeleteClick(alum)}
                   className="p-2 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-colors"
                 >
                   <Trash2 size={14} />
@@ -406,6 +413,59 @@ const ManageAlumni: React.FC = () => {
           )}
         </div>
       )}
+
+      <AnimatePresence>
+        {deleteTarget && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/85 backdrop-blur-sm"
+            onClick={() => setDeleteTarget(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 10, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.95, y: 10, opacity: 0 }}
+              className="relative w-full max-w-sm rounded-3xl p-6 bg-surface border border-surfaceLight shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Warning/Alert Icon Header */}
+              <div className="flex flex-col items-center text-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-500">
+                  <Trash2 size={24} />
+                </div>
+                
+                <div>
+                  <h3 className="text-lg font-bold text-white mb-2">Remove Alumni Record</h3>
+                  <p className="text-sm text-textMuted leading-relaxed">
+                    Are you sure you want to permanently delete the alumni record for <strong className="text-white font-semibold">{deleteTarget.name}</strong>? This action cannot be undone.
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setDeleteTarget(null)}
+                  className="flex-1 py-3 bg-bgDark border border-surfaceLight text-textMuted font-bold rounded-xl text-xs uppercase tracking-wider hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmDelete}
+                  className="flex-1 py-3 bg-red-500 text-white font-bold rounded-xl text-xs uppercase tracking-wider hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20"
+                >
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <Toast message={toast.message} type={toast.type} visible={toast.visible} onClose={hideToast} />
     </div>
   );
