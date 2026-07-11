@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useGlobalState } from '../../context/GlobalContext';
-import { Plus, Trash2, Upload, X, Search, Filter, ExternalLink, Github, Code2, Layers, User, Pencil, Save, Eye, EyeOff, Check } from 'lucide-react';
+import { Plus, Trash2, Upload, X, Search, Filter, ExternalLink, Github, Code2, Layers, User, Pencil, Save, Eye, EyeOff, Check, Loader2 } from 'lucide-react';
+import { uploadToCloudinary } from '../../services/cloudinary';
 
 const ManageProjects: React.FC = () => {
     const { projects, addProject, updateProject, deleteProject } = useGlobalState();
@@ -17,14 +18,7 @@ const ManageProjects: React.FC = () => {
     });
     const [projectImgMode, setProjectImgMode] = useState<'url' | 'upload'>('url');
     const projectImgRef = useRef<HTMLInputElement>(null);
-
-    const projectFileToDataUrl = (file: File): Promise<string> =>
-        new Promise((res, rej) => {
-            const r = new FileReader();
-            r.onload = () => res(r.result as string);
-            r.onerror = rej;
-            r.readAsDataURL(file);
-        });
+    const [uploading, setUploading] = useState(false);
 
     const handleAddProject = (e: React.FormEvent) => {
         e.preventDefault();
@@ -185,15 +179,26 @@ const ManageProjects: React.FC = () => {
                                     {projectImgMode === 'url' ? (
                                         <input value={newProject.image} onChange={e => setNewProject({ ...newProject, image: e.target.value })} className="w-full bg-bgDark border border-surfaceLight rounded-xl px-5 py-3 text-sm focus:border-primary focus:outline-none" placeholder="https://imgur.com/..." />
                                     ) : (
-                                        <button type="button" onClick={() => projectImgRef.current?.click()} className="group/btn w-full border-2 border-dashed border-surfaceLight hover:border-primary/50 rounded-xl py-6 text-xs text-textMuted hover:text-white transition-all flex flex-col items-center justify-center gap-2">
-                                            <Upload size={24} className="mb-1 text-textMuted group-hover/btn:text-primary transition-colors" />
-                                            <span className="font-bold">Choose a file from device</span>
+                                        <button type="button" disabled={uploading} onClick={() => projectImgRef.current?.click()} className={`group/btn w-full border-2 border-dashed border-surfaceLight hover:border-primary/50 rounded-xl py-6 text-xs text-textMuted hover:text-white transition-all flex flex-col items-center justify-center gap-2 ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                            {uploading ? (
+                                                <Loader2 size={24} className="mb-1 animate-spin text-primary" />
+                                            ) : (
+                                                <Upload size={24} className="mb-1 text-textMuted group-hover/btn:text-primary transition-colors" />
+                                            )}
+                                            <span className="font-bold">{uploading ? 'Uploading to Cloudinary...' : 'Choose a file from device'}</span>
                                             <span className="text-[10px] opacity-60">Max size 5 MB (PNG, JPG, WEBP)</span>
-                                            <input ref={projectImgRef} type="file" accept="image/*" className="hidden" onChange={async e => {
+                                            <input ref={projectImgRef} type="file" accept="image/*" disabled={uploading} className="hidden" onChange={async e => {
                                                 const file = e.target.files?.[0];
                                                 if (file) {
-                                                    const dataUrl = await projectFileToDataUrl(file);
-                                                    setNewProject(p => ({ ...p, image: dataUrl }));
+                                                    setUploading(true);
+                                                    try {
+                                                        const url = await uploadToCloudinary(file);
+                                                        setNewProject(p => ({ ...p, image: url }));
+                                                    } catch (err: any) {
+                                                        alert(err.message || 'Upload failed');
+                                                    } finally {
+                                                        setUploading(false);
+                                                    }
                                                 }
                                             }} />
                                         </button>

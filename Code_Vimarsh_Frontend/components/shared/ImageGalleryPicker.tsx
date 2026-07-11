@@ -16,6 +16,7 @@
 
 import React, { useRef, useState } from 'react';
 import { Upload, Link as LinkIcon, Plus, X, ImageOff, AlertCircle } from 'lucide-react';
+import { uploadToCloudinary } from '../../services/cloudinary';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -23,14 +24,6 @@ const MAX_FILE_SIZE_MB = 5;
 const ACCEPTED_TYPES   = 'image/jpeg,image/png,image/webp,image/gif,image/avif';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-const fileToDataUrl = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload  = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
 
 const isValidImageUrl = (url: string) =>
   /^https?:\/\/.+/i.test(url.trim());
@@ -103,10 +96,10 @@ const ImageGalleryPicker: React.FC<ImageGalleryPickerProps> = ({
         continue;
       }
       try {
-        const dataUrl = await fileToDataUrl(file);
-        results.push(dataUrl);
-      } catch {
-        errors.push(`Failed to read "${file.name}".`);
+        const cloudinaryUrl = await uploadToCloudinary(file);
+        results.push(cloudinaryUrl);
+      } catch (err: any) {
+        errors.push(`Failed to upload "${file.name}": ${err.message || err}`);
       }
     }
 
