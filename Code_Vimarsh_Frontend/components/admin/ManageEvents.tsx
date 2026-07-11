@@ -547,7 +547,7 @@ const EventEditor: React.FC<EventEditorProps> = ({
                 <label className="text-xs text-textMuted mb-1.5 block">Date</label>
                 <input
                   type="date"
-                  value={draft.date}
+                  value={draft.date ? draft.date.split('T')[0] : ''}
                   min={todayStr}
                   onChange={(e) => onDraftChange({ ...draft, date: e.target.value })}
                   className={inp}

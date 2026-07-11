@@ -428,7 +428,18 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     try {
       const payload = mapEventToPayload(event);
       const { data: { session } } = await supabase.auth.getSession();
-      const userId = session?.user?.id || currentUser?.id || 'unknown';
+      
+      let profileId = currentUser?.id;
+      if (!profileId && session?.user?.id) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+        if (profile) {
+          profileId = profile.id;
+        }
+      }
 
       const { data, error } = await supabase
         .from('events')
@@ -447,7 +458,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           max_participants: payload.max_participants,
           form_fields: payload.form_fields,
           is_published: payload.is_published,
-          created_by: userId,
+          created_by: profileId || null,
         }])
         .select()
         .single();
