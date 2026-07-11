@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useGlobalState } from '../../context/GlobalContext';
-import { Plus, Pencil, Trash2, Users, UserPlus, Mail, Linkedin, Github, ImageIcon, X, Image as ImageIconLucide, Search, Filter, ShieldCheck, Palette, Code, Settings, Upload } from 'lucide-react';
+import { Plus, Pencil, Trash2, Users, UserPlus, Mail, Linkedin, Github, ImageIcon, X, Image as ImageIconLucide, Search, Filter, ShieldCheck, Palette, Code, Settings, Upload, Loader2 } from 'lucide-react';
+import { uploadToCloudinary } from '../../services/cloudinary';
 import { TeamMember } from '../../types';
 
 const ManageTeamMembers: React.FC = () => {
@@ -11,6 +12,7 @@ const ManageTeamMembers: React.FC = () => {
     const [newTeamMember, setNewTeamMember] = useState({
         name: '', section: '' as TeamMember['section'] | '', role: '', image: '', email: '', linkedin: '', github: ''
     });
+    const [uploading, setUploading] = useState(false);
 
     const handleAddTeamMember = (e: React.FormEvent) => {
         e.preventDefault();
@@ -127,16 +129,26 @@ const ManageTeamMembers: React.FC = () => {
                                         <ImageIconLucide className="absolute left-4 top-1/2 -translate-y-1/2 text-textMuted opacity-40" size={16} />
                                         <input value={newTeamMember.image} onChange={e => setNewTeamMember({ ...newTeamMember, image: e.target.value })} className="w-full bg-bgDark border border-surfaceLight rounded-xl px-12 py-3.5 text-sm focus:border-primary focus:outline-none transition-all placeholder:opacity-40" placeholder="/Path.jpg or Image URL" />
                                     </div>
-                                    <label className="shrink-0 flex items-center justify-center w-12 h-12 bg-surfaceLight/30 border border-surfaceLight rounded-xl cursor-pointer hover:border-primary/50 hover:bg-bgDark transition-all group/upload">
-                                        <input type="file" accept="image/*" className="hidden" onChange={e => {
+                                    <label className={`shrink-0 flex items-center justify-center w-12 h-12 bg-surfaceLight/30 border border-surfaceLight rounded-xl cursor-pointer hover:border-primary/50 hover:bg-bgDark transition-all group/upload ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                        <input type="file" accept="image/*" disabled={uploading} className="hidden" onChange={async e => {
                                             const file = e.target.files?.[0];
                                             if (file) {
-                                                const reader = new FileReader();
-                                                reader.onload = () => setNewTeamMember(prev => ({ ...prev, image: reader.result as string }));
-                                                reader.readAsDataURL(file);
+                                                setUploading(true);
+                                                try {
+                                                    const url = await uploadToCloudinary(file);
+                                                    setNewTeamMember(prev => ({ ...prev, image: url }));
+                                                } catch (err: any) {
+                                                    alert(err.message || 'Upload failed');
+                                                } finally {
+                                                    setUploading(false);
+                                                }
                                             }
                                         }} />
-                                        <Upload size={18} className="text-textMuted group-hover/upload:text-primary transition-colors" />
+                                        {uploading ? (
+                                            <Loader2 size={18} className="animate-spin text-primary" />
+                                        ) : (
+                                            <Upload size={18} className="text-textMuted group-hover/upload:text-primary transition-colors" />
+                                        )}
                                     </label>
                                 </div>
                                 {newTeamMember.image && (

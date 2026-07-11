@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Plus, Trash2, AlertCircle, CheckCircle, Loader2, Image as ImageIcon, Upload, Link as LinkIcon } from 'lucide-react';
+import { uploadToCloudinary } from '../../../services/cloudinary';
 import { ManagedBlog, BlogTopic, BlogStatus } from '../../../types';
 
 interface Props {
@@ -62,28 +63,37 @@ export const BlogFormModal: React.FC<Props> = ({ existing, usedSlugs, onSave, on
   const featuredFileRef = useRef<HTMLInputElement>(null);
   const extraFileRef = useRef<HTMLInputElement>(null);
 
-  const fileToDataUrl = (file: File): Promise<string> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
+  const [uploadingFeatured, setUploadingFeatured] = useState(false);
+  const [uploadingExtra, setUploadingExtra] = useState(false);
 
   const handleFeaturedFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const dataUrl = await fileToDataUrl(file);
-    set('featuredImage', dataUrl);
-    e.target.value = '';
+    setUploadingFeatured(true);
+    try {
+      const url = await uploadToCloudinary(file);
+      set('featuredImage', url);
+    } catch (err: any) {
+      alert(err.message || 'Upload failed');
+    } finally {
+      setUploadingFeatured(false);
+      e.target.value = '';
+    }
   };
 
   const handleExtraFilesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
-    const dataUrls = await Promise.all(files.map(fileToDataUrl));
-    set('images', [...form.images, ...dataUrls]);
-    e.target.value = '';
+    setUploadingExtra(true);
+    try {
+      const urls = await Promise.all(files.map(uploadToCloudinary));
+      set('images', [...form.images, ...urls]);
+    } catch (err: any) {
+      alert(err.message || 'Upload failed');
+    } finally {
+      setUploadingExtra(false);
+      e.target.value = '';
+    }
   };
 
   // Validate slug on change
@@ -342,13 +352,20 @@ export const BlogFormModal: React.FC<Props> = ({ existing, usedSlugs, onSave, on
             ) : (
               <button
                 type="button"
+                disabled={uploadingFeatured}
                 onClick={() => featuredFileRef.current?.click()}
-                className="w-full flex items-center justify-center gap-2 border border-dashed border-primary/40 hover:border-primary rounded-lg py-4 text-sm text-textMuted hover:text-primary transition-colors"
+                className={`w-full flex items-center justify-center gap-2 border border-dashed border-primary/40 hover:border-primary rounded-lg py-4 text-sm text-textMuted hover:text-primary transition-colors ${uploadingFeatured ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                <Upload size={16} />
-                {form.featuredImage && form.featuredImage.startsWith('data:')
-                  ? 'Replace uploaded photo'
-                  : 'Click to upload a photo'}
+                {uploadingFeatured ? (
+                  <Loader2 size={16} className="animate-spin text-primary" />
+                ) : (
+                  <Upload size={16} />
+                )}
+                {uploadingFeatured
+                  ? 'Uploading to Cloudinary...'
+                  : form.featuredImage
+                    ? 'Replace uploaded photo'
+                    : 'Click to upload a photo'}
               </button>
             )}
 
@@ -425,11 +442,16 @@ export const BlogFormModal: React.FC<Props> = ({ existing, usedSlugs, onSave, on
             ) : (
               <button
                 type="button"
+                disabled={uploadingExtra}
                 onClick={() => extraFileRef.current?.click()}
-                className="w-full flex items-center justify-center gap-2 border border-dashed border-primary/40 hover:border-primary rounded-lg py-4 text-sm text-textMuted hover:text-primary transition-colors"
+                className={`w-full flex items-center justify-center gap-2 border border-dashed border-primary/40 hover:border-primary rounded-lg py-4 text-sm text-textMuted hover:text-primary transition-colors ${uploadingExtra ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                <Upload size={16} />
-                Click to upload photos (multiple allowed)
+                {uploadingExtra ? (
+                  <Loader2 size={16} className="animate-spin text-primary" />
+                ) : (
+                  <Upload size={16} />
+                )}
+                {uploadingExtra ? 'Uploading to Cloudinary...' : 'Click to upload photos (multiple allowed)'}
               </button>
             )}
 

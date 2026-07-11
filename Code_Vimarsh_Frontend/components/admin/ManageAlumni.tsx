@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useGlobalState } from '../../context/GlobalContext';
 import { Alum, Domain } from '../../types';
-import { Plus, Edit2, Trash2, X, Save, Image as ImageIcon, Briefcase, MapPin, ExternalLink, Link as LinkIcon, Star, Map } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Save, Image as ImageIcon, Briefcase, MapPin, ExternalLink, Link as LinkIcon, Star, Map, Loader2 } from 'lucide-react';
+import { uploadToCloudinary } from '../../services/cloudinary';
 import { Toast, useToast } from '../Projects'; // Using existing Toast
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -14,6 +15,7 @@ const ManageAlumni: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<Alum | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Alum | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const resetForm = () => {
     setIsEditing(false);
@@ -150,14 +152,18 @@ const ManageAlumni: React.FC = () => {
     setFormData({ ...formData, roadmap: newRoadmap });
   };
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && formData) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData({ ...formData, photo: reader.result as string });
-      };
-      reader.readAsDataURL(file);
+      setUploadingPhoto(true);
+      try {
+        const url = await uploadToCloudinary(file);
+        setFormData({ ...formData, photo: url });
+      } catch (err: any) {
+        alert(err.message || 'Upload failed');
+      } finally {
+        setUploadingPhoto(false);
+      }
     }
   };
 
@@ -289,10 +295,16 @@ const ManageAlumni: React.FC = () => {
                           <img src={formData.photo} alt="Preview" className="w-full h-full object-cover" />
                         </div>
                       )}
-                      <label className="flex-1 cursor-pointer bg-bgDark border border-dashed border-surfaceLight rounded-xl px-4 py-2.5 hover:border-primary/50 transition-colors flex items-center justify-center gap-2">
-                        <ImageIcon size={16} className="text-textMuted" />
-                        <span className="text-sm text-textMuted">Click to upload photo</span>
-                        <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+                      <label className={`flex-1 cursor-pointer bg-bgDark border border-dashed border-surfaceLight rounded-xl px-4 py-2.5 hover:border-primary/50 transition-colors flex items-center justify-center gap-2 ${uploadingPhoto ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                        {uploadingPhoto ? (
+                          <Loader2 size={16} className="text-primary animate-spin" />
+                        ) : (
+                          <ImageIcon size={16} className="text-textMuted" />
+                        )}
+                        <span className="text-sm text-textMuted">
+                          {uploadingPhoto ? 'Uploading photo...' : 'Click to upload photo'}
+                        </span>
+                        <input type="file" accept="image/*" disabled={uploadingPhoto} className="hidden" onChange={handlePhotoUpload} />
                       </label>
                     </div>
                   </div>

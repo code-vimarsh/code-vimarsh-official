@@ -13,6 +13,7 @@ import {
 import { ProjectFormData, ProjectFormErrors } from './types';
 import { ProjectType } from '../../types';
 import ImageGalleryPicker from '../shared/ImageGalleryPicker';
+import { uploadToCloudinary } from '../../services/cloudinary';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -222,6 +223,18 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
 
     setSubmitting(true);
     try {
+      let mainImageUrl = form.imagePreview;
+
+      if (form.imageFile) {
+        try {
+          mainImageUrl = await uploadToCloudinary(form.imageFile);
+        } catch (uploadErr: any) {
+          setErrors((prev) => ({ ...prev, imageFile: `Cloudinary upload failed: ${uploadErr.message || uploadErr}` }));
+          setSubmitting(false);
+          return;
+        }
+      }
+
       // Simulate async save (replace with Supabase call when integrated)
       await new Promise((res) => setTimeout(res, 900));
 
@@ -240,9 +253,9 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({
         category: 'Web', // default; can be extended with a category picker
         tech: techArray,
         author: form.authorName.trim(),
-        image: form.imagePreview || undefined,
+        image: mainImageUrl || undefined,
         // gallery: primary image is first, extra images follow
-        images: [form.imagePreview, ...form.extraImages].filter(Boolean) as string[],
+        images: [mainImageUrl, ...form.extraImages].filter(Boolean) as string[],
         isPublished: form.isPublished,
         links: {
           github: form.githubUrl.trim(),
