@@ -472,14 +472,17 @@ const Team: React.FC = () => {
       <div style={{ position: 'relative', zIndex: 10, maxWidth: 1200, margin: '0 auto', padding: '0 28px' }}>
         <Hero />
 
-        {SECTIONS.map((s, i) => (
-          <TeamSection
-            key={s.sectionKey}
-            section={s}
-            sectionIndex={i}
-            members={team.filter(m => m.section === s.sectionKey)}
-          />
-        ))}
+        {SECTIONS.map((s, i) => {
+          const sectionMembers = team.filter(m => m.section === s.sectionKey);
+          return (
+            <TeamSection
+              key={s.sectionKey}
+              section={s}
+              sectionIndex={i}
+              members={s.sectionKey === 'Web Team' ? sectionMembers.reverse() : sectionMembers}
+            />
+          );
+        })}
 
         {/* Footer */}
         <motion.div

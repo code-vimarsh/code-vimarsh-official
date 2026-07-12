@@ -189,7 +189,8 @@ const ManageTeamMembers: React.FC = () => {
 
                     <div className="space-y-10 pr-1 overflow-y-auto custom-scrollbar" style={{ maxHeight: '800px' }}>
                         {(['Team Leads', 'Web Team', 'Management', 'Design Team'] as const).map(sec => {
-                            const sectionMembers = filteredTeam.filter(m => m.section === sec);
+                            let sectionMembers = filteredTeam.filter(m => m.section === sec);
+                            if (sec === 'Web Team') sectionMembers = sectionMembers.reverse();
                             if (sectionMembers.length === 0) return null;
                             const config = SectionConfig[sec];
 
