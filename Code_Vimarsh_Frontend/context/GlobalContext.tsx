@@ -46,7 +46,7 @@ interface GlobalContextType {
   deleteLinkResource: (id: string) => void;
   // Bulk email registries
   participants: Participant[];
-  addParticipant: (p: Participant) => void;
+  addParticipant: (p: Participant, skipSync?: boolean) => void;
   removeParticipant: (id: string) => void;
   checkInParticipant: (id: string, status: 'registered' | 'attended') => Promise<void>;
   clubMembers: ClubMember[];
@@ -368,6 +368,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           if (data) {
             const fetched = data.map((r: any) => ({
               id: r.id?.toString(),
+              userId: r.user_id,
               ticketCode: r.ticket_code || r.id?.toString().slice(0, 4),
               name: r.full_name,
               email: r.email,
@@ -422,6 +423,9 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     images: e.images || [],
     formFields: e.form_fields || [],
     isPublished: e.is_published ?? false,
+    location: e.location || '',
+    tags: e.topics || [],
+    capacity: e.max_participants,
   });
 
   const addEvent = async (event: EventType) => {
@@ -1053,12 +1057,13 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
   };
 
-  const addParticipant = (p: Participant) => {
+  const addParticipant = (p: Participant, skipSync = false) => {
     setParticipants(prev => {
       const updated = [p, ...prev];
       localStorage.setItem('cv_participants', JSON.stringify(updated));
       return updated;
     });
+    if (skipSync) return;
     // Sync to Supabase directly
     supabase
       .from('event_registrations')

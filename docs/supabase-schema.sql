@@ -64,6 +64,7 @@ create table if not exists public.event_registrations (
   phone text,
   custom_answers jsonb default '{}'::jsonb, -- Contains all dynamic form fields answers
   status text default 'registered',
+  ticket_code text, -- Added: Stores the user's generated ticket code
   registered_at timestamptz not null default now()
 );
 

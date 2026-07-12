@@ -92,7 +92,10 @@ const EventDetails: React.FC = () => {
   const isAlreadyRegistered = !!(
     currentUser &&
     participants.some(
-      (p) => p.eventId === id && p.email?.toLowerCase() === currentUser.email?.toLowerCase()
+      (p) =>
+        p.eventId === id &&
+        ((p.email && p.email.toLowerCase() === currentUser.email?.toLowerCase()) ||
+          (p.userId && p.userId === currentUser.id))
     )
   );
 

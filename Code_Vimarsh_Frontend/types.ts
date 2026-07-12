@@ -32,6 +32,7 @@ export interface EventType {
   isPublished?: boolean;
   location?: string;
   tags?: string[];
+  capacity?: number;
 }
 
 export interface ProjectType {
@@ -184,6 +185,7 @@ export interface AdminUser {
 
 export interface Participant {
   id: string;
+  userId?: string;
   ticketCode?: string;
   name: string;
   email: string;

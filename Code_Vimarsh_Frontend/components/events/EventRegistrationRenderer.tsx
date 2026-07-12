@@ -98,7 +98,10 @@ const EventRegistrationRenderer: React.FC<EventRegistrationRendererProps> = ({
   useEffect(() => {
     if (currentUser) {
       const existing = participants.find(
-        (p) => p.eventId === eventId && p.email.toLowerCase() === currentUser.email.toLowerCase()
+        (p) =>
+          p.eventId === eventId &&
+          ((p.email && p.email.toLowerCase() === currentUser.email.toLowerCase()) ||
+            (p.userId && p.userId === currentUser.id))
       );
       if (existing) {
         setRegisteredParticipant(existing);
@@ -141,21 +144,26 @@ const EventRegistrationRenderer: React.FC<EventRegistrationRendererProps> = ({
     }
 
     setSubmitting(true);
+    let didSync = false;
     try {
-      const nameField = form.fields.find(f => f.label.toLowerCase().includes('name') || f.type === 'short_text');
-      const emailField = form.fields.find(f => f.label.toLowerCase().includes('email') || f.type === 'email');
-      const nameVal = nameField ? (values[nameField.id] as string) : 'Participant';
-      const emailVal = emailField ? (values[emailField.id] as string) : '';
+      const nameField = form.fields.find(f => f.label.toLowerCase().includes('name'));
+      // Only fallback to first short_text if not logged in
+      const finalNameField = nameField || (!currentUser ? form.fields.find(f => f.type === 'short_text') : undefined);
+      const nameVal = finalNameField ? (values[finalNameField.id] as string) : (currentUser?.name || 'Participant');
 
-      if (emailVal) {
-        const isAlreadyRegistered = participants.some(
-          (p) => p.eventId === eventId && p.email.toLowerCase() === emailVal.toLowerCase()
-        );
-        if (isAlreadyRegistered) {
-          setSubmitError('You have already registered for this event.');
-          setSubmitting(false);
-          return;
-        }
+      const emailField = form.fields.find(f => f.label.toLowerCase().includes('email') || f.type === 'email');
+      const emailVal = emailField ? (values[emailField.id] as string) : (currentUser?.email || '');
+
+      const isAlreadyRegistered = participants.some(
+        (p) => p.eventId === eventId && (
+          (emailVal && p.email?.toLowerCase() === emailVal.toLowerCase()) ||
+          (currentUser && p.userId === currentUser.id)
+        )
+      );
+      if (isAlreadyRegistered) {
+        setSubmitError('You have already registered for this event.');
+        setSubmitting(false);
+        return;
       }
 
       let newPart: any = null;
@@ -196,12 +204,10 @@ const EventRegistrationRenderer: React.FC<EventRegistrationRendererProps> = ({
           throw error;
         }
 
-        if (!data) {
-          throw new Error('Supabase insert succeeded but RLS prevented selecting the row.');
-        }
-
+        didSync = true;
         newPart = {
           id: data.id,
+          userId: data.user_id,
           ticketCode: data.ticket_code || ticketCode,
           name: data.full_name,
           email: data.email,
@@ -216,6 +222,7 @@ const EventRegistrationRenderer: React.FC<EventRegistrationRendererProps> = ({
         const localCode = Math.floor(1000 + Math.random() * 9000).toString();
         newPart = {
           id: `reg_${Math.random().toString(36).substr(2, 9)}_${Date.now().toString(36)}`,
+          userId: currentUser?.id,
           ticketCode: localCode,
           name: nameVal,
           email: emailVal,
@@ -228,7 +235,7 @@ const EventRegistrationRenderer: React.FC<EventRegistrationRendererProps> = ({
       }
 
       submitResponse({ formId: form.id, eventId, answers: values });
-      addParticipant(newPart);
+      addParticipant(newPart, didSync);
       setRegisteredParticipant(newPart);
       setSubmitted(true);
     } catch (err) {

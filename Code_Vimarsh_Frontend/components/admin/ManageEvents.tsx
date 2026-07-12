@@ -707,7 +707,8 @@ interface ScannerModalProps {
 }
 
 const ScannerModal: React.FC<ScannerModalProps> = ({ eventId, eventTitle, formFields, onClose }) => {
-  const { participants, checkInParticipant } = useGlobalState();
+  const { participants, checkInParticipant, events } = useGlobalState();
+  const event = events.find(e => e.id === eventId);
   const [scanning, setScanning] = useState(false);
   const [manualId, setManualId] = useState('');
   const [scanResult, setScanResult] = useState<{ success: boolean; message: string } | null>(null);
@@ -774,7 +775,17 @@ const ScannerModal: React.FC<ScannerModalProps> = ({ eventId, eventTitle, formFi
   };
 
   const exportToExcel = () => {
-    const eventRegs = participants.filter(p => p.eventId === eventId);
+    const rawRegs = participants.filter(p => p.eventId === eventId);
+    const uniqueMap = new Map<string, typeof rawRegs[0]>();
+    rawRegs.forEach(p => {
+      const emailKey = p.email ? p.email.toLowerCase().trim() : p.id;
+      const existing = uniqueMap.get(emailKey);
+      if (!existing || (!existing.ticketCode && p.ticketCode)) {
+        uniqueMap.set(emailKey, p);
+      }
+    });
+    const eventRegs = Array.from(uniqueMap.values());
+
     if (eventRegs.length === 0) {
       alert("No registrations to export.");
       return;
@@ -810,8 +821,32 @@ const ScannerModal: React.FC<ScannerModalProps> = ({ eventId, eventTitle, formFi
       ];
 
       customFields.forEach(f => {
-        const val = r.customAnswers ? r.customAnswers[f.id] : '';
-        const displayVal = typeof val === 'object' ? JSON.stringify(val) : String(val || '');
+        let answers = r.customAnswers || {};
+        if (typeof answers === 'string') {
+          try {
+            answers = JSON.parse(answers);
+          } catch (e) {
+            answers = {};
+          }
+        }
+        const val = answers[f.id] || answers[f.label] || Object.entries(answers).find(([k]) => k.toLowerCase() === f.label.toLowerCase())?.[1] || '';
+        
+        let displayVal = '';
+        if (f.options && Array.isArray(f.options) && val) {
+          if (Array.isArray(val)) {
+            const labels = val.map(v => {
+              const found = f.options.find((opt: any) => opt.value === v || opt.label === v);
+              return found ? found.label : String(v);
+            });
+            displayVal = labels.join(', ');
+          } else {
+            const found = f.options.find((opt: any) => opt.value === val || opt.label === val);
+            displayVal = found ? found.label : String(val);
+          }
+        } else {
+          displayVal = typeof val === 'object' ? JSON.stringify(val) : String(val || '');
+        }
+
         rowCells.push(`<td style="font-size: 11px; border: 1px solid #e5e7eb; padding: 8px 10px; font-family: Arial, sans-serif;">${displayVal}</td>`);
       });
 
@@ -853,7 +888,6 @@ const ScannerModal: React.FC<ScannerModalProps> = ({ eventId, eventTitle, formFi
     link.setAttribute("download", `${eventTitle.replace(/\s+/g, '_')}_Registrations.xls`);
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
   };
 
   useEffect(() => {
@@ -1041,7 +1075,17 @@ const ScannerModal: React.FC<ScannerModalProps> = ({ eventId, eventTitle, formFi
                 </thead>
                 <tbody className="divide-y divide-surfaceLight/50 text-xs">
                   {(() => {
-                    const eventRegs = participants.filter(p => p.eventId === eventId);
+                    const rawRegs = participants.filter(p => p.eventId === eventId);
+                    const uniqueMap = new Map<string, typeof rawRegs[0]>();
+                    rawRegs.forEach(p => {
+                      const emailKey = p.email ? p.email.toLowerCase().trim() : p.id;
+                      const existing = uniqueMap.get(emailKey);
+                      if (!existing || (!existing.ticketCode && p.ticketCode)) {
+                        uniqueMap.set(emailKey, p);
+                      }
+                    });
+                    const eventRegs = Array.from(uniqueMap.values());
+
                     const filteredRegs = eventRegs.filter(p => 
                       p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                       p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
