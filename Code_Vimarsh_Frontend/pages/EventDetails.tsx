@@ -7,7 +7,7 @@ import type { Event } from '../components/events/types';
 import EventBanner from '../components/events/EventBanner';
 import EventSpeakers from '../components/events/EventSpeakers';
 import EventRegistrationRenderer from '../components/events/EventRegistrationRenderer';
-import { useGlobalState } from '../context/GlobalContext';
+import { useGlobalState, getSafeImageUrl } from '../context/GlobalContext';
 import { supabase } from '../services/supabase';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -148,10 +148,13 @@ const EventDetails: React.FC = () => {
           location: localEv.location || 'TBA',
           venue: localEv.location || '',
           status: (localEv.status?.toLowerCase() || 'upcoming') as any,
-          image: localEv.image || '',
-          images: localEv.images || [],
+          image: getSafeImageUrl(localEv.image || ''),
+          images: (localEv.images || []).map((imgUrl: string) => getSafeImageUrl(imgUrl)),
           tags: localEv.tags || [],
-          speakers: (localEv as any).speakers || [],
+          speakers: ((localEv as any).speakers || []).map((s: any) => ({
+            ...s,
+            avatar: getSafeImageUrl(s.avatar || '')
+          })),
           capacity: (localEv as any).capacity || 0,
           registeredCount: 0,
         };
@@ -182,10 +185,13 @@ const EventDetails: React.FC = () => {
             location: e.location || 'TBA',
             venue: e.location || '',
             status: (e.status?.toLowerCase() || 'upcoming') as any,
-            image: e.banner_image_url || e.banner_image || e.image || '',
-            images: e.images || [],
+            image: getSafeImageUrl(e.banner_image_url || e.banner_image || e.image || ''),
+            images: (e.images || []).map((imgUrl: string) => getSafeImageUrl(imgUrl)),
             tags: e.topics || [],
-            speakers: e.event_speakers || [],
+            speakers: (e.event_speakers || []).map((s: any) => ({
+              ...s,
+              avatar: getSafeImageUrl(s.avatar || '')
+            })),
             capacity: e.max_participants,
             registeredCount: e.event_registrations?.[0]?.count || 0,
           };
