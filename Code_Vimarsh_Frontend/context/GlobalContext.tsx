@@ -6,14 +6,6 @@ import { EVENTS_DATA } from '../data/eventsData';
 
 const AUTH_KEY = 'cv_loggedin';
 
-export const getSafeImageUrl = (url: string): string => {
-  if (!url) return '';
-  if (url.includes('unsplash.com') && !url.includes('wsrv.nl')) {
-    return `https://wsrv.nl/?url=${encodeURIComponent(url)}`;
-  }
-  return url;
-};
-
 interface GlobalContextType {
   isLoggedIn: boolean;
   setIsLoggedIn: (v: boolean) => void;
@@ -226,8 +218,8 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             status: e.status ? e.status.charAt(0).toUpperCase() + e.status.slice(1).toLowerCase() : 'Upcoming',
             description: e.description || '',
             long_description: e.long_description || '',
-            image: getSafeImageUrl(e.banner_image_url || e.banner_image || e.image || ''),
-            images: (e.images || []).map((imgUrl: string) => getSafeImageUrl(imgUrl)),
+            image: e.banner_image_url || e.banner_image || e.image || '',
+            images: e.images || [],
             formFields: e.form_fields || [],
             isPublished: e.is_published ?? false,
             location: e.location || '',
@@ -427,8 +419,8 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     status: e.status ? e.status.charAt(0).toUpperCase() + e.status.slice(1).toLowerCase() : 'Upcoming',
     description: e.description || '',
     long_description: e.long_description || '',
-    image: getSafeImageUrl(e.banner_image_url || e.banner_image || e.image || ''),
-    images: (e.images || []).map((imgUrl: string) => getSafeImageUrl(imgUrl)),
+    image: e.banner_image_url || e.banner_image || e.image || '',
+    images: e.images || [],
     formFields: e.form_fields || [],
     isPublished: e.is_published ?? false,
     location: e.location || '',
@@ -549,8 +541,8 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       features: p.features || [],
       category: (frontendCategoryMap[p.category] || 'Web') as any,
       tech: p.tech_stack || p.tech || [],
-      image: getSafeImageUrl(p.image_url || p.image || ''),
-      images: (p.images || []).map((imgUrl: string) => getSafeImageUrl(imgUrl)),
+      image: p.image_url || p.image || '',
+      images: p.images || [],
       isPublished: p.is_published ?? true,
       author: p.author_name || p.author || 'Unknown',
       links: {
@@ -566,7 +558,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     email: m.email || '',
     role: m.role || '',
     section: m.section as any,
-    image: getSafeImageUrl(m.image || m.image_url || ''),
+    image: m.image || m.image_url || '',
     linkedin: m.linkedin || m.linkedin_url || '',
     github: m.github || m.github_url || '',
   });
@@ -587,7 +579,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     linkedin: a.linkedin || '',
     github: a.github || '',
     website: a.website || '',
-    photo: getSafeImageUrl(a.photo || ''),
+    photo: a.photo || '',
     tech: a.tech || [],
     achievements: a.achievements || [],
     roadmap: a.roadmap || [],
@@ -600,8 +592,8 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     topic: b.topic || '',
     shortDescription: b.short_description || '',
     content: b.content || '',
-    featuredImage: getSafeImageUrl(b.featured_image || b.featured_image_url || ''),
-    images: (b.images || []).map((imgUrl: string) => getSafeImageUrl(imgUrl)),
+    featuredImage: b.featured_image || b.featured_image_url || '',
+    images: b.images || [],
     authorName: b.author_name || 'Unknown',
     authorRole: b.author_role || 'Guest',
     tags: b.tags || [],
@@ -628,7 +620,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     title: r.title,
     category: r.category || 'website',
     url: r.url || '',
-    thumbnail: getSafeImageUrl(r.thumbnail || r.thumbnail_url || ''),
+    thumbnail: r.thumbnail || r.thumbnail_url || '',
     tags: r.tags || [],
     bestFor: r.best_for || '',
     type: r.content_type || '',
