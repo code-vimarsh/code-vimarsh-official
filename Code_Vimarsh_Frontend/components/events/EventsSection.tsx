@@ -56,23 +56,25 @@ const EventsSection: React.FC = () => {
   const [activeTab, setActiveTab] = useState<FilterTab>('All');
 
   // Map EventType from GlobalContext → local Event shape for display components
-  const eventsData: Event[] = useMemo(() => events.map(e => ({
-    id: e.id,
-    title: e.title,
-    description: e.description || '',
-    fullDescription: e.long_description || e.description || '',
-    date: e.status?.toLowerCase() === 'live' ? 'live' : (e.date || ''),
-    displayDate: fmtDisplayDate(e.date, e.status?.toLowerCase() || ''),
-    time: '',
-    location: (e as any).location || 'TBA',
-    venue: (e as any).location || '',
-    status: (e.status?.toLowerCase() || 'upcoming') as any,
-    image: e.image || e.images?.[0] || '',
-    images: e.images || [],
-    tags: (e as any).tags || [],
-    capacity: (e as any).capacity,
-    registeredCount: 0,
-  })), [events]);
+  const eventsData: Event[] = useMemo(() => events
+    .filter(e => e.isPublished !== false)
+    .map(e => ({
+      id: e.id,
+      title: e.title,
+      description: e.description || '',
+      fullDescription: e.long_description || e.description || '',
+      date: e.status?.toLowerCase() === 'live' ? 'live' : (e.date || ''),
+      displayDate: fmtDisplayDate(e.date, e.status?.toLowerCase() || ''),
+      time: '',
+      location: (e as any).location || 'TBA',
+      venue: (e as any).location || '',
+      status: (e.status?.toLowerCase() || 'upcoming') as any,
+      image: e.image || e.images?.[0] || '',
+      images: e.images || [],
+      tags: (e as any).tags || [],
+      capacity: (e as any).capacity,
+      registeredCount: 0,
+    })), [events]);
 
   // Derived data
   const sorted   = useMemo(() => sortEvents(eventsData), [eventsData]);
