@@ -133,13 +133,17 @@ const EventDetails: React.FC = () => {
     const getLocalFallback = () => {
       const localEv = events.find((e: any) => e.id === id);
       if (localEv) {
+        const bannerUrl = localEv.image || '';
+        const imgList = Array.isArray(localEv.images) && localEv.images.length > 0 ? localEv.images : (bannerUrl ? [bannerUrl] : []);
+        const primaryImg = bannerUrl || (imgList.length > 0 ? imgList[0] : '');
+
         return {
           id: localEv.id,
           title: localEv.title,
           description: localEv.description || '',
           fullDescription: localEv.long_description || localEv.description || '',
-          date: localEv.status === 'Live' || localEv.status === 'live' ? 'live' : (localEv.date || ''),
-          displayDate: localEv.status === 'Live' || localEv.status === 'live'
+          date: localEv.status?.toLowerCase() === 'live' ? 'live' : (localEv.date || ''),
+          displayDate: localEv.status?.toLowerCase() === 'live'
             ? 'Happening Now'
             : localEv.date 
               ? new Date(localEv.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -148,8 +152,8 @@ const EventDetails: React.FC = () => {
           location: localEv.location || 'TBA',
           venue: localEv.location || '',
           status: (localEv.status?.toLowerCase() || 'upcoming') as any,
-          image: localEv.image || '',
-          images: localEv.images || [],
+          image: primaryImg,
+          images: imgList,
           tags: localEv.tags || [],
           speakers: (localEv as any).speakers || [],
           capacity: (localEv as any).capacity || 0,
@@ -171,6 +175,10 @@ const EventDetails: React.FC = () => {
       .then(({ data: e, error }: any) => {
         if (error) throw error;
         if (e) {
+          const bannerUrl = e.banner_image_url || e.banner_image || e.image || '';
+          const imgList = Array.isArray(e.images) && e.images.length > 0 ? e.images : (bannerUrl ? [bannerUrl] : []);
+          const primaryImg = bannerUrl || (imgList.length > 0 ? imgList[0] : '');
+
           const mapped: Event = {
             id: e.id,
             title: e.title,
@@ -182,8 +190,8 @@ const EventDetails: React.FC = () => {
             location: e.location || 'TBA',
             venue: e.location || '',
             status: (e.status?.toLowerCase() || 'upcoming') as any,
-            image: e.banner_image_url || e.banner_image || e.image || '',
-            images: e.images || [],
+            image: primaryImg,
+            images: imgList,
             tags: e.topics || [],
             speakers: e.event_speakers || [],
             capacity: e.max_participants,
