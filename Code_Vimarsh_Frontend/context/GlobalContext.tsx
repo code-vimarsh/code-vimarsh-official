@@ -210,22 +210,28 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       .then(({ data, error }) => {
         if (error) throw error;
         if (data && data.length > 0) {
-          const mappedEvents = data.map((e: any) => ({
-            id: e.id?.toString(),
-            title: e.title,
-            date: e.start_date || e.date || new Date().toISOString(),
-            type: e.event_type || 'Workshop',
-            status: e.status ? e.status.charAt(0).toUpperCase() + e.status.slice(1).toLowerCase() : 'Upcoming',
-            description: e.description || '',
-            long_description: e.long_description || '',
-            image: e.banner_image_url || e.banner_image || e.image || '',
-            images: e.images || [],
-            formFields: e.form_fields || [],
-            isPublished: e.is_published ?? false,
-            location: e.location || '',
-            tags: e.topics || [],
-            capacity: e.max_participants,
-          }));
+          const mappedEvents = data.map((e: any) => {
+            const banner = e.banner_image_url || e.banner_image || e.image || '';
+            const imgList = Array.isArray(e.images) && e.images.length > 0 ? e.images : (banner ? [banner] : []);
+            const primaryImg = banner || (imgList.length > 0 ? imgList[0] : '');
+
+            return {
+              id: e.id?.toString(),
+              title: e.title,
+              date: e.start_date || e.date || new Date().toISOString(),
+              type: e.event_type || 'Workshop',
+              status: e.status ? e.status.charAt(0).toUpperCase() + e.status.slice(1).toLowerCase() : 'Upcoming',
+              description: e.description || '',
+              long_description: e.long_description || '',
+              image: primaryImg,
+              images: imgList,
+              formFields: e.form_fields || [],
+              isPublished: e.is_published ?? false,
+              location: e.location || '',
+              tags: e.topics || [],
+              capacity: e.max_participants,
+            };
+          });
           setEvents(mappedEvents);
         }
       })
@@ -392,6 +398,9 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   const mapEventToPayload = (event: EventType) => {
     const slug = event.title.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+    const primaryImage = event.image || (event.images && event.images.length > 0 ? event.images[0] : '');
+    const imagesList = event.images && event.images.length > 0 ? event.images : (primaryImage ? [primaryImage] : []);
+
     return {
       title: event.title,
       slug,
@@ -399,11 +408,11 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       long_description: event.long_description,
       type: event.type || 'Workshop',
       status: event.status || 'Upcoming',
-      location: (event as any).location || '',
+      location: (event as any).location || (event as any).venue || '',
       start_date: event.date ? new Date(event.date).toISOString() : new Date().toISOString(),
       end_date: event.date ? new Date(event.date).toISOString() : new Date().toISOString(),
-      banner_image_url: event.image || '',
-      images: event.images || [],
+      banner_image_url: primaryImage,
+      images: imagesList,
       topics: (event as any).tags || [],
       max_participants: (event as any).capacity,
       form_fields: event.formFields || [],
@@ -411,22 +420,28 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     };
   };
 
-  const mapEventFromBackend = (e: any): EventType => ({
-    id: e.id?.toString(),
-    title: e.title,
-    date: e.start_date || e.date || new Date().toISOString(),
-    type: e.type || 'Workshop',
-    status: e.status ? e.status.charAt(0).toUpperCase() + e.status.slice(1).toLowerCase() : 'Upcoming',
-    description: e.description || '',
-    long_description: e.long_description || '',
-    image: e.banner_image_url || e.banner_image || e.image || '',
-    images: e.images || [],
-    formFields: e.form_fields || [],
-    isPublished: e.is_published ?? false,
-    location: e.location || '',
-    tags: e.topics || [],
-    capacity: e.max_participants,
-  });
+  const mapEventFromBackend = (e: any): EventType => {
+    const banner = e.banner_image_url || e.banner_image || e.image || '';
+    const imgList = Array.isArray(e.images) && e.images.length > 0 ? e.images : (banner ? [banner] : []);
+    const primaryImg = banner || (imgList.length > 0 ? imgList[0] : '');
+
+    return {
+      id: e.id?.toString(),
+      title: e.title,
+      date: e.start_date || e.date || new Date().toISOString(),
+      type: e.event_type || e.type || 'Workshop',
+      status: e.status ? e.status.charAt(0).toUpperCase() + e.status.slice(1).toLowerCase() : 'Upcoming',
+      description: e.description || '',
+      long_description: e.long_description || '',
+      image: primaryImg,
+      images: imgList,
+      formFields: e.form_fields || [],
+      isPublished: e.is_published ?? false,
+      location: e.location || '',
+      tags: e.topics || [],
+      capacity: e.max_participants,
+    };
+  };
 
   const addEvent = async (event: EventType) => {
     try {
@@ -458,6 +473,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           start_date: payload.start_date,
           end_date: payload.end_date,
           banner_image_url: payload.banner_image_url,
+          images: payload.images,
           topics: payload.topics,
           max_participants: payload.max_participants,
           form_fields: payload.form_fields,
@@ -493,6 +509,7 @@ export const GlobalProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           start_date: payload.start_date,
           end_date: payload.end_date,
           banner_image_url: payload.banner_image_url,
+          images: payload.images,
           topics: payload.topics,
           max_participants: payload.max_participants,
           form_fields: payload.form_fields,

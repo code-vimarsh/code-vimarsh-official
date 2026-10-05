@@ -103,8 +103,10 @@ const blankEvent = (): AdminEvent => ({
   status: 'Upcoming',
   type: 'Workshop',
   description: '',
+  location: '',
   isPublished: false,
   formFields: [],
+  image: '',
   images: [],
 });
 
@@ -542,7 +544,7 @@ const EventEditor: React.FC<EventEditorProps> = ({
                 placeholder="e.g. Next.js Workshop"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="text-xs text-textMuted mb-1.5 block">Date</label>
                 <input
@@ -565,6 +567,15 @@ const EventEditor: React.FC<EventEditorProps> = ({
                   <option value="Live"     style={{ background: '#0a0a0a' }}>Live</option>
                   <option value="Past"     style={{ background: '#0a0a0a' }}>Past</option>
                 </select>
+              </div>
+              <div>
+                <label className="text-xs text-textMuted mb-1.5 block">Venue / Location</label>
+                <input
+                  value={draft.location || ''}
+                  onChange={(e) => onDraftChange({ ...draft, location: e.target.value })}
+                  className={inp}
+                  placeholder="e.g. Auditorium / Online / MSU Baroda"
+                />
               </div>
             </div>
 
@@ -612,7 +623,7 @@ const EventEditor: React.FC<EventEditorProps> = ({
                   <div className="pt-4">
                     <ImageGalleryPicker
                       images={draft.images}
-                      onChange={(imgs) => onDraftChange({ ...draft, images: imgs })}
+                      onChange={(imgs) => onDraftChange({ ...draft, images: imgs, image: imgs[0] || '' })}
                       label="Event Gallery"
                       hint="First image is used as the event banner. JPG, PNG, WebP — max 5 MB each."
                     />
@@ -1158,8 +1169,15 @@ const ManageEvents: React.FC = () => {
   };
 
   const startEdit = (e: AdminEvent) => {
+    const imgs = e.images && e.images.length > 0 ? e.images : (e.image ? [e.image] : []);
     setEditingId(e.id);
-    setDraft({ ...e, formFields: e.formFields || [], images: e.images || [] });
+    setDraft({
+      ...e,
+      formFields: e.formFields || [],
+      images: imgs,
+      image: e.image || imgs[0] || '',
+      location: e.location || '',
+    });
     setDeleteConfirm(null);
   };
 
@@ -1253,6 +1271,7 @@ const ManageEvents: React.FC = () => {
                         {evt.status}
                       </span>
                       <span>{evt.date ? new Date(evt.date).toLocaleDateString() : 'TBA'}</span>
+                      {evt.location && <span>• {evt.location}</span>}
                     </div>
                   </div>
 
