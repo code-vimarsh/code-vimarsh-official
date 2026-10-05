@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Zap } from 'lucide-react';
+import { useGlobalState } from '../../context/GlobalContext';
 
 import type { Event } from './types';
 import EventBadge from './EventBadge';
@@ -11,6 +12,7 @@ import EventBadge from './EventBadge';
 
 const LiveHeroBanner: React.FC<{ event: Event }> = ({ event }) => {
   const navigate = useNavigate();
+  const { currentUser } = useGlobalState();
 
   return (
     <motion.div
@@ -67,7 +69,14 @@ const LiveHeroBanner: React.FC<{ event: Event }> = ({ event }) => {
               type="button"
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
-              onClick={(e) => { e.stopPropagation(); navigate(`/events/${event.id}?register=true`); }}
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                if (!currentUser) {
+                  navigate('/signup');
+                } else {
+                  navigate(`/events/${event.id}?register=true`); 
+                }
+              }}
               className="relative w-full flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold text-white overflow-hidden"
               style={{
                 background: 'linear-gradient(135deg, #ff6a00 0%, #ff9a00 100%)',
@@ -100,13 +109,6 @@ const LiveHeroBanner: React.FC<{ event: Event }> = ({ event }) => {
               <Zap size={15} className="shrink-0" />
               Register Now
             </motion.button>
-
-            {event.capacity !== undefined && event.registeredCount !== undefined && (() => {
-              const spotsLeft = event.capacity! - event.registeredCount!;
-              return spotsLeft <= 0
-                ? <p className="text-center text-[11px] text-red-400/80 font-medium">Event is full — join the waitlist</p>
-                : null;
-            })()}
           </div>
 
           <button

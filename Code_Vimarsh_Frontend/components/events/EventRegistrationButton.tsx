@@ -1,6 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Zap, Calendar, Ban } from 'lucide-react';
+import { useGlobalState } from '../../context/GlobalContext';
+import { useNavigate } from 'react-router-dom';
 import type { EventStatus } from './types';
 
 interface EventRegistrationButtonProps {
@@ -25,10 +27,15 @@ const EventRegistrationButton: React.FC<EventRegistrationButtonProps> = ({
   capacity,
   registeredCount,
 }) => {
-  const spotsLeft =
-    capacity !== undefined && registeredCount !== undefined
-      ? capacity - registeredCount
-      : null;
+  const { currentUser } = useGlobalState();
+  const navigate = useNavigate();
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (!currentUser) {
+      e.preventDefault();
+      navigate('/signup');
+    }
+  };
 
   /* ── Live ── */
   if (status === 'live') {
@@ -36,6 +43,7 @@ const EventRegistrationButton: React.FC<EventRegistrationButtonProps> = ({
       <div className="flex flex-col gap-2">
         <motion.a
           href={registrationLink ?? '#'}
+          onClick={handleClick}
           target="_blank"
           rel="noopener noreferrer"
           whileHover={{ scale: 1.03 }}
@@ -76,12 +84,6 @@ const EventRegistrationButton: React.FC<EventRegistrationButtonProps> = ({
           <Zap size={16} className="shrink-0" aria-hidden="true" />
           Register Now
         </motion.a>
-
-        {spotsLeft === 0 && (
-          <p className="text-center text-xs text-red-400/80 font-medium">
-            Event is at capacity
-          </p>
-        )}
       </div>
     );
   }

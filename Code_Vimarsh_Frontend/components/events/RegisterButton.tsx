@@ -1,6 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Zap } from 'lucide-react';
+import { useGlobalState } from '../../context/GlobalContext';
+import { useNavigate } from 'react-router-dom';
 
 interface RegisterButtonProps {
   href: string;
@@ -16,15 +18,21 @@ const RegisterButton: React.FC<RegisterButtonProps> = ({
   registeredCount,
   className = '',
 }) => {
-  const spotsLeft =
-    capacity !== undefined && registeredCount !== undefined
-      ? capacity - registeredCount
-      : null;
+  const { currentUser } = useGlobalState();
+  const navigate = useNavigate();
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (!currentUser) {
+      e.preventDefault();
+      navigate('/signup');
+    }
+  };
 
   return (
     <div className={`flex flex-col gap-2 ${className}`}>
       <motion.a
         href={href}
+        onClick={handleClick}
         target="_blank"
         rel="noopener noreferrer"
         whileHover={{ scale: 1.03 }}
@@ -64,12 +72,6 @@ const RegisterButton: React.FC<RegisterButtonProps> = ({
         <Zap size={15} className="shrink-0" />
         Register Now
       </motion.a>
-
-      {spotsLeft === 0 && (
-        <p className="text-center text-[11px] text-red-400/80 font-medium">
-          Event is full — join the waitlist
-        </p>
-      )}
     </div>
   );
 };

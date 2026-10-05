@@ -84,6 +84,7 @@ const EventDetails: React.FC = () => {
   const { events, participants, currentUser } = useGlobalState();
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
+  const navigate = useNavigate();
   const [event, setEvent] = useState<Event | null | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
@@ -109,6 +110,10 @@ const EventDetails: React.FC = () => {
   useEffect(() => {
     if (!event || event.status !== 'live') return;
     if (new URLSearchParams(location.search).get('register') === 'true') {
+      if (!currentUser) {
+        navigate('/signup');
+        return;
+      }
       setIsRegisterOpen(true);
       requestAnimationFrame(() => {
         setTimeout(() => {
@@ -116,7 +121,7 @@ const EventDetails: React.FC = () => {
         }, 120);
       });
     }
-  }, [event, location.search]);
+  }, [event, location.search, currentUser, navigate]);
 
   // ── Data resolution (fetches from backend API) ──────────
   useEffect(() => {
@@ -203,6 +208,10 @@ const EventDetails: React.FC = () => {
   }, [id, events]);
 
   const openRegistration = () => {
+    if (!currentUser) {
+      navigate('/signup');
+      return;
+    }
     setIsRegisterOpen(true);
     // Give React one frame to mount the section before scrolling
     requestAnimationFrame(() => {
